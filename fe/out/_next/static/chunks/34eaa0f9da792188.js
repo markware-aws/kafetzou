@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,52683,e=>{"use strict";var t=e.i(71645),u=e.i(18566),l=e.i(86909);function o(){let e=(0,u.useRouter)();return(0,t.useEffect)(()=>{(0,l.getUser)().then(t=>{e.replace(t?"/upload":"/login")})},[e]),null}e.s(["default",()=>o])}]);

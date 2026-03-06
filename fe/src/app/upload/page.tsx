@@ -1,0 +1,260 @@
+"use client";
+
+import { useState, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Upload, X, Coffee, Sparkles, ImagePlus, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Navbar } from "@/components/navbar";
+import { AuthGuard } from "@/components/auth-guard";
+import { ReadingCard } from "@/components/reading-card";
+import { getUploadUrl, uploadImageToS3, createReading, type ReadCoffeeResponse } from "@/lib/api";
+
+const MAX_IMAGES = 3;
+
+interface ImageSlot {
+  id: string;
+  file: File;
+  preview: string;
+  status: "idle" | "uploading" | "reading" | "done" | "error";
+  result?: ReadCoffeeResponse;
+  error?: string;
+}
+
+type StepLabel = "Uploading to S3…" | "Reading the grounds…" | "Done" | "Failed";
+
+function stepLabel(status: ImageSlot["status"]): StepLabel {
+  if (status === "uploading") return "Uploading to S3…";
+  if (status === "reading") return "Reading the grounds…";
+  if (status === "done") return "Done";
+  return "Failed";
+}
+
+export default function UploadPage() {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [slots, setSlots] = useState<ImageSlot[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  const addFiles = useCallback((files: FileList | File[]) => {
+    const arr = Array.from(files).slice(0, MAX_IMAGES - slots.length);
+    const newSlots: ImageSlot[] = arr.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      preview: URL.createObjectURL(file),
+      status: "idle",
+    }));
+    setSlots((prev) => [...prev, ...newSlots].slice(0, MAX_IMAGES));
+  }, [slots.length]);
+
+  function removeSlot(id: string) {
+    setSlots((prev) => {
+      const slot = prev.find((s) => s.id === id);
+      if (slot) URL.revokeObjectURL(slot.preview);
+      return prev.filter((s) => s.id !== id);
+    });
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (e.target.files) addFiles(e.target.files);
+    e.target.value = "";
+  }
+
+  function updateSlot(id: string, patch: Partial<ImageSlot>) {
+    setSlots((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  }
+
+  async function processSlot(slot: ImageSlot) {
+    updateSlot(slot.id, { status: "uploading", error: undefined });
+    try {
+      const { upload_url, image_key, reading_id } = await getUploadUrl();
+      await uploadImageToS3(upload_url, slot.file);
+      updateSlot(slot.id, { status: "reading" });
+      const result = await createReading(image_key, reading_id);
+      updateSlot(slot.id, { status: "done", result });
+    } catch (err: any) {
+      updateSlot(slot.id, { status: "error", error: err.message ?? "Something went wrong" });
+    }
+  }
+
+  async function handleReadAll() {
+    if (slots.length === 0 || processing) return;
+    setProcessing(true);
+    // Process sequentially to avoid Cognito token issues and rate limits
+    for (const slot of slots.filter((s) => s.status === "idle" || s.status === "error")) {
+      await processSlot(slot);
+    }
+    setProcessing(false);
+  }
+
+  const idleSlots = slots.filter((s) => s.status === "idle" || s.status === "error");
+  const allDone = slots.length > 0 && slots.every((s) => s.status === "done");
+  const canRead = idleSlots.length > 0 && !processing;
+  const results = slots.filter((s) => s.status === "done" && s.result);
+
+  return (
+    <AuthGuard>
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+
+        <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
+          {/* Hero */}
+          <div className="text-center mb-10">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-amber-400" />
+              <span className="text-amber-400 text-sm font-medium uppercase tracking-widest">Oracle Mode</span>
+            </div>
+            <h1 className="text-3xl font-bold text-violet-100 mb-2">Read My Coffee</h1>
+            <p className="text-violet-400 text-sm max-w-sm mx-auto">
+              Upload up to {MAX_IMAGES} photos of your Greek coffee cup. The kafetzou will reveal what the grounds hold.
+            </p>
+          </div>
+
+          {/* Drop zone (only show when we can still add images) */}
+          {slots.length < MAX_IMAGES && (
+            <div
+              className={`relative border-2 border-dashed rounded-2xl transition-all cursor-pointer mb-6 ${
+                dragOver
+                  ? "border-amber-500 bg-amber-900/10"
+                  : "border-violet-800/50 hover:border-violet-600/70 bg-[#12102a]/60 hover:bg-[#12102a]"
+              }`}
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={onDrop}
+            >
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-colors ${dragOver ? "bg-amber-500/20" : "bg-violet-900/40"}`}>
+                  <ImagePlus className={`w-6 h-6 transition-colors ${dragOver ? "text-amber-400" : "text-violet-400"}`} />
+                </div>
+                <p className="text-violet-200 text-sm font-medium mb-1">
+                  {dragOver ? "Drop your photos here" : "Drag & drop your coffee cup photos"}
+                </p>
+                <p className="text-violet-500 text-xs">
+                  or click to browse — {MAX_IMAGES - slots.length} slot{MAX_IMAGES - slots.length !== 1 ? "s" : ""} remaining
+                </p>
+                <p className="text-violet-600 text-xs mt-2">JPG, PNG, WEBP</p>
+              </div>
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={onFileChange}
+              />
+            </div>
+          )}
+
+          {/* Image previews */}
+          {slots.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              {slots.map((slot, i) => (
+                <div key={slot.id} className="animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
+                  <div className="relative rounded-xl overflow-hidden border border-violet-800/40 bg-[#12102a] aspect-square">
+                    <img src={slot.preview} alt={`Cup ${i + 1}`} className="w-full h-full object-cover" />
+
+                    {/* Status overlay */}
+                    {slot.status !== "idle" && (
+                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
+                        {(slot.status === "uploading" || slot.status === "reading") && (
+                          <>
+                            <div className="w-10 h-10 rounded-full border-2 border-amber-500/30 border-t-amber-500 spin-slow" />
+                            <p className="text-xs text-amber-300 text-center px-2">{stepLabel(slot.status)}</p>
+                          </>
+                        )}
+                        {slot.status === "done" && (
+                          <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+                        )}
+                        {slot.status === "error" && (
+                          <div className="flex flex-col items-center gap-2">
+                            <AlertCircle className="w-8 h-8 text-rose-400" />
+                            <p className="text-xs text-rose-300 text-center px-2">{slot.error}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Remove button (only when idle or error) */}
+                    {!processing && (slot.status === "idle" || slot.status === "error") && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeSlot(slot.id); }}
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-violet-300 hover:text-rose-300 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {/* Slot number badge */}
+                    <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-violet-900/80 flex items-center justify-center">
+                      <span className="text-xs text-violet-300 font-medium">{i + 1}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* CTA */}
+          {slots.length > 0 && !allDone && (
+            <div className="flex flex-col items-center gap-3">
+              <button
+                onClick={handleReadAll}
+                disabled={!canRead}
+                className="flex items-center gap-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold rounded-xl px-8 py-3.5 text-sm transition-all shadow-xl shadow-amber-500/20"
+              >
+                <Coffee className="w-4 h-4" />
+                {processing ? "Reading the grounds…" : `Read my coffee${slots.length > 1 ? ` (${idleSlots.length})` : ""}`}
+              </button>
+              {!processing && (
+                <p className="text-xs text-violet-500">
+                  Each photo is analyzed separately by the AI oracle
+                </p>
+              )}
+            </div>
+          )}
+
+          {allDone && (
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+                <CheckCircle2 className="w-4 h-4" />
+                All readings complete
+              </div>
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="text-xs text-violet-400 hover:text-amber-300 transition-colors"
+              >
+                View all my readings →
+              </button>
+            </div>
+          )}
+
+          {/* Results */}
+          {results.length > 0 && (
+            <div className="mt-10 flex flex-col gap-6">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-violet-900/40" />
+                <span className="text-xs text-violet-500 uppercase tracking-widest font-medium">The Oracle Speaks</span>
+                <div className="h-px flex-1 bg-violet-900/40" />
+              </div>
+              {results.map((slot, i) => (
+                <ReadingCard
+                  key={slot.id}
+                  reading={slot.result!.reading}
+                  symbolsDetected={slot.result!.symbols_detected}
+                  imagePreview={slot.preview}
+                  index={i}
+                />
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+    </AuthGuard>
+  );
+}
