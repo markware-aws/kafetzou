@@ -9,7 +9,9 @@ class CoffeeSymbol(BaseModel):
 
 
 class CoffeeVisionAnalysis(BaseModel):
+    is_coffee_cup: bool = Field(..., description="True if the image shows a Greek coffee cup with grounds")
     symbols: list[CoffeeSymbol] = Field(default_factory=list, description="Detected tasseography symbols")
-    density: str = Field(..., description="Density of coffee grounds: light, medium, or dense")
-    flow_direction: str = Field(..., description="Direction of lines or flow in the grounds")
+    letters: list[str] = Field(default_factory=list, description="Letters or numbers visible in the grounds (e.g. 'Α', 'Μ', '7')")
+    density: str = Field(default="άγνωστο", description="Density of coffee grounds: light, medium, or dense")
+    flow_direction: str = Field(default="άγνωστο", description="Direction of lines or flow in the grounds")
     notable_patterns: list[str] = Field(default_factory=list, description="Notable overall patterns observed")

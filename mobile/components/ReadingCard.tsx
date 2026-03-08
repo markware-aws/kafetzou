@@ -7,10 +7,11 @@ import type { CoffeeReading } from '@/lib/api';
 interface Props {
   reading: CoffeeReading;
   symbolsDetected: string[];
+  lettersDetected?: string[];
   imageUri?: string;
 }
 
-export function ReadingCard({ reading, symbolsDetected, imageUri }: Props) {
+export function ReadingCard({ reading, symbolsDetected, lettersDetected = [], imageUri }: Props) {
   return (
     <View style={styles.card}>
       {/* Header */}
@@ -21,7 +22,7 @@ export function ReadingCard({ reading, symbolsDetected, imageUri }: Props) {
         <View style={styles.headerText}>
           <View style={styles.row}>
             <Sparkles size={13} color={theme.amber} />
-            <Text style={styles.label}>Your Fortune</Text>
+            <Text style={styles.label}>Η Μοίρα σου</Text>
           </View>
           <Text style={styles.generalMessage}>{reading.general_message}</Text>
         </View>
@@ -29,28 +30,48 @@ export function ReadingCard({ reading, symbolsDetected, imageUri }: Props) {
 
       {/* Love / Career / Luck */}
       <View style={styles.sections}>
-        <Section icon={<Heart size={14} color="#f87171" />} label="Love" color="#f87171" bg="rgba(239,68,68,0.1)">
+        <Section icon={<Heart size={14} color="#f87171" />} label="Αγάπη" color="#f87171" bg="rgba(239,68,68,0.1)">
           {reading.love}
         </Section>
-        <Section icon={<Briefcase size={14} color="#38bdf8" />} label="Career" color="#38bdf8" bg="rgba(56,189,248,0.1)">
+        <Section icon={<Briefcase size={14} color="#38bdf8" />} label="Καριέρα" color="#38bdf8" bg="rgba(56,189,248,0.1)">
           {reading.career}
         </Section>
-        <Section icon={<Star size={14} color={theme.amber} />} label="Luck" color={theme.amber} bg={theme.amberGlow}>
+        <Section icon={<Star size={14} color={theme.amber} />} label="Τύχη" color={theme.amber} bg={theme.amberGlow}>
           {reading.luck}
         </Section>
       </View>
 
       {/* Symbols */}
-      {symbolsDetected.length > 0 && (
+      {(() => {
+        const allSymbols = [...new Set([...symbolsDetected, ...(reading.symbols ?? [])])];
+        return allSymbols.length > 0 ? (
+          <View style={styles.symbolsContainer}>
+            <View style={styles.row}>
+              <Eye size={12} color={theme.textMuted} />
+              <Text style={styles.symbolsLabel}>Σύμβολα που είδα</Text>
+            </View>
+            <View style={styles.chips}>
+              {allSymbols.map((sym) => (
+                <View key={sym} style={styles.chip}>
+                  <Text style={styles.chipText}>{sym}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null;
+      })()}
+
+      {/* Letters */}
+      {lettersDetected.length > 0 && (
         <View style={styles.symbolsContainer}>
           <View style={styles.row}>
-            <Eye size={12} color={theme.textMuted} />
-            <Text style={styles.symbolsLabel}>Symbols Seen</Text>
+            <Eye size={12} color={theme.amber} />
+            <Text style={styles.lettersLabel}>Γράμματα που είδα</Text>
           </View>
           <View style={styles.chips}>
-            {symbolsDetected.map((sym) => (
-              <View key={sym} style={styles.chip}>
-                <Text style={styles.chipText}>{sym}</Text>
+            {lettersDetected.map((letter) => (
+              <View key={letter} style={styles.letterChip}>
+                <Text style={styles.letterChipText}>{letter}</Text>
               </View>
             ))}
           </View>
@@ -59,7 +80,7 @@ export function ReadingCard({ reading, symbolsDetected, imageUri }: Props) {
 
       {/* Prediction */}
       <View style={styles.prediction}>
-        <Text style={styles.predictionLabel}>Prediction</Text>
+        <Text style={styles.predictionLabel}>Πρόβλεψη</Text>
         <Text style={styles.predictionText}>"{reading.prediction_summary}"</Text>
       </View>
     </View>
@@ -119,6 +140,7 @@ const styles = StyleSheet.create({
   sectionText: { fontSize: 12, color: '#c4b8e0', lineHeight: 18, marginTop: 4 },
   symbolsContainer: { paddingHorizontal: 16, paddingBottom: 12 },
   symbolsLabel: { fontSize: 10, color: theme.textMuted, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase' },
+  lettersLabel: { fontSize: 10, color: theme.amber, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   chip: {
     paddingHorizontal: 10,
@@ -129,6 +151,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(124,58,237,0.3)',
   },
   chipText: { fontSize: 11, color: '#c4b8e0', textTransform: 'capitalize' },
+  letterChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    backgroundColor: 'rgba(245,158,11,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.4)',
+  },
+  letterChipText: { fontSize: 12, color: theme.amber, fontWeight: '700' },
   prediction: {
     margin: 16,
     marginTop: 4,

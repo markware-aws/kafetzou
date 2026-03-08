@@ -6,17 +6,18 @@ import type { CoffeeReading } from "@/lib/api";
 interface ReadingCardProps {
   reading: CoffeeReading;
   symbolsDetected: string[];
+  lettersDetected?: string[];
   imagePreview?: string;
   index?: number;
 }
 
 const sections = [
-  { key: "love" as const, label: "Love", icon: Heart, color: "text-rose-400", bg: "bg-rose-900/20 border-rose-800/30" },
-  { key: "career" as const, label: "Career", icon: Briefcase, color: "text-sky-400", bg: "bg-sky-900/20 border-sky-800/30" },
-  { key: "luck" as const, label: "Luck", icon: Star, color: "text-amber-400", bg: "bg-amber-900/20 border-amber-800/30" },
+  { key: "love" as const, label: "Αγάπη", icon: Heart, color: "text-rose-400", bg: "bg-rose-900/20 border-rose-800/30" },
+  { key: "career" as const, label: "Καριέρα", icon: Briefcase, color: "text-sky-400", bg: "bg-sky-900/20 border-sky-800/30" },
+  { key: "luck" as const, label: "Τύχη", icon: Star, color: "text-amber-400", bg: "bg-amber-900/20 border-amber-800/30" },
 ];
 
-export function ReadingCard({ reading, symbolsDetected, imagePreview, index = 0 }: ReadingCardProps) {
+export function ReadingCard({ reading, symbolsDetected, lettersDetected = [], imagePreview, index = 0 }: ReadingCardProps) {
   return (
     <div
       className="animate-fade-in rounded-2xl border border-violet-800/40 bg-[#12102a] overflow-hidden"
@@ -34,7 +35,7 @@ export function ReadingCard({ reading, symbolsDetected, imagePreview, index = 0 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="text-xs text-amber-400 font-medium uppercase tracking-widest">Your Fortune</span>
+            <span className="text-xs text-amber-400 font-medium uppercase tracking-widest">Η Μοίρα σου</span>
           </div>
           <p className="text-violet-100 text-sm leading-relaxed">{reading.general_message}</p>
         </div>
@@ -53,30 +54,55 @@ export function ReadingCard({ reading, symbolsDetected, imagePreview, index = 0 
         ))}
       </div>
 
-      {/* Symbols */}
-      {symbolsDetected.length > 0 && (
-        <div className="px-6 pb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Eye className="w-3.5 h-3.5 text-violet-400" />
-            <span className="text-xs text-violet-400 font-medium uppercase tracking-wider">Symbols Seen</span>
+      {/* Symbols & Letters */}
+      {(() => {
+        const allSymbols = [...new Set([...symbolsDetected, ...(reading.symbols ?? [])])];
+        return (allSymbols.length > 0 || lettersDetected.length > 0) ? (
+          <div className="px-6 pb-4 flex flex-col gap-3">
+            {allSymbols.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Eye className="w-3.5 h-3.5 text-violet-400" />
+                  <span className="text-xs text-violet-400 font-medium uppercase tracking-wider">Σύμβολα που είδα</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {allSymbols.map((sym) => (
+                    <span
+                      key={sym}
+                      className="px-3 py-1 rounded-full text-xs bg-violet-900/40 border border-violet-700/40 text-violet-200 capitalize"
+                    >
+                      {sym}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {lettersDetected.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Eye className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-xs text-amber-400 font-medium uppercase tracking-wider">Γράμματα που είδα</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {lettersDetected.map((letter) => (
+                    <span
+                      key={letter}
+                      className="px-3 py-1 rounded-full text-xs bg-amber-900/30 border border-amber-700/40 text-amber-200 font-bold"
+                    >
+                      {letter}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {symbolsDetected.map((sym) => (
-              <span
-                key={sym}
-                className="px-3 py-1 rounded-full text-xs bg-violet-900/40 border border-violet-700/40 text-violet-200 capitalize"
-              >
-                {sym}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+        ) : null;
+      })()}
 
       {/* Prediction summary */}
       <div className="px-6 pb-6">
         <div className="rounded-xl bg-gradient-to-r from-violet-900/30 to-amber-900/20 border border-violet-800/30 p-4">
-          <p className="text-xs text-amber-300/70 font-medium uppercase tracking-widest mb-1">Prediction</p>
+          <p className="text-xs text-amber-300/70 font-medium uppercase tracking-widest mb-1">Πρόβλεψη</p>
           <p className="text-sm text-violet-100 italic leading-relaxed">"{reading.prediction_summary}"</p>
         </div>
       </div>

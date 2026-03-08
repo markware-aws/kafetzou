@@ -61,35 +61,35 @@ export default function LoginScreen() {
             <Coffee size={32} color="#000" />
           </View>
           <Text style={s.logoText}>Kafetzou</Text>
-          <Text style={s.logoSub}>AI Greek Coffee Cup Readings</Text>
+          <Text style={s.logoSub}>AI Ανάγνωση Ελληνικού Καφέ</Text>
         </View>
 
         {/* Card */}
         <View style={s.card}>
           {step === 'login' && (
             <>
-              <Text style={s.title}>Welcome back</Text>
+              <Text style={s.title}>Καλώς ήρθες</Text>
               <Field label="Email" value={email} onChange={setEmail} keyboardType="email-address" placeholder="you@example.com" />
-              <PasswordField value={password} onChange={setPassword} show={showPass} onToggle={() => setShowPass(p => !p)} placeholder="Password" />
+              <PasswordField value={password} onChange={setPassword} show={showPass} onToggle={() => setShowPass(p => !p)} placeholder="Κωδικός" />
               {error ? <Text style={s.error}>{error}</Text> : null}
-              <Btn label="Sign in" loadingLabel="Signing in…" loading={loading} onPress={handleLogin} />
+              <Btn label="Σύνδεση" loadingLabel="Σύνδεση…" loading={loading} onPress={handleLogin} />
               <Text style={s.switchText}>
-                No account?{' '}
-                <Text style={s.switchLink} onPress={() => { setStep('register'); setError(''); }}>Create one</Text>
+                Δεν έχεις λογαριασμό;{' '}
+                <Text style={s.switchLink} onPress={() => { setStep('register'); setError(''); }}>Δημιούργησε έναν</Text>
               </Text>
             </>
           )}
 
           {step === 'register' && (
             <>
-              <Text style={s.title}>Create account</Text>
+              <Text style={s.title}>Δημιουργία λογαριασμού</Text>
               <Field label="Email" value={email} onChange={setEmail} keyboardType="email-address" placeholder="you@example.com" />
-              <PasswordField value={password} onChange={setPassword} show={showPass} onToggle={() => setShowPass(p => !p)} placeholder="Min 8 characters" />
+              <PasswordField value={password} onChange={setPassword} show={showPass} onToggle={() => setShowPass(p => !p)} placeholder="Τουλάχιστον 8 χαρακτήρες" />
               {error ? <Text style={s.error}>{error}</Text> : null}
-              <Btn label="Create account" loadingLabel="Creating…" loading={loading} onPress={handleRegister} />
+              <Btn label="Δημιουργία λογαριασμού" loadingLabel="Δημιουργία…" loading={loading} onPress={handleRegister} />
               <Text style={s.switchText}>
-                Have an account?{' '}
-                <Text style={s.switchLink} onPress={() => { setStep('login'); setError(''); }}>Sign in</Text>
+                Έχεις ήδη λογαριασμό;{' '}
+                <Text style={s.switchLink} onPress={() => { setStep('login'); setError(''); }}>Σύνδεση</Text>
               </Text>
             </>
           )}
@@ -98,12 +98,12 @@ export default function LoginScreen() {
             <>
               <View style={s.row}>
                 <Sparkles size={16} color={theme.amber} />
-                <Text style={s.title}>Check your email</Text>
+                <Text style={s.title}>Έλεγξε το email σου</Text>
               </View>
-              <Text style={s.confirmSub}>We sent a code to <Text style={{ color: theme.text }}>{email}</Text></Text>
-              <Field label="Verification code" value={code} onChange={setCode} keyboardType="number-pad" placeholder="123456" />
+              <Text style={s.confirmSub}>Στείλαμε κωδικό στο <Text style={{ color: theme.text }}>{email}</Text></Text>
+              <Field label="Κωδικός επιβεβαίωσης" value={code} onChange={setCode} keyboardType="number-pad" placeholder="123456" />
               {error ? <Text style={s.error}>{error}</Text> : null}
-              <Btn label="Verify & sign in" loadingLabel="Verifying…" loading={loading} onPress={handleConfirm} />
+              <Btn label="Επιβεβαίωση & Σύνδεση" loadingLabel="Επιβεβαίωση…" loading={loading} onPress={handleConfirm} />
             </>
           )}
         </View>
@@ -132,7 +132,7 @@ function Field({ label, value, onChange, keyboardType, placeholder }: any) {
 function PasswordField({ value, onChange, show, onToggle, placeholder }: any) {
   return (
     <View style={s.field}>
-      <Text style={s.fieldLabel}>Password</Text>
+      <Text style={s.fieldLabel}>Κωδικός</Text>
       <View style={s.passWrap}>
         <TextInput
           style={[s.input, { flex: 1, borderWidth: 0 }]}

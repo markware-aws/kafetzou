@@ -25,17 +25,17 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="upload"
         options={{
-          title: 'New Reading',
+          title: 'Νέα Ανάγνωση',
           tabBarIcon: ({ color, size }) => <Upload size={size - 2} color={color} />,
-          headerTitle: '☕  Read My Coffee',
+          headerTitle: '☕  Διάβασε τον Καφέ μου',
         }}
       />
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'My Readings',
+          title: 'Οι Αναγνώσεις μου',
           tabBarIcon: ({ color, size }) => <LayoutDashboard size={size - 2} color={color} />,
-          headerTitle: 'My Readings',
+          headerTitle: 'Οι Αναγνώσεις μου',
         }}
       />
     </Tabs>

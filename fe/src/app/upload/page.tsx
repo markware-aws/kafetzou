@@ -19,21 +19,26 @@ interface ImageSlot {
   error?: string;
 }
 
-type StepLabel = "Uploading to S3…" | "Reading the grounds…" | "Done" | "Failed";
+type StepLabel = "Μεταφόρτωση…" | "Διαβάζω τον καφέ…" | "Έγινε" | "Αποτυχία";
 
 function stepLabel(status: ImageSlot["status"]): StepLabel {
-  if (status === "uploading") return "Uploading to S3…";
-  if (status === "reading") return "Reading the grounds…";
-  if (status === "done") return "Done";
-  return "Failed";
+  if (status === "uploading") return "Μεταφόρτωση…";
+  if (status === "reading") return "Διαβάζω τον καφέ…";
+  if (status === "done") return "Έγινε";
+  return "Αποτυχία";
 }
 
 export default function UploadPage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const addMoreRef = useRef<HTMLInputElement>(null);
   const [slots, setSlots] = useState<ImageSlot[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [processing, setProcessing] = useState(false);
+
+  function resetSlots() {
+    setSlots((prev) => { prev.forEach((s) => URL.revokeObjectURL(s.preview)); return []; });
+  }
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const arr = Array.from(files).slice(0, MAX_IMAGES - slots.length);
@@ -107,16 +112,16 @@ export default function UploadPage() {
           <div className="text-center mb-10">
             <div className="flex items-center justify-center gap-2 mb-3">
               <Sparkles className="w-5 h-5 text-amber-400" />
-              <span className="text-amber-400 text-sm font-medium uppercase tracking-widest">Oracle Mode</span>
+              <span className="text-amber-400 text-sm font-medium uppercase tracking-widest">Λειτουργία Μαντείου</span>
             </div>
-            <h1 className="text-3xl font-bold text-violet-100 mb-2">Read My Coffee</h1>
+            <h1 className="text-3xl font-bold text-violet-100 mb-2">Διάβασε τον Καφέ μου</h1>
             <p className="text-violet-400 text-sm max-w-sm mx-auto">
-              Upload up to {MAX_IMAGES} photos of your Greek coffee cup. The kafetzou will reveal what the grounds hold.
+              Ανέβασε έως {MAX_IMAGES} φωτογραφίες του φλιτζανιού σου. Η καφετζού θα αποκαλύψει τι κρύβει ο κατακάθι.
             </p>
           </div>
 
-          {/* Drop zone (only show when we can still add images) */}
-          {slots.length < MAX_IMAGES && (
+          {/* Drop zone — only when no images selected yet */}
+          {slots.length === 0 && (
             <div
               className={`relative border-2 border-dashed rounded-2xl transition-all cursor-pointer mb-6 ${
                 dragOver
@@ -133,27 +138,20 @@ export default function UploadPage() {
                   <ImagePlus className={`w-6 h-6 transition-colors ${dragOver ? "text-amber-400" : "text-violet-400"}`} />
                 </div>
                 <p className="text-violet-200 text-sm font-medium mb-1">
-                  {dragOver ? "Drop your photos here" : "Drag & drop your coffee cup photos"}
+                  {dragOver ? "Αφήστε τις φωτογραφίες εδώ" : "Σύρετε τις φωτογραφίες του φλιτζανιού σας"}
                 </p>
                 <p className="text-violet-500 text-xs">
-                  or click to browse — {MAX_IMAGES - slots.length} slot{MAX_IMAGES - slots.length !== 1 ? "s" : ""} remaining
+                  ή κάντε κλικ — έως {MAX_IMAGES} φωτογραφίες
                 </p>
                 <p className="text-violet-600 text-xs mt-2">JPG, PNG, WEBP</p>
               </div>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={onFileChange}
-              />
+              <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={onFileChange} />
             </div>
           )}
 
-          {/* Image previews */}
+          {/* Image previews + add more tile */}
           {slots.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-3 gap-4 mb-6">
               {slots.map((slot, i) => (
                 <div key={slot.id} className="animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
                   <div className="relative rounded-xl overflow-hidden border border-violet-800/40 bg-[#12102a] aspect-square">
@@ -168,9 +166,7 @@ export default function UploadPage() {
                             <p className="text-xs text-amber-300 text-center px-2">{stepLabel(slot.status)}</p>
                           </>
                         )}
-                        {slot.status === "done" && (
-                          <CheckCircle2 className="w-10 h-10 text-emerald-400" />
-                        )}
+                        {slot.status === "done" && <CheckCircle2 className="w-10 h-10 text-emerald-400" />}
                         {slot.status === "error" && (
                           <div className="flex flex-col items-center gap-2">
                             <AlertCircle className="w-8 h-8 text-rose-400" />
@@ -180,7 +176,7 @@ export default function UploadPage() {
                       </div>
                     )}
 
-                    {/* Remove button (only when idle or error) */}
+                    {/* Remove button */}
                     {!processing && (slot.status === "idle" || slot.status === "error") && (
                       <button
                         onClick={(e) => { e.stopPropagation(); removeSlot(slot.id); }}
@@ -197,6 +193,18 @@ export default function UploadPage() {
                   </div>
                 </div>
               ))}
+
+              {/* Add more tile */}
+              {slots.length < MAX_IMAGES && !processing && (
+                <button
+                  onClick={() => addMoreRef.current?.click()}
+                  className="aspect-square rounded-xl border-2 border-dashed border-violet-800/40 hover:border-violet-600/60 bg-[#12102a]/60 hover:bg-[#12102a] flex flex-col items-center justify-center gap-2 transition-all"
+                >
+                  <ImagePlus className="w-6 h-6 text-violet-500" />
+                  <span className="text-xs text-violet-500">Προσθήκη</span>
+                </button>
+              )}
+              <input ref={addMoreRef} type="file" accept="image/*" multiple className="hidden" onChange={onFileChange} />
             </div>
           )}
 
@@ -209,12 +217,12 @@ export default function UploadPage() {
                 className="flex items-center gap-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold rounded-xl px-8 py-3.5 text-sm transition-all shadow-xl shadow-amber-500/20"
               >
                 <Coffee className="w-4 h-4" />
-                {processing ? "Reading the grounds…" : `Read my coffee${slots.length > 1 ? ` (${idleSlots.length})` : ""}`}
+                {processing ? "Διαβάζω τον καφέ…" : `Διάβασε τον καφέ μου${slots.length > 1 ? ` (${idleSlots.length})` : ""}`}
               </button>
               {!processing && (
-                <p className="text-xs text-violet-500">
-                  Each photo is analyzed separately by the AI oracle
-                </p>
+                <button onClick={resetSlots} className="text-xs text-violet-600 hover:text-violet-400 transition-colors">
+                  Νέα Ανάγνωση
+                </button>
               )}
             </div>
           )}
@@ -223,14 +231,17 @@ export default function UploadPage() {
             <div className="flex flex-col items-center gap-3">
               <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
                 <CheckCircle2 className="w-4 h-4" />
-                All readings complete
+                Όλες οι αναγνώσεις ολοκληρώθηκαν
               </div>
-              <button
-                onClick={() => router.push("/dashboard")}
-                className="text-xs text-violet-400 hover:text-amber-300 transition-colors"
-              >
-                View all my readings →
-              </button>
+              <div className="flex items-center gap-4">
+                <button onClick={resetSlots} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold rounded-xl px-5 py-2.5 text-sm transition-all shadow-lg shadow-amber-500/20">
+                  <Upload className="w-4 h-4" />
+                  Νέα Ανάγνωση
+                </button>
+                <button onClick={() => router.push("/dashboard")} className="text-xs text-violet-400 hover:text-amber-300 transition-colors">
+                  Δες όλες →
+                </button>
+              </div>
             </div>
           )}
 
@@ -239,7 +250,7 @@ export default function UploadPage() {
             <div className="mt-10 flex flex-col gap-6">
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-violet-900/40" />
-                <span className="text-xs text-violet-500 uppercase tracking-widest font-medium">The Oracle Speaks</span>
+                <span className="text-xs text-violet-500 uppercase tracking-widest font-medium">Η Καφετζού Μιλά</span>
                 <div className="h-px flex-1 bg-violet-900/40" />
               </div>
               {results.map((slot, i) => (
@@ -247,6 +258,7 @@ export default function UploadPage() {
                   key={slot.id}
                   reading={slot.result!.reading}
                   symbolsDetected={slot.result!.symbols_detected}
+                  lettersDetected={slot.result!.letters_detected}
                   imagePreview={slot.preview}
                   index={i}
                 />

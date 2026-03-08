@@ -12,11 +12,11 @@ import { getReading } from "@/lib/api";
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return "μόλις τώρα";
+  if (m < 60) return `πριν ${m}λ`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 24) return `πριν ${h}ω`;
+  return `πριν ${Math.floor(h / 24)} μέρες`;
 }
 
 function ReadingContent() {
@@ -27,7 +27,7 @@ function ReadingContent() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!id) { setError("No reading ID provided"); setLoading(false); return; }
+    if (!id) { setError("Δεν βρέθηκε αναγνωστικό ID"); setLoading(false); return; }
     getReading(id)
       .then(setItem)
       .catch((e) => setError(e.message))
@@ -41,7 +41,7 @@ function ReadingContent() {
         className="inline-flex items-center gap-2 text-sm text-violet-400 hover:text-amber-300 transition-colors mb-8"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to readings
+        Πίσω στις αναγνώσεις
       </Link>
 
       {loading && (
@@ -65,7 +65,7 @@ function ReadingContent() {
                 <Coffee className="w-5 h-5 text-black" />
               </div>
               <div>
-                <p className="text-sm font-medium text-violet-100">Coffee Reading</p>
+                <p className="text-sm font-medium text-violet-100">Ανάγνωση Καφέ</p>
                 <div className="flex items-center gap-1.5 text-xs text-violet-500 mt-0.5">
                   <Clock className="w-3 h-3" />
                   {timeAgo(item.created_at)}
@@ -82,6 +82,7 @@ function ReadingContent() {
           <ReadingCard
             reading={item.reading_result}
             symbolsDetected={item.symbols_detected ?? []}
+            lettersDetected={item.letters_detected ?? []}
           />
         </>
       )}

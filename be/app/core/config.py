@@ -13,10 +13,12 @@ class Settings(BaseSettings):
 
     # DynamoDB
     dynamodb_readings_table: str = "readings"
+    dynamodb_tarot_table: str = "tarot_readings"
     dynamodb_users_table: str = "users"
 
     # Cognito
     cognito_user_pool_id: str
+    cognito_app_client_id: str
     cognito_region: str = ""
 
     # Stripe (to be configured later)

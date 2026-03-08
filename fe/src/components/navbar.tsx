@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { Coffee, LayoutDashboard, Upload, LogOut, Menu, X } from "lucide-react";
+import { Coffee, LayoutDashboard, Upload, LogOut, Menu, X, Star } from "lucide-react";
 import { logout } from "@/lib/auth";
 
 const navLinks = [
-  { href: "/upload", label: "New Reading", icon: Upload },
-  { href: "/dashboard", label: "My Readings", icon: LayoutDashboard },
+  { href: "/upload", label: "Νέα Ανάγνωση", icon: Upload },
+  { href: "/tarot", label: "Ταρό", icon: Star },
+  { href: "/dashboard", label: "Οι Αναγνώσεις μου", icon: LayoutDashboard },
 ];
 
 export function Navbar() {
@@ -57,7 +58,7 @@ export function Navbar() {
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-violet-400 hover:text-rose-300 hover:bg-rose-900/20 transition-colors ml-2"
           >
             <LogOut className="w-4 h-4" />
-            {loggingOut ? "Signing out…" : "Sign out"}
+            {loggingOut ? "Αποσύνδεση…" : "Αποσύνδεση"}
           </button>
         </div>
 
@@ -91,7 +92,7 @@ export function Navbar() {
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-violet-400 hover:text-rose-300 mt-1"
           >
             <LogOut className="w-4 h-4" />
-            Sign out
+            Αποσύνδεση
           </button>
         </div>
       )}

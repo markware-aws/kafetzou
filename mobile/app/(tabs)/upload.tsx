@@ -25,16 +25,20 @@ interface Slot {
 }
 
 function statusLabel(s: Slot['status']) {
-  if (s === 'uploading') return 'Uploading…';
-  if (s === 'reading') return 'Reading…';
-  if (s === 'done') return 'Done';
-  return 'Failed';
+  if (s === 'uploading') return 'Μεταφόρτωση…';
+  if (s === 'reading') return 'Ανάγνωση…';
+  if (s === 'done') return 'Έγινε';
+  return 'Αποτυχία';
 }
 
 export default function UploadScreen() {
   const router = useRouter();
   const [slots, setSlots] = useState<Slot[]>([]);
   const [processing, setProcessing] = useState(false);
+
+  function resetSlots() {
+    setSlots([]);
+  }
 
   const update = (id: string, patch: Partial<Slot>) =>
     setSlots(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
@@ -62,7 +66,7 @@ export default function UploadScreen() {
   async function takePhoto() {
     if (slots.length >= MAX) return;
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) { Alert.alert('Permission needed', 'Camera access is required to take a photo.'); return; }
+    if (!perm.granted) { Alert.alert('Απαιτείται άδεια', 'Απαιτείται πρόσβαση στην κάμερα.'); return; }
 
     const result = await ImagePicker.launchCameraAsync({ quality: 0.85 });
     if (result.canceled) return;
@@ -83,7 +87,7 @@ export default function UploadScreen() {
       const result = await createReading(image_key, reading_id);
       update(slot.id, { status: 'done', result });
     } catch (e: any) {
-      update(slot.id, { status: 'error', error: e.message ?? 'Something went wrong' });
+      update(slot.id, { status: 'error', error: e.message ?? 'Κάτι πήγε στραβά' });
     }
   }
 
@@ -106,10 +110,10 @@ export default function UploadScreen() {
       <View style={s.hero}>
         <View style={s.heroRow}>
           <Sparkles size={14} color={theme.amber} />
-          <Text style={s.heroLabel}>Oracle Mode</Text>
+          <Text style={s.heroLabel}>Λειτουργία Μαντείου</Text>
         </View>
-        <Text style={s.heroTitle}>Read My Coffee</Text>
-        <Text style={s.heroSub}>Upload up to {MAX} photos of your Greek coffee cup</Text>
+        <Text style={s.heroTitle}>Διάβασε τον Καφέ μου</Text>
+        <Text style={s.heroSub}>Ανέβασε έως {MAX} φωτογραφίες του φλιτζανιού σου</Text>
       </View>
 
       {/* Image slots */}
@@ -152,18 +156,28 @@ export default function UploadScreen() {
         </View>
       )}
 
-      {/* Add buttons */}
-      {slots.length < MAX && (
+      {/* Add buttons — only when no images yet */}
+      {slots.length === 0 && (
         <View style={s.addRow}>
           <TouchableOpacity style={s.addBtn} onPress={pickImages} activeOpacity={0.8}>
             <ImagePlus size={20} color={theme.amber} />
-            <Text style={s.addBtnText}>Gallery</Text>
-            <Text style={s.addBtnSub}>{MAX - slots.length} remaining</Text>
+            <Text style={s.addBtnText}>Γκαλερί</Text>
+            <Text style={s.addBtnSub}>έως {MAX} φωτογραφίες</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.addBtn} onPress={takePhoto} activeOpacity={0.8}>
             <Coffee size={20} color={theme.violetLight} />
-            <Text style={s.addBtnText}>Camera</Text>
-            <Text style={s.addBtnSub}>Take photo</Text>
+            <Text style={s.addBtnText}>Κάμερα</Text>
+            <Text style={s.addBtnSub}>Φωτογράφισε</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Add more tile — when images selected but room remains */}
+      {slots.length > 0 && slots.length < MAX && !processing && (
+        <View style={s.addMoreRow}>
+          <TouchableOpacity style={s.addMoreBtn} onPress={pickImages} activeOpacity={0.8}>
+            <ImagePlus size={16} color={theme.textDim} />
+            <Text style={s.addMoreText}>Προσθήκη ({MAX - slots.length} ακόμα)</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -181,18 +195,26 @@ export default function UploadScreen() {
               ? <ActivityIndicator color="#000" />
               : <Coffee size={16} color="#000" />}
             <Text style={s.ctaBtnText}>
-              {processing ? 'Reading the grounds…' : `Read my coffee${slots.length > 1 ? ` (${idleCount})` : ''}`}
+              {processing ? 'Διαβάζω τον καφέ…' : `Διάβασε τον καφέ μου${slots.length > 1 ? ` (${idleCount})` : ''}`}
             </Text>
           </TouchableOpacity>
-          {!processing && <Text style={s.ctaSub}>Each photo is analyzed separately</Text>}
+          {!processing && (
+            <TouchableOpacity onPress={resetSlots}>
+              <Text style={s.resetText}>Νέα Ανάγνωση</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
       {allDone && (
-        <TouchableOpacity style={s.dashLink} onPress={() => router.push('/(tabs)/dashboard')}>
-          <CheckCircle size={14} color="#10b981" />
-          <Text style={s.dashLinkText}>View all my readings →</Text>
-        </TouchableOpacity>
+        <View style={s.doneRow}>
+          <TouchableOpacity style={s.newReadingBtn} onPress={resetSlots} activeOpacity={0.8}>
+            <Text style={s.newReadingText}>Νέα Ανάγνωση</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/dashboard')}>
+            <Text style={s.dashLinkText}>Δες όλες →</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Results */}
@@ -200,7 +222,7 @@ export default function UploadScreen() {
         <View style={s.results}>
           <View style={s.divider}>
             <View style={s.dividerLine} />
-            <Text style={s.dividerText}>The Oracle Speaks</Text>
+            <Text style={s.dividerText}>Η Καφετζού Μιλά</Text>
             <View style={s.dividerLine} />
           </View>
           {results.map(slot => (
@@ -208,6 +230,7 @@ export default function UploadScreen() {
               key={slot.id}
               reading={slot.result!.reading}
               symbolsDetected={slot.result!.symbols_detected}
+              lettersDetected={slot.result!.letters_detected}
               imageUri={slot.uri}
             />
           ))}
@@ -271,7 +294,23 @@ const s = StyleSheet.create({
   ctaBtnText: { fontSize: 15, fontWeight: '700', color: '#000' },
   ctaSub: { fontSize: 11, color: theme.textMuted },
 
-  dashLink: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center', marginBottom: 16 },
+  addMoreRow: { marginBottom: 16 },
+  addMoreBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.border,
+    borderRadius: 12, paddingVertical: 12,
+    backgroundColor: 'rgba(124,58,237,0.05)',
+  },
+  addMoreText: { fontSize: 12, color: theme.textDim, fontWeight: '600' },
+
+  resetText: { fontSize: 12, color: theme.textDim, textDecorationLine: 'underline' },
+
+  doneRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 16 },
+  newReadingBtn: {
+    backgroundColor: theme.amber, borderRadius: 12,
+    paddingHorizontal: 20, paddingVertical: 10,
+  },
+  newReadingText: { fontSize: 13, fontWeight: '700', color: '#000' },
   dashLinkText: { fontSize: 13, color: theme.textMuted },
 
   results: { marginTop: 16 },

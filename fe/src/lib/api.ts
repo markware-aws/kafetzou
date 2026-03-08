@@ -51,6 +51,7 @@ export interface ReadCoffeeResponse {
   reading_id: string;
   reading: CoffeeReading;
   symbols_detected: string[];
+  letters_detected: string[];
 }
 
 export async function createReading(
@@ -80,5 +81,49 @@ export async function getReading(readingId: string): Promise<any> {
     headers: await authHeaders(),
   });
   if (!res.ok) throw new Error("Reading not found");
+  return res.json();
+}
+
+// ── Tarot ─────────────────────────────────────────────────────────────────────
+
+export interface TarotReading {
+  cards: string[];
+  interpretation: string;
+  advice: string;
+  summary: string;
+}
+
+export interface TarotReadingResponse {
+  reading_id: string;
+  spread: string;
+  reading: TarotReading;
+}
+
+export async function createTarotReading(
+  spread: "one_card" | "three_card"
+): Promise<TarotReadingResponse> {
+  const res = await fetch(`${API_URL}/tarot/reading`, {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify({ spread }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? "Failed to create tarot reading");
+  }
+  return res.json();
+}
+
+export async function getTarotReadings(): Promise<any[]> {
+  const res = await fetch(`${API_URL}/tarot/readings`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch tarot readings");
+  return res.json();
+}
+
+export async function getTarotReading(readingId: string): Promise<any> {
+  const res = await fetch(`${API_URL}/tarot/readings/${readingId}`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error("Tarot reading not found");
   return res.json();
 }

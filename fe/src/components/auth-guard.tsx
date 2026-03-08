@@ -10,10 +10,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    getUser().then((user) => {
-      if (!user) router.replace("/login");
-      else setChecking(false);
-    });
+    // Give Amplify time to restore the session from localStorage before deciding
+    // the user is unauthenticated and bouncing them to login on every refresh.
+    const timer = setTimeout(() => {
+      getUser().then((user) => {
+        if (!user) router.replace("/login");
+        else setChecking(false);
+      });
+    }, 200);
+    return () => clearTimeout(timer);
   }, [router]);
 
   if (checking) {
@@ -23,7 +28,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center glow-pulse">
             <Coffee className="w-6 h-6 text-black" />
           </div>
-          <p className="text-violet-400 text-sm animate-pulse">Reading the grounds…</p>
+          <p className="text-violet-400 text-sm animate-pulse">Διαβάζω τον καφέ…</p>
         </div>
       </div>
     );

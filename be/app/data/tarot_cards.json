@@ -1,0 +1,180 @@
+{
+  "major_arcana": [
+    {
+      "name": "The Fool",
+      "number": 0,
+      "keywords": ["new beginnings", "freedom", "adventure"]
+    },
+    {
+      "name": "The Magician",
+      "number": 1,
+      "keywords": ["manifestation", "power", "action"]
+    },
+    {
+      "name": "The High Priestess",
+      "number": 2,
+      "keywords": ["intuition", "mystery", "inner voice"]
+    },
+    {
+      "name": "The Empress",
+      "number": 3,
+      "keywords": ["abundance", "fertility", "nurturing"]
+    },
+    {
+      "name": "The Emperor",
+      "number": 4,
+      "keywords": ["authority", "structure", "leadership"]
+    },
+    {
+      "name": "The Hierophant",
+      "number": 5,
+      "keywords": ["tradition", "spiritual guidance"]
+    },
+    {
+      "name": "The Lovers",
+      "number": 6,
+      "keywords": ["love", "relationships", "choices"]
+    },
+    {
+      "name": "The Chariot",
+      "number": 7,
+      "keywords": ["determination", "victory", "control"]
+    },
+    {
+      "name": "Strength",
+      "number": 8,
+      "keywords": ["courage", "inner strength", "patience"]
+    },
+    {
+      "name": "The Hermit",
+      "number": 9,
+      "keywords": ["introspection", "guidance", "solitude"]
+    },
+    {
+      "name": "Wheel of Fortune",
+      "number": 10,
+      "keywords": ["destiny", "cycles", "change"]
+    },
+    {
+      "name": "Justice",
+      "number": 11,
+      "keywords": ["fairness", "balance", "truth"]
+    },
+    {
+      "name": "The Hanged Man",
+      "number": 12,
+      "keywords": ["sacrifice", "perspective", "letting go"]
+    },
+    {
+      "name": "Death",
+      "number": 13,
+      "keywords": ["transformation", "endings", "rebirth"]
+    },
+    {
+      "name": "Temperance",
+      "number": 14,
+      "keywords": ["balance", "moderation", "harmony"]
+    },
+    {
+      "name": "The Devil",
+      "number": 15,
+      "keywords": ["temptation", "attachment", "materialism"]
+    },
+    {
+      "name": "The Tower",
+      "number": 16,
+      "keywords": ["sudden change", "chaos", "revelation"]
+    },
+    {
+      "name": "The Star",
+      "number": 17,
+      "keywords": ["hope", "renewal", "inspiration"]
+    },
+    {
+      "name": "The Moon",
+      "number": 18,
+      "keywords": ["illusion", "intuition", "uncertainty"]
+    },
+    {
+      "name": "The Sun",
+      "number": 19,
+      "keywords": ["success", "joy", "vitality"]
+    },
+    {
+      "name": "Judgement",
+      "number": 20,
+      "keywords": ["awakening", "reflection", "rebirth"]
+    },
+    {
+      "name": "The World",
+      "number": 21,
+      "keywords": ["completion", "achievement", "wholeness"]
+    }
+  ],
+  "minor_arcana": {
+    "wands": [
+      "Ace of Wands",
+      "Two of Wands",
+      "Three of Wands",
+      "Four of Wands",
+      "Five of Wands",
+      "Six of Wands",
+      "Seven of Wands",
+      "Eight of Wands",
+      "Nine of Wands",
+      "Ten of Wands",
+      "Page of Wands",
+      "Knight of Wands",
+      "Queen of Wands",
+      "King of Wands"
+    ],
+    "cups": [
+      "Ace of Cups",
+      "Two of Cups",
+      "Three of Cups",
+      "Four of Cups",
+      "Five of Cups",
+      "Six of Cups",
+      "Seven of Cups",
+      "Eight of Cups",
+      "Nine of Cups",
+      "Ten of Cups",
+      "Page of Cups",
+      "Knight of Cups",
+      "Queen of Cups",
+      "King of Cups"
+    ],
+    "swords": [
+      "Ace of Swords",
+      "Two of Swords",
+      "Three of Swords",
+      "Four of Swords",
+      "Five of Swords",
+      "Six of Swords",
+      "Seven of Swords",
+      "Eight of Swords",
+      "Nine of Swords",
+      "Ten of Swords",
+      "Page of Swords",
+      "Knight of Swords",
+      "Queen of Swords",
+      "King of Swords"
+    ],
+    "pentacles": [
+      "Ace of Pentacles",
+      "Two of Pentacles",
+      "Three of Pentacles",
+      "Four of Pentacles",
+      "Five of Pentacles",
+      "Six of Pentacles",
+      "Seven of Pentacles",
+      "Eight of Pentacles",
+      "Nine of Pentacles",
+      "Ten of Pentacles",
+      "Page of Pentacles",
+      "Knight of Pentacles",
+      "Queen of Pentacles",
+      "King of Pentacles"
+    ]
+  }
+}

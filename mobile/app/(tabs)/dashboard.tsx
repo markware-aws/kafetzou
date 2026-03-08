@@ -11,11 +11,11 @@ import { theme } from '@/lib/theme';
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return 'μόλις τώρα';
+  if (m < 60) return `πριν ${m}λ`;
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
+  if (h < 24) return `πριν ${h}ω`;
+  return `πριν ${Math.floor(h / 24)} μέρες`;
 }
 
 export default function DashboardScreen() {
@@ -47,7 +47,7 @@ export default function DashboardScreen() {
     return (
       <View style={s.center}>
         <ActivityIndicator color={theme.amber} size="large" />
-        <Text style={s.loadingText}>Loading readings…</Text>
+        <Text style={s.loadingText}>Φόρτωση αναγνώσεων…</Text>
       </View>
     );
   }
@@ -57,7 +57,7 @@ export default function DashboardScreen() {
       <View style={s.center}>
         <Text style={s.errorText}>{error}</Text>
         <TouchableOpacity onPress={() => load()} style={s.retryBtn}>
-          <Text style={s.retryText}>Retry</Text>
+          <Text style={s.retryText}>Επανάληψη</Text>
         </TouchableOpacity>
       </View>
     );
@@ -69,10 +69,10 @@ export default function DashboardScreen() {
         <View style={s.emptyOrb}>
           <Coffee size={32} color={theme.textDim} />
         </View>
-        <Text style={s.emptyTitle}>No readings yet</Text>
-        <Text style={s.emptySub}>Upload your first coffee cup photo to begin</Text>
+        <Text style={s.emptyTitle}>Δεν υπάρχουν αναγνώσεις ακόμα</Text>
+        <Text style={s.emptySub}>Ανέβασε την πρώτη φωτογραφία για να ξεκινήσεις</Text>
         <TouchableOpacity style={s.newBtn} onPress={() => router.push('/(tabs)/upload')} activeOpacity={0.8}>
-          <Text style={s.newBtnText}>Start reading</Text>
+          <Text style={s.newBtnText}>Έναρξη ανάγνωσης</Text>
         </TouchableOpacity>
       </View>
     );
@@ -95,7 +95,7 @@ export default function DashboardScreen() {
             <View style={{ flex: 1 }}>
               <View style={s.cardRow}>
                 <Sparkles size={12} color={theme.amber} />
-                <Text style={s.cardTitle} numberOfLines={1}>{r.reading_result?.general_message ?? 'Coffee reading'}</Text>
+                <Text style={s.cardTitle} numberOfLines={1}>{r.reading_result?.general_message ?? 'Ανάγνωση καφέ'}</Text>
               </View>
               <Text style={s.cardSub} numberOfLines={2}>{r.reading_result?.prediction_summary}</Text>
               <View style={s.symbols}>

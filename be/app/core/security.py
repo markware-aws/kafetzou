@@ -42,6 +42,7 @@ def _decode_token(token: str) -> dict:
             key,
             algorithms=["RS256"],
             issuer=issuer,
+            audience=settings.cognito_app_client_id,
         )
     except JWTError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))

@@ -26,10 +26,7 @@
         "backgroundColor": "#0c0a1a"
       },
       "package": "com.kafetzou.app",
-      "permissions": [
-        "READ_EXTERNAL_STORAGE",
-        "CAMERA"
-      ]
+      "permissions": ["READ_EXTERNAL_STORAGE", "CAMERA"]
     },
     "plugins": [
       "expo-router",
@@ -46,8 +43,8 @@
     },
     "extra": {
       "apiUrl": "http://localhost:8000",
-      "cognitoUserPoolId": "",
-      "cognitoClientId": "",
+      "cognitoUserPoolId": "eu-central-1_09pw1GdBI",
+      "cognitoClientId": "76po52ir822bdh4pbm6dp24emv",
       "eas": {
         "projectId": "your-eas-project-id"
       }

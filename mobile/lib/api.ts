@@ -31,6 +31,7 @@ export interface ReadCoffeeResponse {
   reading_id: string;
   reading: CoffeeReading;
   symbols_detected: string[];
+  letters_detected: string[];
 }
 
 // ── Upload ────────────────────────────────────────────────────────────────────

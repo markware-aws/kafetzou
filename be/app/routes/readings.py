@@ -21,6 +21,7 @@ class ReadCoffeeResponse(BaseModel):
     reading_id: str
     reading: CoffeeReading
     symbols_detected: list[str]
+    letters_detected: list[str]
 
 
 @router.post("/read-coffee", response_model=ReadCoffeeResponse)
@@ -57,6 +58,12 @@ async def read_coffee(
             detail=f"Vision analysis failed: {exc}",
         )
 
+    if not vision.is_coffee_cup:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Η εικόνα δεν φαίνεται να είναι φλιτζάνι ελληνικού καφέ. Παρακαλώ ανέβασε φωτογραφία του φλιτζανιού σου μετά την κατανάλωση.",
+        )
+
     logger.info("Symbols detected: %s", [s.name for s in vision.symbols])
 
     # Step 2: Fortune interpretation
@@ -89,6 +96,7 @@ async def read_coffee(
         reading_id=reading_id,
         reading=reading,
         symbols_detected=[s.name for s in vision.symbols],
+        letters_detected=vision.letters,
     )
 
 

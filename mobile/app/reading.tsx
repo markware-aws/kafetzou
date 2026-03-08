@@ -23,7 +23,7 @@ export default function ReadingScreen() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!id) { setError('No reading ID'); setLoading(false); return; }
+    if (!id) { setError('Δεν βρέθηκε ID'); setLoading(false); return; }
     getReading(id)
       .then(setItem)
       .catch(e => setError(e.message))
@@ -34,7 +34,7 @@ export default function ReadingScreen() {
     return (
       <View style={s.center}>
         <ActivityIndicator color={theme.amber} size="large" />
-        <Text style={s.loadingText}>Consulting the oracle…</Text>
+        <Text style={s.loadingText}>Διαβάζω τον καφέ…</Text>
       </View>
     );
   }
@@ -66,6 +66,7 @@ export default function ReadingScreen() {
           <ReadingCard
             reading={item.reading_result}
             symbolsDetected={item.symbols_detected ?? []}
+            lettersDetected={item.letters_detected ?? []}
           />
         </>
       )}

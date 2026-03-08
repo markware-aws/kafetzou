@@ -1,14 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Coffee, Eye, EyeOff, Sparkles } from "lucide-react";
-import { login, register, confirmRegistration } from "@/lib/auth";
+import { login, register, confirmRegistration, getUser } from "@/lib/auth";
 
 type Step = "login" | "register" | "confirm";
 
 export default function LoginPage() {
   const router = useRouter();
+
+  // Redirect already-authenticated users away from the login page
+  useEffect(() => {
+    getUser().then((user) => {
+      if (user) router.replace("/upload");
+    });
+  }, [router]);
   const [step, setStep] = useState<Step>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -75,14 +82,14 @@ export default function LoginPage() {
             <Coffee className="w-8 h-8 text-black" />
           </div>
           <h1 className="text-2xl font-bold text-amber-200 tracking-wide">Kafetzou</h1>
-          <p className="text-violet-400 text-sm mt-1">AI Greek Coffee Cup Readings</p>
+          <p className="text-violet-400 text-sm mt-1">AI Ανάγνωση Ελληνικού Καφέ</p>
         </div>
 
         {/* Card */}
         <div className="rounded-2xl border border-violet-800/40 bg-[#12102a] p-8 shadow-2xl">
           {step === "login" && (
             <>
-              <h2 className="text-lg font-semibold text-violet-100 mb-6">Welcome back</h2>
+              <h2 className="text-lg font-semibold text-violet-100 mb-6">Καλώς ήρθες</h2>
               <form onSubmit={handleLogin} className="flex flex-col gap-4">
                 <Input label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
                 <div>
@@ -106,12 +113,12 @@ export default function LoginPage() {
                   </div>
                 </div>
                 {error && <p className="text-rose-400 text-xs">{error}</p>}
-                <SubmitButton loading={loading} label="Sign in" loadingLabel="Signing in…" />
+                <SubmitButton loading={loading} label="Σύνδεση" loadingLabel="Σύνδεση…" />
               </form>
               <p className="text-center text-xs text-violet-500 mt-5">
-                No account?{" "}
+                Δεν έχεις λογαριασμό;{" "}
                 <button onClick={() => { setStep("register"); setError(""); }} className="text-amber-400 hover:text-amber-300 font-medium">
-                  Create one
+                  Δημιούργησε έναν
                 </button>
               </p>
             </>
@@ -119,7 +126,7 @@ export default function LoginPage() {
 
           {step === "register" && (
             <>
-              <h2 className="text-lg font-semibold text-violet-100 mb-6">Create account</h2>
+              <h2 className="text-lg font-semibold text-violet-100 mb-6">Δημιουργία λογαριασμού</h2>
               <form onSubmit={handleRegister} className="flex flex-col gap-4">
                 <Input label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
                 <div>
@@ -140,12 +147,12 @@ export default function LoginPage() {
                   </div>
                 </div>
                 {error && <p className="text-rose-400 text-xs">{error}</p>}
-                <SubmitButton loading={loading} label="Create account" loadingLabel="Creating…" />
+                <SubmitButton loading={loading} label="Δημιουργία λογαριασμού" loadingLabel="Δημιουργία…" />
               </form>
               <p className="text-center text-xs text-violet-500 mt-5">
-                Already have an account?{" "}
+                Έχεις ήδη λογαριασμό;{" "}
                 <button onClick={() => { setStep("login"); setError(""); }} className="text-amber-400 hover:text-amber-300 font-medium">
-                  Sign in
+                  Σύνδεση
                 </button>
               </p>
             </>
@@ -155,13 +162,13 @@ export default function LoginPage() {
             <>
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="w-4 h-4 text-amber-400" />
-                <h2 className="text-lg font-semibold text-violet-100">Check your email</h2>
+                <h2 className="text-lg font-semibold text-violet-100">Έλεγξε το email σου</h2>
               </div>
-              <p className="text-sm text-violet-400 mb-6">We sent a verification code to <span className="text-violet-200">{email}</span></p>
+              <p className="text-sm text-violet-400 mb-6">Στείλαμε κωδικό επιβεβαίωσης στο <span className="text-violet-200">{email}</span></p>
               <form onSubmit={handleConfirm} className="flex flex-col gap-4">
                 <Input label="Verification code" type="text" value={code} onChange={setCode} placeholder="123456" />
                 {error && <p className="text-rose-400 text-xs">{error}</p>}
-                <SubmitButton loading={loading} label="Verify & sign in" loadingLabel="Verifying…" />
+                <SubmitButton loading={loading} label="Επιβεβαίωση & Σύνδεση" loadingLabel="Επιβεβαίωση…" />
               </form>
             </>
           )}
