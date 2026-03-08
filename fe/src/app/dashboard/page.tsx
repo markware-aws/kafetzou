@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Coffee, Sparkles, Clock, ChevronRight, Upload, Eye, Star } from "lucide-react";
+import { Coffee, Sparkles, Clock, ChevronRight, Upload, Eye, Star, Globe } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
-import { getReadings, getTarotReadings } from "@/lib/api";
+import { getReadings, getTarotReadings, getPersonalizedAstrologyHistory } from "@/lib/api";
+import { getCardDisplayName } from "@/lib/tarot";
+import { SIGN_BY_ID } from "@/lib/astrology";
 
 interface Reading {
   reading_id: string;
@@ -27,7 +29,19 @@ interface TarotItem {
   };
 }
 
-type Tab = "coffee" | "tarot";
+interface AstrologyItem {
+  reading_id: string;
+  created_at: string;
+  sign: string;
+  sex: string;
+  eye_color: string;
+  reading_result: {
+    summary: string;
+    warning: string;
+  };
+}
+
+type Tab = "coffee" | "tarot" | "astrology";
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -43,14 +57,16 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>("coffee");
   const [readings, setReadings] = useState<Reading[]>([]);
   const [tarotReadings, setTarotReadings] = useState<TarotItem[]>([]);
+  const [astrologyReadings, setAstrologyReadings] = useState<AstrologyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([getReadings(), getTarotReadings()])
-      .then(([coffee, tarot]) => {
+    Promise.all([getReadings(), getTarotReadings(), getPersonalizedAstrologyHistory()])
+      .then(([coffee, tarot, astrology]) => {
         setReadings(coffee);
         setTarotReadings(tarot);
+        setAstrologyReadings(astrology);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -68,7 +84,7 @@ export default function DashboardPage() {
               <p className="text-sm text-violet-500 mt-1">Το ιστορικό σου</p>
             </div>
             <Link
-              href={tab === "coffee" ? "/upload" : "/tarot"}
+              href={tab === "coffee" ? "/upload" : tab === "tarot" ? "/tarot" : "/astrology"}
               className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold rounded-xl px-4 py-2.5 text-sm transition-all shadow-lg shadow-amber-500/20"
             >
               <Upload className="w-4 h-4" />
@@ -99,6 +115,17 @@ export default function DashboardPage() {
             >
               <Star className="w-4 h-4" />
               Ταρό
+            </button>
+            <button
+              onClick={() => setTab("astrology")}
+              className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-all ${
+                tab === "astrology"
+                  ? "bg-violet-800/60 text-amber-300"
+                  : "text-violet-400 hover:text-violet-200"
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              Αστρολογία
             </button>
           </div>
 
@@ -181,6 +208,60 @@ export default function DashboardPage() {
             </>
           )}
 
+          {/* Astrology personalized readings */}
+          {!loading && tab === "astrology" && (
+            <>
+              {astrologyReadings.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-16 h-16 rounded-full bg-violet-900/40 flex items-center justify-center mb-4">
+                    <Globe className="w-8 h-8 text-violet-500" />
+                  </div>
+                  <p className="text-violet-300 font-medium mb-1">Δεν υπάρχουν εξατομικευμένες αναγνώσεις ακόμα</p>
+                  <p className="text-violet-500 text-sm mb-6">Δοκίμασε την εξατομικευμένη αστρολογική ανάγνωση</p>
+                  <Link
+                    href="/astrology"
+                    className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-violet-700 text-white font-semibold rounded-xl px-5 py-2.5 text-sm"
+                  >
+                    <Globe className="w-4 h-4" />
+                    Πήγαινε στην Αστρολογία
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {astrologyReadings.map((r, i) => {
+                    const sign = SIGN_BY_ID[r.sign];
+                    return (
+                      <div
+                        key={r.reading_id}
+                        className="animate-fade-in rounded-2xl border border-violet-800/30 bg-[#12102a] p-5"
+                        style={{ animationDelay: `${i * 60}ms` }}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-lg leading-none">{sign?.symbol ?? "✦"}</span>
+                              <p className="text-sm text-violet-100 font-medium">
+                                {sign?.nameGr ?? r.sign}
+                              </p>
+                              <span className="text-xs text-violet-500">· {r.sex} · {r.eye_color}</span>
+                            </div>
+                            <p className="text-xs text-violet-400 line-clamp-2">
+                              {r.reading_result?.summary}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-violet-500 shrink-0">
+                            <Clock className="w-3 h-3" />
+                            {timeAgo(r.created_at)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
           {/* Tarot readings */}
           {!loading && tab === "tarot" && (
             <>
@@ -221,7 +302,7 @@ export default function DashboardPage() {
                                 key={card}
                                 className="text-xs bg-violet-900/40 border border-violet-700/30 text-violet-300 rounded-full px-2 py-0.5"
                               >
-                                {card}
+                                {getCardDisplayName(card)}
                               </span>
                             ))}
                           </div>

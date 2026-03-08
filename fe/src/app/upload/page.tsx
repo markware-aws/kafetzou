@@ -2,11 +2,12 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, Coffee, Sparkles, ImagePlus, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Upload, X, Coffee, Sparkles, ImagePlus, AlertCircle, CheckCircle2, Coins } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { ReadingCard } from "@/components/reading-card";
 import { getUploadUrl, uploadImageToS3, createReading, type ReadCoffeeResponse } from "@/lib/api";
+import { notifyCreditsChanged } from "@/lib/user";
 
 const MAX_IMAGES = 3;
 
@@ -82,8 +83,16 @@ export default function UploadPage() {
       updateSlot(slot.id, { status: "reading" });
       const result = await createReading(image_key, reading_id);
       updateSlot(slot.id, { status: "done", result });
+      notifyCreditsChanged();
     } catch (err: any) {
-      updateSlot(slot.id, { status: "error", error: err.message ?? "Something went wrong" });
+      const msg = err.message ?? "Something went wrong";
+      const isLowCredits = msg.includes("credits") || msg.includes("402");
+      updateSlot(slot.id, {
+        status: "error",
+        error: isLowCredits
+          ? "Δεν έχεις αρκετά credits (χρειάζεσαι 2). Αγόρασε credits για να συνεχίσεις."
+          : msg,
+      });
     }
   }
 
@@ -219,6 +228,12 @@ export default function UploadPage() {
                 <Coffee className="w-4 h-4" />
                 {processing ? "Διαβάζω τον καφέ…" : `Διάβασε τον καφέ μου${slots.length > 1 ? ` (${idleSlots.length})` : ""}`}
               </button>
+              {!processing && (
+                <div className="flex items-center gap-1 text-xs text-amber-600">
+                  <Coins className="w-3 h-3" />
+                  <span>2 credits ανά ανάγνωση</span>
+                </div>
+              )}
               {!processing && (
                 <button onClick={resetSlots} className="text-xs text-violet-600 hover:text-violet-400 transition-colors">
                   Νέα Ανάγνωση

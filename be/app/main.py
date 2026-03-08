@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import auth, readings, tarot, upload
+from app.routes import astrology, auth, readings, tarot, upload
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,6 +29,7 @@ app.include_router(auth.router)
 app.include_router(upload.router)
 app.include_router(readings.router)
 app.include_router(tarot.router)
+app.include_router(astrology.router)
 
 
 @app.get("/health", tags=["health"])

@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { Coffee, LayoutDashboard, Upload, LogOut, Menu, X, Star } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Coffee, LayoutDashboard, Upload, LogOut, Menu, X, Star, Sparkles, Coins } from "lucide-react";
 import { logout } from "@/lib/auth";
+import { getMe } from "@/lib/api";
 
 const navLinks = [
-  { href: "/upload", label: "Νέα Ανάγνωση", icon: Upload },
+  { href: "/upload", label: "Καφές", icon: Upload },
   { href: "/tarot", label: "Ταρό", icon: Star },
-  { href: "/dashboard", label: "Οι Αναγνώσεις μου", icon: LayoutDashboard },
+  { href: "/astrology", label: "Αστρολογία", icon: Sparkles },
+  { href: "/dashboard", label: "Ιστορικό", icon: LayoutDashboard },
 ];
 
 export function Navbar() {
@@ -17,6 +19,16 @@ export function Navbar() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [credits, setCredits] = useState<number | null>(null);
+
+  useEffect(() => {
+    getMe().then((u) => setCredits(Number(u.credits ?? 0))).catch(() => {});
+    const handler = () => {
+      getMe().then((u) => setCredits(Number(u.credits ?? 0))).catch(() => {});
+    };
+    window.addEventListener("credits-changed", handler);
+    return () => window.removeEventListener("credits-changed", handler);
+  }, []);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -51,6 +63,13 @@ export function Navbar() {
               {label}
             </Link>
           ))}
+
+          {credits !== null && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium ml-1">
+              <Coins className="w-3.5 h-3.5" />
+              {credits}
+            </div>
+          )}
 
           <button
             onClick={handleLogout}
@@ -87,6 +106,12 @@ export function Navbar() {
               {label}
             </Link>
           ))}
+          {credits !== null && (
+            <div className="flex items-center gap-2 px-3 py-2 text-sm text-amber-400">
+              <Coins className="w-4 h-4" />
+              <span>{credits} credits</span>
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-violet-400 hover:text-rose-300 mt-1"

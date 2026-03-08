@@ -14,12 +14,17 @@ class Settings(BaseSettings):
     # DynamoDB
     dynamodb_readings_table: str = "readings"
     dynamodb_tarot_table: str = "tarot_readings"
+    dynamodb_astrology_table: str = "astrology_readings"
+    dynamodb_astrology_personalized_table: str = "astrology_personalized"
     dynamodb_users_table: str = "users"
 
     # Cognito
     cognito_user_pool_id: str
     cognito_app_client_id: str
     cognito_region: str = ""
+
+    # Prewarm secret (used by EventBridge Scheduler to authenticate)
+    prewarm_secret: str = ""
 
     # Stripe (to be configured later)
     stripe_secret_key: str = ""

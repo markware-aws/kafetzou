@@ -9,8 +9,11 @@ from app.services.openai_service import structured_chat
 logger = logging.getLogger(__name__)
 
 _DATA_PATH = Path(__file__).parent.parent / "data" / "tarot_cards.json"
+_GR_PATH = Path(__file__).parent.parent / "data" / "tarot_gr.json"
 
 _deck: list[str] | None = None
+_en_to_gr: dict[str, str] | None = None
+_card_data: dict[str, dict] | None = None
 
 
 def _load_deck() -> list[str]:
@@ -32,6 +35,47 @@ def _load_deck() -> list[str]:
     _deck = cards
     logger.info("Tarot deck loaded: %d cards", len(cards))
     return _deck
+
+
+def _load_translations() -> dict[str, str]:
+    global _en_to_gr
+    if _en_to_gr is not None:
+        return _en_to_gr
+
+    with open(_GR_PATH, encoding="utf-8") as f:
+        data = json.load(f)
+
+    # Build en→gr map; first occurrence wins on duplicates
+    mapping: dict[str, str] = {}
+    for entry in data:
+        name_en = entry.get("name_en", "")
+        name_el = entry.get("name_el", "")
+        if name_en and name_en not in mapping:
+            mapping[name_en] = name_el
+
+    _en_to_gr = mapping
+    return _en_to_gr
+
+
+def _load_card_data() -> dict[str, dict]:
+    global _card_data
+    if _card_data is not None:
+        return _card_data
+
+    with open(_GR_PATH, encoding="utf-8") as f:
+        data = json.load(f)
+
+    _card_data = {entry["name_en"]: entry for entry in data if "name_en" in entry}
+    return _card_data
+
+
+def _to_greek(card_en: str) -> str:
+    return _load_translations().get(card_en, card_en)
+
+
+def get_card_info(card_en: str) -> dict:
+    """Return the full card data dict from tarot_gr.json for a given English name."""
+    return _load_card_data().get(card_en, {})
 
 
 def draw_one_card() -> list[str]:
@@ -81,10 +125,12 @@ _THREE_CARD_PROMPT = """Είσαι έμπειρος αναγνώστης ταρ�
 
 async def generate_tarot_reading(cards: list[str]) -> tuple[TarotReading, dict]:
     if len(cards) == 1:
-        system_prompt = _ONE_CARD_PROMPT.format(card=cards[0])
+        system_prompt = _ONE_CARD_PROMPT.format(card=_to_greek(cards[0]))
     else:
         system_prompt = _THREE_CARD_PROMPT.format(
-            card1=cards[0], card2=cards[1], card3=cards[2]
+            card1=_to_greek(cards[0]),
+            card2=_to_greek(cards[1]),
+            card3=_to_greek(cards[2]),
         )
 
     reading, usage = await structured_chat(

@@ -1,3 +1,17 @@
+import tarotGr from "./tarot-gr.json";
+
+// EN → GR display name lookup (first occurrence wins on duplicates)
+const EN_TO_GR: Record<string, string> = {};
+for (const entry of tarotGr) {
+  if (entry.name_en && !EN_TO_GR[entry.name_en]) {
+    EN_TO_GR[entry.name_en] = entry.name_el;
+  }
+}
+
+export function getCardDisplayName(nameEn: string): string {
+  return EN_TO_GR[nameEn] ?? nameEn;
+}
+
 // Maps a card name to its image path under /public/tarot/
 // Major Arcana: "{number}. {name}.jpg"
 // Minor Arcana: "{name}.jpg"

@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
+from app.core.credits import RequireCredits
 from app.core.security import get_current_user
 from app.schemas.coffee_reading import CoffeeReading
 from app.services import dynamodb_service, s3_service, vision_service, fortune_service
@@ -28,6 +29,7 @@ class ReadCoffeeResponse(BaseModel):
 async def read_coffee(
     body: ReadCoffeeRequest,
     current_user: dict = Depends(get_current_user),
+    _: None = Depends(RequireCredits(2)),
 ) -> ReadCoffeeResponse:
     """
     Two-step AI pipeline:
@@ -91,6 +93,11 @@ async def read_coffee(
         logger.error("Failed to save reading: %s", exc)
         # Don't fail the request — the reading is still returned
         # TODO: add retry / dead-letter queue for persistence failures
+
+    try:
+        dynamodb_service.deduct_credits(user_id, 2)
+    except Exception as exc:
+        logger.warning("Failed to deduct credits for user %s: %s", user_id, exc)
 
     return ReadCoffeeResponse(
         reading_id=reading_id,

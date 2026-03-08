@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, RefreshCw, Star } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Sparkles, RefreshCw, Star, Coins, Sun } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
-import { createTarotReading, TarotReadingResponse } from "@/lib/api";
-import { getCardImagePath } from "@/lib/tarot";
+import { createTarotReading, getDailyTarotCard, TarotReadingResponse } from "@/lib/api";
+import { getCardImagePath, getCardDisplayName } from "@/lib/tarot";
+import { notifyCreditsChanged } from "@/lib/user";
 
 type Spread = "one_card" | "three_card";
 
@@ -15,6 +16,103 @@ const SPREAD_LABELS: Record<Spread, string> = {
 };
 
 const POSITION_LABELS = ["Παρελθόν", "Παρόν", "Μέλλον"];
+
+// ── Daily card ─────────────────────────────────────────────────────────────────
+
+interface DailyCardResult {
+  reading_id: string;
+  reading_result: {
+    cards: string[];
+    card_gr: string;
+    meaning_upright: string;
+    meaning_reversed: string;
+  };
+}
+
+function DailyCardSection() {
+  const [daily, setDaily] = useState<DailyCardResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    getDailyTarotCard()
+      .then((d) => setDaily(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-violet-800/30 bg-[#12102a] p-5 mb-8">
+        <div className="h-5 shimmer rounded w-40 mb-4" />
+        <div className="h-4 shimmer rounded w-full" />
+      </div>
+    );
+  }
+
+  if (!daily) return null;
+
+  const card = daily.reading_result.cards[0];
+  const cardGr = daily.reading_result.card_gr;
+  const meaningUpright = daily.reading_result.meaning_upright;
+  const meaningReversed = daily.reading_result.meaning_reversed;
+
+  return (
+    <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 mb-8">
+      <div className="flex items-center gap-2 mb-4">
+        <Sun className="w-4 h-4 text-amber-400 shrink-0" />
+        <h2 className="text-sm font-semibold text-amber-300">Η Ημερήσια Κάρτα σου</h2>
+        <span className="ml-auto text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">Δωρεάν</span>
+      </div>
+
+      <div className="flex gap-5 items-start">
+        {/* Card thumbnail */}
+        <div
+          onClick={() => setRevealed(true)}
+          className={`shrink-0 rounded-xl overflow-hidden border cursor-pointer transition-all ${
+            revealed
+              ? "border-amber-500/40 shadow-lg shadow-amber-500/10"
+              : "border-violet-700/40 hover:border-violet-600/60"
+          }`}
+          style={{ width: "80px" }}
+        >
+          <div style={{ paddingBottom: "150%", position: "relative" }}>
+            {revealed ? (
+              <img
+                src={getCardImagePath(card)}
+                alt={card}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-900 to-[#0c0a1a] flex flex-col items-center justify-center gap-2">
+                <Star className="w-5 h-5 text-violet-500" />
+                <span className="text-[10px] text-violet-500 text-center px-1">Άγγιξε</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Interpretation */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-amber-200 mb-1">{cardGr}</p>
+          <p className="text-xs text-violet-400 mb-2">{getCardDisplayName(card)}</p>
+          <div className="flex flex-col gap-1.5">
+            <div>
+              <span className="text-[10px] uppercase tracking-wide text-violet-500 font-medium">Ορθή</span>
+              <p className="text-xs text-violet-200">{meaningUpright}</p>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase tracking-wide text-violet-500 font-medium">Ανεστραμμένη</span>
+              <p className="text-xs text-violet-400">{meaningReversed}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── AI reading ─────────────────────────────────────────────────────────────────
 
 export default function TarotPage() {
   const [spread, setSpread] = useState<Spread>("three_card");
@@ -33,8 +131,15 @@ export default function TarotPage() {
       const data = await createTarotReading(spread);
       setResult(data);
       setRevealed(new Array(data.reading.cards.length).fill(false));
+      notifyCreditsChanged();
     } catch (e: any) {
-      setError(e.message ?? "Κάτι πήγε στραβά");
+      const msg = e.message ?? "Κάτι πήγε στραβά";
+      const isLowCredits = msg.includes("credits") || msg.includes("402");
+      setError(
+        isLowCredits
+          ? "Δεν έχεις αρκετά credits (χρειάζεσαι 1). Αγόρασε credits για να συνεχίσεις."
+          : msg
+      );
     } finally {
       setLoading(false);
     }
@@ -69,8 +174,18 @@ export default function TarotPage() {
             <p className="text-sm text-violet-400">Άφησε τις κάρτες να αποκαλύψουν το μονοπάτι σου</p>
           </div>
 
+          {/* Daily free card */}
+          <DailyCardSection />
+
           {!result && (
             <>
+              {/* Section header */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className="h-px flex-1 bg-violet-900/40" />
+                <span className="text-xs text-violet-500 uppercase tracking-widest font-medium">AI Ανάγνωση</span>
+                <div className="h-px flex-1 bg-violet-900/40" />
+              </div>
+
               {/* Spread selector */}
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
                 {(Object.entries(SPREAD_LABELS) as [Spread, string][]).map(([key, label]) => (
@@ -92,7 +207,7 @@ export default function TarotPage() {
               </div>
 
               {/* Draw button */}
-              <div className="text-center">
+              <div className="flex flex-col items-center gap-3">
                 <button
                   onClick={handleDraw}
                   disabled={loading}
@@ -110,6 +225,12 @@ export default function TarotPage() {
                     </>
                   )}
                 </button>
+                {!loading && (
+                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                    <Coins className="w-3 h-3" />
+                    <span>1 credit</span>
+                  </div>
+                )}
               </div>
 
               {error && (
@@ -166,7 +287,7 @@ export default function TarotPage() {
                     </div>
 
                     {revealed[i] && (
-                      <span className="text-xs text-amber-300 font-medium text-center block">{card}</span>
+                      <span className="text-xs text-amber-300 font-medium text-center block">{getCardDisplayName(card)}</span>
                     )}
                   </div>
                 ))}
@@ -175,7 +296,6 @@ export default function TarotPage() {
               {/* Reading — shown once all cards revealed */}
               {revealed.every(Boolean) && (
                 <div className="animate-fade-in flex flex-col gap-4">
-                  {/* Summary */}
                   <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
@@ -184,7 +304,6 @@ export default function TarotPage() {
                     <p className="text-sm text-violet-100 leading-relaxed">{result.reading.summary}</p>
                   </div>
 
-                  {/* Interpretation */}
                   <div className="rounded-2xl border border-violet-800/30 bg-[#12102a] p-5">
                     <h2 className="text-sm font-semibold text-violet-300 mb-3">Ερμηνεία</h2>
                     <p className="text-sm text-violet-200 leading-relaxed whitespace-pre-line">
@@ -192,13 +311,11 @@ export default function TarotPage() {
                     </p>
                   </div>
 
-                  {/* Advice */}
                   <div className="rounded-2xl border border-violet-800/30 bg-[#12102a] p-5">
                     <h2 className="text-sm font-semibold text-violet-300 mb-3">Συμβουλή</h2>
                     <p className="text-sm text-violet-200 leading-relaxed">{result.reading.advice}</p>
                   </div>
 
-                  {/* New reading */}
                   <div className="text-center pt-2">
                     <button
                       onClick={reset}
@@ -211,7 +328,6 @@ export default function TarotPage() {
                 </div>
               )}
 
-              {/* Hint if not all revealed */}
               {!revealed.every(Boolean) && (
                 <p className="text-center text-xs text-violet-500">
                   Άγγιξε κάθε κάρτα για να αποκαλύψεις την ερμηνεία
