@@ -6,7 +6,8 @@
       "Bash(npm install:*)",
       "WebFetch(domain:stackoverflow.com)",
       "Bash(cp:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(npx:*)"
     ]
   }
 }

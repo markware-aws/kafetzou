@@ -10,6 +10,7 @@ import { Navbar } from "@/components/navbar";
 import {
   getHoroscope,
   createPersonalizedAstrologyReading,
+  getBirthProfile,
   AstrologyReading,
 } from "@/lib/api";
 import {
@@ -21,6 +22,7 @@ import {
 } from "@/lib/astrology";
 import { getIdToken } from "@/lib/auth";
 import { notifyCreditsChanged } from "@/lib/user";
+import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 
 type Period = "daily" | "weekly" | "monthly";
 
@@ -55,7 +57,7 @@ function ReadingSection({
           ? "border-rose-800/30 bg-rose-900/10"
           : accent
           ? "border-amber-500/20 bg-amber-500/5"
-          : "border-violet-800/30 bg-[#12102a]"
+          : "border-violet-800/30 bg-[#2e2a3a]"
       }`}
     >
       <div className="flex items-center gap-2 mb-2">
@@ -113,7 +115,7 @@ function HoroscopePanel({ signId }: { signId: string }) {
       </div>
 
       {/* Period tabs */}
-      <div className="flex gap-1 p-1 rounded-xl bg-[#12102a] border border-violet-800/30">
+      <div className="flex gap-1 p-1 rounded-xl bg-[#2e2a3a] border border-violet-800/30">
         {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(([key, label]) => (
           <button
             key={key}
@@ -162,20 +164,37 @@ function HoroscopePanel({ signId }: { signId: string }) {
 
 // ── Personalized form ────────────────────────────────────────────────────────
 
-function PersonalizedForm() {
+function PersonalizedForm({ onInsufficientCredits }: { onInsufficientCredits: () => void }) {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [sign, setSign] = useState("");
   const [sex, setSex] = useState("");
   const [dob, setDob] = useState("");
   const [eyeColor, setEyeColor] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AstrologyReading | null>(null);
   const [error, setError] = useState("");
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     getIdToken()
-      .then((t) => setIsLoggedIn(!!t))
+      .then((t) => {
+        setIsLoggedIn(!!t);
+        if (t) {
+          getBirthProfile()
+            .then((p) => {
+              if (p) {
+                if (p.chart?.sun_sign) setSign(p.chart.sun_sign);
+                if (p.sex) setSex(p.sex);
+                if (p.date_of_birth) setDob(p.date_of_birth);
+                if (p.eye_color) setEyeColor(p.eye_color);
+                setProfileLoaded(true);
+              }
+            })
+            .catch(() => {});
+        }
+      })
       .catch(() => setIsLoggedIn(false));
   }, []);
 
@@ -197,11 +216,8 @@ function PersonalizedForm() {
     } catch (e: any) {
       const msg = e.message ?? "Κάτι πήγε στραβά";
       const isLowCredits = msg.includes("credits") || msg.includes("402");
-      setError(
-        isLowCredits
-          ? "Δεν έχεις αρκετά credits (χρειάζεσαι 1). Αγόρασε credits για να συνεχίσεις."
-          : msg
-      );
+      if (isLowCredits) onInsufficientCredits();
+      else setError(msg);
     } finally {
       setLoading(false);
     }
@@ -211,7 +227,7 @@ function PersonalizedForm() {
 
   if (!isLoggedIn) {
     return (
-      <div className="rounded-2xl border border-violet-800/30 bg-[#12102a] p-6 text-center">
+      <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-6 text-center">
         <div className="w-12 h-12 rounded-full bg-violet-900/40 flex items-center justify-center mx-auto mb-3">
           <Lock className="w-5 h-5 text-violet-400" />
         </div>
@@ -230,14 +246,16 @@ function PersonalizedForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-violet-800/30 bg-[#12102a] p-5">
+    <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5">
       <div className="flex items-center gap-2 mb-5">
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
           <User className="w-4 h-4 text-black" />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-violet-100">Εξατομικευμένη Ανάγνωση</h3>
-          <p className="text-xs text-violet-400">Βασισμένη στα δικά σου χαρακτηριστικά</p>
+          <p className="text-xs text-violet-400">
+            {profileLoaded ? "Προ-συμπληρώθηκε από το αστρολογικό σου προφίλ" : "Βασισμένη στα δικά σου χαρακτηριστικά"}
+          </p>
         </div>
       </div>
 
@@ -250,7 +268,7 @@ function PersonalizedForm() {
               value={sign}
               onChange={(e) => setSign(e.target.value)}
               required
-              className="w-full bg-[#0c0a1a] border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60"
+              className="w-full bg-[#24242E] border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60"
             >
               <option value="">— Επίλεξε ζώδιο —</option>
               {SIGNS.map((s) => (
@@ -277,7 +295,7 @@ function PersonalizedForm() {
                   setDob(val);
                   if (val) setSign(getSignFromDob(val));
                 }}
-                className="w-full bg-[#0c0a1a] border border-violet-800/40 rounded-xl pl-10 pr-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60 [color-scheme:dark]"
+                className="w-full bg-[#24242E] border border-violet-800/40 rounded-xl pl-10 pr-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60 [color-scheme:dark]"
               />
             </div>
           </div>
@@ -380,7 +398,7 @@ function PersonalizedForm() {
 
 // ── Main page content ────────────────────────────────────────────────────────
 
-function AstrologyContent() {
+function AstrologyContent({ onInsufficientCredits }: { onInsufficientCredits: () => void }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const selectedSign = searchParams.get("sign") ?? "";
@@ -412,7 +430,7 @@ function AstrologyContent() {
               <button
                 key={sign.id}
                 onClick={() => selectSign(sign.id)}
-                className={`group rounded-2xl border bg-[#12102a] hover:bg-[#16132e] p-4 flex flex-col items-center gap-2 transition-all border-violet-800/30 hover:border-violet-600/50 hover:shadow-lg hover:shadow-violet-900/30`}
+                className={`group rounded-2xl border bg-[#2e2a3a] hover:bg-[#352f43] p-4 flex flex-col items-center gap-2 transition-all border-violet-800/30 hover:border-violet-600/50 hover:shadow-lg hover:shadow-violet-900/30`}
               >
                 <span className="text-3xl leading-none group-hover:scale-110 transition-transform">
                   {sign.symbol}
@@ -424,7 +442,7 @@ function AstrologyContent() {
           </div>
 
           {/* Personalized teaser */}
-          <PersonalizedForm />
+          <PersonalizedForm onInsufficientCredits={onInsufficientCredits} />
         </>
       ) : (
         <div className="flex flex-col gap-6">
@@ -447,7 +465,7 @@ function AstrologyContent() {
               <span className="text-xs text-violet-500 uppercase tracking-widest">Εξατομικευμένη</span>
               <div className="flex-1 h-px bg-violet-800/30" />
             </div>
-            <PersonalizedForm />
+            <PersonalizedForm onInsufficientCredits={onInsufficientCredits} />
           </div>
         </div>
       )}
@@ -458,11 +476,18 @@ function AstrologyContent() {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AstrologyPage() {
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   return (
     <div className="min-h-screen flex flex-col">
+      <InsufficientCreditsDialog
+        open={creditDialogOpen}
+        onClose={() => setCreditDialogOpen(false)}
+        requiredCredits={1}
+        featureName="Αστρολογία"
+      />
       <Navbar />
       <Suspense fallback={<div className="flex-1 flex items-center justify-center text-violet-400 text-sm">Φορτώνω…</div>}>
-        <AstrologyContent />
+        <AstrologyContent onInsufficientCredits={() => setCreditDialogOpen(true)} />
       </Suspense>
     </div>
   );

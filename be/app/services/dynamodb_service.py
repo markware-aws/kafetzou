@@ -9,12 +9,24 @@ from botocore.exceptions import ClientError
 from app.core.config import settings
 from app.schemas.astrology import AstrologyReading
 from app.schemas.coffee_reading import CoffeeReading
+from app.schemas.dream_reading import DreamReading
 from app.schemas.tarot_reading import TarotReading
 from app.schemas.vision import CoffeeVisionAnalysis
 
 logger = logging.getLogger(__name__)
 
 _dynamodb = None
+
+
+def _to_decimal(obj):
+    """Recursively convert float values to Decimal for DynamoDB compatibility."""
+    if isinstance(obj, float):
+        return Decimal(str(obj))
+    if isinstance(obj, dict):
+        return {k: _to_decimal(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_decimal(v) for v in obj]
+    return obj
 
 
 def get_dynamodb():
@@ -38,6 +50,10 @@ def _astrology_table():
 
 def _astrology_personalized_table():
     return get_dynamodb().Table(settings.dynamodb_astrology_personalized_table)
+
+
+def _dreams_table():
+    return get_dynamodb().Table(settings.dynamodb_dreams_table)
 
 
 def _users_table():
@@ -237,6 +253,17 @@ def save_personalized_astrology_reading(
     return item
 
 
+def get_personalized_astrology_reading(user_id: str, reading_id: str) -> dict | None:
+    """Fetch a single personalized astrology reading by composite key."""
+    table = _astrology_personalized_table()
+    try:
+        response = table.get_item(Key={"user_id": user_id, "reading_id": reading_id})
+    except ClientError as exc:
+        logger.error("Failed to get personalized astrology reading: %s", exc)
+        raise
+    return response.get("Item")
+
+
 def get_personalized_astrology_readings(user_id: str) -> list[dict]:
     """Fetch all personalized astrology readings for a user."""
     table = _astrology_personalized_table()
@@ -251,6 +278,57 @@ def get_personalized_astrology_readings(user_id: str) -> list[dict]:
     return response.get("Items", [])
 
 
+def save_dream_reading(
+    *,
+    user_id: str,
+    reading_id: str,
+    dream_text: str,
+    reading: DreamReading,
+) -> dict:
+    """Persist a dream interpretation to DynamoDB."""
+    table = _dreams_table()
+    now = datetime.now(timezone.utc).isoformat()
+    item = {
+        "user_id": user_id,
+        "reading_id": reading_id,
+        "dream_text": dream_text,
+        "reading_result": reading.model_dump(),
+        "created_at": now,
+    }
+    try:
+        table.put_item(Item=item)
+    except ClientError as exc:
+        logger.error("Failed to save dream reading to DynamoDB: %s", exc)
+        raise
+    logger.info("Saved dream reading %s for user %s", reading_id, user_id)
+    return item
+
+
+def get_dream_readings(user_id: str) -> list[dict]:
+    """Fetch all dream readings for a user, sorted by created_at descending."""
+    table = _dreams_table()
+    try:
+        response = table.query(
+            KeyConditionExpression=Key("user_id").eq(user_id),
+            ScanIndexForward=False,
+        )
+    except ClientError as exc:
+        logger.error("Failed to query dream readings: %s", exc)
+        raise
+    return response.get("Items", [])
+
+
+def get_dream_reading(user_id: str, reading_id: str) -> dict | None:
+    """Fetch a single dream reading by composite key."""
+    table = _dreams_table()
+    try:
+        response = table.get_item(Key={"user_id": user_id, "reading_id": reading_id})
+    except ClientError as exc:
+        logger.error("Failed to get dream reading: %s", exc)
+        raise
+    return response.get("Item")
+
+
 def get_user(user_id: str) -> dict | None:
     """Fetch a user record by user_id (without creating one)."""
     table = _users_table()
@@ -260,6 +338,20 @@ def get_user(user_id: str) -> dict | None:
         logger.error("Failed to get user: %s", exc)
         raise
     return response.get("Item")
+
+
+def add_credits(user_id: str, amount: int) -> int:
+    """Atomically add credits to a user's account. Safe to call from webhook."""
+    table = _users_table()
+    response = table.update_item(
+        Key={"user_id": user_id},
+        UpdateExpression="ADD credits :amount",
+        ExpressionAttributeValues={":amount": Decimal(str(amount))},
+        ReturnValues="UPDATED_NEW",
+    )
+    remaining = int(response["Attributes"]["credits"])
+    logger.info("Added %d credits to user %s, total: %d", amount, user_id, remaining)
+    return remaining
 
 
 def deduct_credits(user_id: str, amount: int) -> int:
@@ -341,6 +433,74 @@ def store_daily_tarot_draw(
         logger.error("Failed to store daily tarot draw: %s", exc)
         raise
     return item
+
+
+def save_birth_profile(
+    *,
+    user_id: str,
+    date_of_birth: str,
+    time_of_birth: str | None,
+    time_known: bool,
+    birth_place: str,
+    birth_lat: float | None,
+    birth_lon: float | None,
+    chart: dict | None,
+    sex: str | None = None,
+    eye_color: str | None = None,
+) -> dict:
+    """Persist birth profile + calculated chart into the users table."""
+    table = _users_table()
+    updates: dict = {
+        "birth_date": date_of_birth,
+        "birth_time": time_of_birth,
+        "birth_time_known": time_known,
+        "birth_place": birth_place,
+    }
+    if birth_lat is not None:
+        updates["birth_lat"] = str(birth_lat)
+        updates["birth_lon"] = str(birth_lon)
+    if chart:
+        updates["chart"] = _to_decimal(chart)
+    if sex:
+        updates["sex"] = sex
+    if eye_color:
+        updates["eye_color"] = eye_color
+
+    expr_parts = [f"#{k} = :{k}" for k in updates]
+    expr_names = {f"#{k}": k for k in updates}
+    expr_values = {f":{k}": v for k, v in updates.items()}
+
+    try:
+        table.update_item(
+            Key={"user_id": user_id},
+            UpdateExpression="SET " + ", ".join(expr_parts),
+            ExpressionAttributeNames=expr_names,
+            ExpressionAttributeValues=expr_values,
+        )
+    except ClientError as exc:
+        logger.error("Failed to save birth profile: %s", exc)
+        raise
+
+    logger.info("Saved birth profile for user %s", user_id)
+    return updates
+
+
+def get_birth_profile(user_id: str) -> dict | None:
+    """Return birth profile fields from the users table, or None if not set."""
+    user = get_user(user_id)
+    if not user or "birth_date" not in user:
+        return None
+    return {
+        "date_of_birth": user.get("birth_date"),
+        "time_of_birth": user.get("birth_time"),
+        "time_known": user.get("birth_time_known", False),
+        "birth_place": user.get("birth_place"),
+        "birth_lat": float(user["birth_lat"]) if user.get("birth_lat") else None,
+        "birth_lon": float(user["birth_lon"]) if user.get("birth_lon") else None,
+        "chart": user.get("chart"),
+        "sex": user.get("sex"),
+        "eye_color": user.get("eye_color"),
+    }
 
 
 def get_or_create_user(user_id: str, email: str) -> dict:

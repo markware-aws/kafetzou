@@ -87,29 +87,55 @@ async def generate_personalized_reading(
     sex: str,
     date_of_birth: str,
     eye_color: str,
+    chart: dict | None = None,
 ) -> tuple[AstrologyReading, dict]:
     sign_data = SIGNS_DATA[sign]
     sign_el = sign_data["el"]
     element = sign_data["element"]
 
-    dob = date.fromisoformat(date_of_birth)
+    dob = date.fromisoformat(date_of_birth) if date_of_birth else None
     today = datetime.now(timezone.utc).date()
-    age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+    age_str = ""
+    if dob:
+        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        age_str = f"\n- Ηλικία: {age} ετών (DOB: {date_of_birth})"
+
+    # Build natal chart section when available
+    chart_section = ""
+    moon_instruction = ""
+    ascendant_instruction = ""
+    if chart:
+        from app.services.chart_service import SIGNS_GR, SIGNS_SYMBOL
+        sun_gr  = SIGNS_GR.get(chart["sun_sign"], chart["sun_sign"])
+        moon_gr = SIGNS_GR.get(chart["moon_sign"], chart["moon_sign"])
+        sun_sym  = SIGNS_SYMBOL.get(chart["sun_sign"], "")
+        moon_sym = SIGNS_SYMBOL.get(chart["moon_sign"], "")
+
+        chart_section = f"""
+Γεννητικός Χάρτης:
+- ☉ Ήλιος {sun_sym} {sun_gr} ({chart['sun_degree']}°): η ψυχή, η ταυτότητα, η δύναμη της θέλησης
+- ☽ Σελήνη {moon_sym} {moon_gr} ({chart['moon_degree']}°): ο συναισθηματικός κόσμος, τα ένστικτα, οι εσωτερικές ανάγκες"""
+        moon_instruction = "\n- Συμπλήρωσε το πεδίο moon_insight: βαθιά ανάλυση Σελήνης — πώς επηρεάζει τις σχέσεις, τα συναισθήματα και τον εσωτερικό κόσμο"
+
+        if chart.get("ascendant_sign"):
+            asc_gr  = SIGNS_GR.get(chart["ascendant_sign"], chart["ascendant_sign"])
+            asc_sym = SIGNS_SYMBOL.get(chart["ascendant_sign"], "")
+            chart_section += f"\n- ↑ Ωροσκόπος {asc_sym} {asc_gr} ({chart['ascendant_degree']}°): εξωτερική εικόνα, πρώτη εντύπωση, σωματική παρουσία"
+            ascendant_instruction = "\n- Συμπλήρωσε το πεδίο ascendant_insight: πώς σε βλέπουν οι άλλοι, ερωτική έλξη, φυσική γοητεία"
 
     system_prompt = f"""Είσαι έμπειρος αστρολόγος που γράφει βαθιές εξατομικευμένες αστρολογικές προβλέψεις στα ελληνικά.
 
 Προσωπικά στοιχεία:
-- Ζώδιο: {sign_el} (στοιχείο: {element})
+- Ζώδιο Ήλιου: {sign_el} (στοιχείο: {element}){age_str}
 - Φύλο: {sex}
-- Ηλικία: {age} ετών (DOB: {date_of_birth})
-- Χρώμα ματιών: {eye_color}
+- Χρώμα ματιών: {eye_color}{chart_section}
 
 Γράψε εξατομικευμένη πρόβλεψη που:
 - Αναφέρεται στο χρώμα των ματιών ως στοιχείο της ψυχής
-- Λαμβάνει υπόψη την ηλικία ως φάση ζωής
+- Λαμβάνει υπόψη την ηλικία ως φάση ζωής (αν υπάρχει)
 - Προσαρμόζει το μήνυμα στο φύλο
 - Κάθε κατηγορία: 5-7 προτάσεις
-- 80% θετική · 20% προσωπική προειδοποίηση
+- 80% θετική · 20% προσωπική προειδοποίηση{moon_instruction}{ascendant_instruction}
 - Αποκλειστικά ελληνικά — τόνος μυστηριώδης και βαθύς"""
 
     return await structured_chat(

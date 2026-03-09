@@ -1,6 +1,42 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
+  /* ── Semantic surface tokens ───────────────────────────────────────────────
+     Available as Tailwind utility classes: bg-bg, bg-surface, bg-surface-hover, bg-nav
+  ── */
+  --color-bg:            #24242E;
+  --color-surface:       #2e2a3a;
+  --color-surface-hover: #352f43;
+  --color-nav:           #1c1c25;
+
+  /* ── Violet scale — warm Bison Hide (#C0B39F) light end → deep Martinique (#40314E) dark end
+     500/600 are readable muted tones; Martinique lives at 700-800 as surface/border shades ── */
+  --color-violet-50:  #f0ece6;
+  --color-violet-100: #C0B39F;
+  --color-violet-200: #aaa090;
+  --color-violet-300: #918778;
+  --color-violet-400: #7a6e5e;
+  --color-violet-500: #6a6058;
+  --color-violet-600: #584e46;
+  --color-violet-700: #40314E;
+  --color-violet-800: #352944;
+  --color-violet-900: #2a2038;
+  --color-violet-950: #1c1528;
+
+  /* ── Amber scale — Mandy (#E2455A) pink-red ───────────────────────────── */
+  --color-amber-50:  #fde8eb;
+  --color-amber-100: #fac9d0;
+  --color-amber-200: #f4a0ac;
+  --color-amber-300: #ec7587;
+  --color-amber-400: #e85e72;
+  --color-amber-500: #E2455A;
+  --color-amber-600: #c93a4e;
+  --color-amber-700: #ab2f41;
+  --color-amber-800: #8c2435;
+  --color-amber-900: #6d1928;
+  --color-amber-950: #4a1019;
+
+  /* ── Existing layout tokens ────────────────────────────────────────────── */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -8,8 +44,8 @@
 }
 
 :root {
-  --background: #0c0a1a;
-  --foreground: #e8e0f0;
+  --background: #24242E;
+  --foreground: #C0B39F;
 }
 
 body {
@@ -19,22 +55,26 @@ body {
   min-height: 100vh;
 }
 
+button, [role="button"] {
+  cursor: pointer;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #1a1535;
+  background: #2e2a3a;
 }
 ::-webkit-scrollbar-thumb {
-  background: #4c1d95;
+  background: #40314E;
   border-radius: 3px;
 }
 
 /* Drop zone drag-over highlight */
 .drop-active {
-  border-color: #f59e0b !important;
-  background-color: rgba(245, 158, 11, 0.08) !important;
+  border-color: #E2455A !important;
+  background-color: rgba(226, 69, 90, 0.08) !important;
 }
 
 /* Fade in animation */
@@ -52,15 +92,15 @@ body {
   100% { background-position: 400px 0; }
 }
 .shimmer {
-  background: linear-gradient(90deg, #1a1535 25%, #2d2060 50%, #1a1535 75%);
+  background: linear-gradient(90deg, #2e2a3a 25%, #40314E 50%, #2e2a3a 75%);
   background-size: 800px 100%;
   animation: shimmer 1.5s infinite;
 }
 
 /* Glow pulse for the orb */
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3), 0 0 60px rgba(124, 58, 237, 0.2); }
-  50%       { box-shadow: 0 0 40px rgba(245, 158, 11, 0.6), 0 0 100px rgba(124, 58, 237, 0.4); }
+  0%, 100% { box-shadow: 0 0 20px rgba(226, 69, 90, 0.3), 0 0 60px rgba(64, 49, 78, 0.3); }
+  50%       { box-shadow: 0 0 40px rgba(226, 69, 90, 0.6), 0 0 100px rgba(64, 49, 78, 0.5); }
 }
 .glow-pulse {
   animation: glow-pulse 3s ease-in-out infinite;

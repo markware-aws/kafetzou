@@ -18,6 +18,58 @@ export async function getMe(): Promise<any> {
   return res.json();
 }
 
+// ── Profile ───────────────────────────────────────────────────────────────────
+
+export interface ChartData {
+  sun_sign: string;
+  sun_degree: number;
+  moon_sign: string;
+  moon_degree: number;
+  ascendant_sign: string | null;
+  ascendant_degree: number | null;
+  time_known: boolean;
+}
+
+export interface BirthProfile {
+  date_of_birth: string;
+  time_of_birth: string | null;
+  time_known: boolean;
+  birth_place: string;
+  birth_lat: number | null;
+  birth_lon: number | null;
+  chart: ChartData | null;
+  sex: string | null;
+  eye_color: string | null;
+}
+
+export interface BirthProfileRequest {
+  date_of_birth: string;
+  time_of_birth: string | null;
+  birth_place: string;
+  sex?: string;
+  eye_color?: string;
+}
+
+export async function getBirthProfile(): Promise<BirthProfile | null> {
+  const res = await fetch(`${API_URL}/profile/birth`, { headers: await authHeaders() });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to fetch birth profile");
+  return res.json();
+}
+
+export async function saveBirthProfile(body: BirthProfileRequest): Promise<BirthProfile> {
+  const res = await fetch(`${API_URL}/profile/birth`, {
+    method: "PUT",
+    headers: await authHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? "Failed to save birth profile");
+  }
+  return res.json();
+}
+
 // ── Upload ────────────────────────────────────────────────────────────────────
 
 export interface UploadUrlResponse {
@@ -145,6 +197,80 @@ export async function getTarotReading(readingId: string): Promise<any> {
   return res.json();
 }
 
+// ── Payments ──────────────────────────────────────────────────────────────────
+
+export interface CreditBundle {
+  id: string;
+  credits: number;
+  price_cents: number;
+  price_eur: number;
+  label: string;
+  description: string;
+  popular: boolean;
+}
+
+export async function getCreditBundles(): Promise<CreditBundle[]> {
+  const res = await fetch(`${API_URL}/payments/bundles`);
+  if (!res.ok) throw new Error("Failed to load bundles");
+  return res.json();
+}
+
+export async function createCheckoutSession(bundleId: string): Promise<{ url: string }> {
+  const res = await fetch(`${API_URL}/payments/create-checkout-session`, {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify({ bundle_id: bundleId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? "Failed to create checkout session");
+  }
+  return res.json();
+}
+
+// ── Dreams ────────────────────────────────────────────────────────────────────
+
+export interface DreamReading {
+  interpretation: string;
+  symbols: string[];
+  emotions: string;
+  advice: string;
+  summary: string;
+}
+
+export interface DreamReadingResponse {
+  reading_id: string;
+  dream_text: string;
+  reading: DreamReading;
+}
+
+export async function createDreamReading(dreamText: string): Promise<DreamReadingResponse> {
+  const res = await fetch(`${API_URL}/dreams/interpret`, {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify({ dream_text: dreamText }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? "Failed to interpret dream");
+  }
+  return res.json();
+}
+
+export async function getDreamReadings(): Promise<any[]> {
+  const res = await fetch(`${API_URL}/dreams`, { headers: await authHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch dream readings");
+  return res.json();
+}
+
+export async function getDreamReading(readingId: string): Promise<any> {
+  const res = await fetch(`${API_URL}/dreams/${readingId}`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error("Dream reading not found");
+  return res.json();
+}
+
 // ── Astrology ─────────────────────────────────────────────────────────────────
 
 export interface AstrologyReading {
@@ -205,6 +331,14 @@ export async function prewarmAstrology(
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail ?? "Prewarm failed");
   }
+  return res.json();
+}
+
+export async function getPersonalizedAstrologyReading(readingId: string): Promise<any> {
+  const res = await fetch(`${API_URL}/astrology/personalized/${readingId}`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error("Astrology reading not found");
   return res.json();
 }
 

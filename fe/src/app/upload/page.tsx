@@ -8,6 +8,7 @@ import { AuthGuard } from "@/components/auth-guard";
 import { ReadingCard } from "@/components/reading-card";
 import { getUploadUrl, uploadImageToS3, createReading, type ReadCoffeeResponse } from "@/lib/api";
 import { notifyCreditsChanged } from "@/lib/user";
+import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 
 const MAX_IMAGES = 3;
 
@@ -36,6 +37,7 @@ export default function UploadPage() {
   const [slots, setSlots] = useState<ImageSlot[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
 
   function resetSlots() {
     setSlots((prev) => { prev.forEach((s) => URL.revokeObjectURL(s.preview)); return []; });
@@ -87,12 +89,12 @@ export default function UploadPage() {
     } catch (err: any) {
       const msg = err.message ?? "Something went wrong";
       const isLowCredits = msg.includes("credits") || msg.includes("402");
-      updateSlot(slot.id, {
-        status: "error",
-        error: isLowCredits
-          ? "Δεν έχεις αρκετά credits (χρειάζεσαι 2). Αγόρασε credits για να συνεχίσεις."
-          : msg,
-      });
+      if (isLowCredits) {
+        updateSlot(slot.id, { status: "idle" });
+        setCreditDialogOpen(true);
+      } else {
+        updateSlot(slot.id, { status: "error", error: msg });
+      }
     }
   }
 
@@ -113,6 +115,12 @@ export default function UploadPage() {
 
   return (
     <AuthGuard>
+      <InsufficientCreditsDialog
+        open={creditDialogOpen}
+        onClose={() => setCreditDialogOpen(false)}
+        requiredCredits={2}
+        featureName="Ανάγνωση Καφέ"
+      />
       <div className="min-h-screen flex flex-col">
         <Navbar />
 
@@ -135,7 +143,7 @@ export default function UploadPage() {
               className={`relative border-2 border-dashed rounded-2xl transition-all cursor-pointer mb-6 ${
                 dragOver
                   ? "border-amber-500 bg-amber-900/10"
-                  : "border-violet-800/50 hover:border-violet-600/70 bg-[#12102a]/60 hover:bg-[#12102a]"
+                  : "border-violet-800/50 hover:border-violet-600/70 bg-[#2e2a3a]/60 hover:bg-[#2e2a3a]"
               }`}
               onClick={() => inputRef.current?.click()}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -163,7 +171,7 @@ export default function UploadPage() {
             <div className="grid grid-cols-3 gap-4 mb-6">
               {slots.map((slot, i) => (
                 <div key={slot.id} className="animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
-                  <div className="relative rounded-xl overflow-hidden border border-violet-800/40 bg-[#12102a] aspect-square">
+                  <div className="relative rounded-xl overflow-hidden border border-violet-800/40 bg-[#2e2a3a] aspect-square">
                     <img src={slot.preview} alt={`Cup ${i + 1}`} className="w-full h-full object-cover" />
 
                     {/* Status overlay */}
@@ -207,7 +215,7 @@ export default function UploadPage() {
               {slots.length < MAX_IMAGES && !processing && (
                 <button
                   onClick={() => addMoreRef.current?.click()}
-                  className="aspect-square rounded-xl border-2 border-dashed border-violet-800/40 hover:border-violet-600/60 bg-[#12102a]/60 hover:bg-[#12102a] flex flex-col items-center justify-center gap-2 transition-all"
+                  className="aspect-square rounded-xl border-2 border-dashed border-violet-800/40 hover:border-violet-600/60 bg-[#2e2a3a]/60 hover:bg-[#2e2a3a] flex flex-col items-center justify-center gap-2 transition-all"
                 >
                   <ImagePlus className="w-6 h-6 text-violet-500" />
                   <span className="text-xs text-violet-500">Προσθήκη</span>

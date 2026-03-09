@@ -7,6 +7,8 @@ import {
   confirmSignUp,
   getCurrentUser,
   fetchAuthSession,
+  resetPassword,
+  confirmResetPassword,
 } from "aws-amplify/auth";
 
 export async function login(email: string, password: string) {
@@ -23,6 +25,14 @@ export async function register(email: string, password: string) {
 
 export async function confirmRegistration(email: string, code: string) {
   return confirmSignUp({ username: email, confirmationCode: code });
+}
+
+export async function forgotPassword(email: string) {
+  return resetPassword({ username: email });
+}
+
+export async function confirmForgotPassword(email: string, code: string, newPassword: string) {
+  return confirmResetPassword({ username: email, confirmationCode: code, newPassword });
 }
 
 export async function getUser() {

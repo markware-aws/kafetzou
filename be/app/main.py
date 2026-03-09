@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import astrology, auth, readings, tarot, upload
+from app.routes import astrology, auth, dreams, payments, profile, readings, tarot, upload
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,6 +26,9 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(profile.router)
+app.include_router(payments.router)
+app.include_router(dreams.router)
 app.include_router(upload.router)
 app.include_router(readings.router)
 app.include_router(tarot.router)

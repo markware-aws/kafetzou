@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Coffee, LayoutDashboard, Upload, LogOut, Menu, X, Star, Sparkles, Coins } from "lucide-react";
+import { Coffee, LayoutDashboard, Upload, LogOut, Menu, X, Star, Sparkles, Coins, User, Moon } from "lucide-react";
 import { logout } from "@/lib/auth";
 import { getMe } from "@/lib/api";
 
@@ -11,7 +11,9 @@ const navLinks = [
   { href: "/upload", label: "Καφές", icon: Upload },
   { href: "/tarot", label: "Ταρό", icon: Star },
   { href: "/astrology", label: "Αστρολογία", icon: Sparkles },
+  { href: "/dream", label: "Όνειρα", icon: Moon },
   { href: "/dashboard", label: "Ιστορικό", icon: LayoutDashboard },
+  { href: "/profile", label: "Προφίλ", icon: User },
 ];
 
 export function Navbar() {
@@ -37,7 +39,7 @@ export function Navbar() {
   }
 
   return (
-    <nav className="border-b border-violet-900/30 bg-[#0e0b1f]/80 backdrop-blur-md sticky top-0 z-50">
+    <nav className="border-b border-violet-900/30 bg-[#1c1c25]/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/upload" className="flex items-center gap-2 group">
@@ -65,10 +67,14 @@ export function Navbar() {
           ))}
 
           {credits !== null && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium ml-1">
+            <Link
+              href="/buy-credits"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium ml-1 hover:bg-amber-500/20 hover:border-amber-500/40 transition-colors group"
+            >
               <Coins className="w-3.5 h-3.5" />
               {credits}
-            </div>
+              <span className="text-amber-600 group-hover:text-amber-400 transition-colors text-xs font-bold">+</span>
+            </Link>
           )}
 
           <button
@@ -92,7 +98,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden border-t border-violet-900/30 bg-[#0e0b1f] px-4 py-3 flex flex-col gap-1">
+        <div className="md:hidden border-t border-violet-900/30 bg-[#1c1c25] px-4 py-3 flex flex-col gap-1">
           {navLinks.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
@@ -107,10 +113,15 @@ export function Navbar() {
             </Link>
           ))}
           {credits !== null && (
-            <div className="flex items-center gap-2 px-3 py-2 text-sm text-amber-400">
+            <Link
+              href="/buy-credits"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-amber-400"
+            >
               <Coins className="w-4 h-4" />
               <span>{credits} credits</span>
-            </div>
+              <span className="text-amber-600 text-xs font-bold">+</span>
+            </Link>
           )}
           <button
             onClick={handleLogout}

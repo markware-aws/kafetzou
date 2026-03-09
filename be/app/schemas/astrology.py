@@ -17,6 +17,8 @@ class AstrologyReading(BaseModel):
     luck: str = Field(..., description="Τύχη, ευκαιρίες, ευνοϊκές στιγμές")
     summary: str = Field(..., description="Μία πρόταση που συνοψίζει την ουσία")
     warning: str = Field(..., description="Προειδοποίηση ή σκοτεινό στοιχείο")
+    moon_insight: str | None = Field(None, description="Σελήνη — συναισθηματική φύση και εσωτερικός κόσμος (μόνο για εξατομικευμένες με χάρτη)")
+    ascendant_insight: str | None = Field(None, description="Ωροσκόπος — εξωτερική εικόνα και πρώτη εντύπωση (μόνο αν ώρα γέννησης γνωστή)")
 
 
 class PersonalizedReadingRequest(BaseModel):

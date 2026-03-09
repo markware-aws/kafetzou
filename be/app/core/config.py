@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     dynamodb_tarot_table: str = "tarot_readings"
     dynamodb_astrology_table: str = "astrology_readings"
     dynamodb_astrology_personalized_table: str = "astrology_personalized"
+    dynamodb_dreams_table: str = "dream_readings"
     dynamodb_users_table: str = "users"
 
     # Cognito
@@ -26,9 +27,10 @@ class Settings(BaseSettings):
     # Prewarm secret (used by EventBridge Scheduler to authenticate)
     prewarm_secret: str = ""
 
-    # Stripe (to be configured later)
+    # Stripe
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    frontend_url: str = "http://localhost:3000"
 
     @property
     def cognito_pool_region(self) -> str:

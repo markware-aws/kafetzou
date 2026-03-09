@@ -85,12 +85,17 @@ async def create_personalized_reading(
 
     reading_id = str(uuid.uuid4())
 
+    # Enrich with natal chart if the user has a saved birth profile
+    birth_profile = dynamodb_service.get_birth_profile(user_id)
+    chart = birth_profile.get("chart") if birth_profile else None
+
     try:
         reading, _ = await astrology_service.generate_personalized_reading(
             sign=body.sign,
             sex=body.sex,
             date_of_birth=body.date_of_birth,
             eye_color=body.eye_color,
+            chart=chart,
         )
     except Exception as exc:
         logger.error("Personalized reading failed: %s", exc)
@@ -125,6 +130,20 @@ async def list_personalized_readings(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     return dynamodb_service.get_personalized_astrology_readings(user_id)
+
+
+@router.get("/personalized/{reading_id}", response_model=dict)
+async def get_personalized_reading(
+    reading_id: str,
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    user_id = current_user.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    item = dynamodb_service.get_personalized_astrology_reading(user_id, reading_id)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
+    return item
 
 
 # ── Public horoscope (lazy cache) ─────────────────────────────────────────────

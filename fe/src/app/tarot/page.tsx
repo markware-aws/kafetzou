@@ -7,6 +7,7 @@ import { AuthGuard } from "@/components/auth-guard";
 import { createTarotReading, getDailyTarotCard, TarotReadingResponse } from "@/lib/api";
 import { getCardImagePath, getCardDisplayName } from "@/lib/tarot";
 import { notifyCreditsChanged } from "@/lib/user";
+import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 
 type Spread = "one_card" | "three_card";
 
@@ -43,7 +44,7 @@ function DailyCardSection() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-violet-800/30 bg-[#12102a] p-5 mb-8">
+      <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5 mb-8">
         <div className="h-5 shimmer rounded w-40 mb-4" />
         <div className="h-4 shimmer rounded w-full" />
       </div>
@@ -84,7 +85,7 @@ function DailyCardSection() {
                 className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-900 to-[#0c0a1a] flex flex-col items-center justify-center gap-2">
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-900 to-[#24242E] flex flex-col items-center justify-center gap-2">
                 <Star className="w-5 h-5 text-violet-500" />
                 <span className="text-[10px] text-violet-500 text-center px-1">Άγγιξε</span>
               </div>
@@ -120,6 +121,7 @@ export default function TarotPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [revealed, setRevealed] = useState<boolean[]>([]);
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
 
   async function handleDraw() {
     setLoading(true);
@@ -135,11 +137,8 @@ export default function TarotPage() {
     } catch (e: any) {
       const msg = e.message ?? "Κάτι πήγε στραβά";
       const isLowCredits = msg.includes("credits") || msg.includes("402");
-      setError(
-        isLowCredits
-          ? "Δεν έχεις αρκετά credits (χρειάζεσαι 1). Αγόρασε credits για να συνεχίσεις."
-          : msg
-      );
+      if (isLowCredits) setCreditDialogOpen(true);
+      else setError(msg);
     } finally {
       setLoading(false);
     }
@@ -161,6 +160,12 @@ export default function TarotPage() {
 
   return (
     <AuthGuard>
+      <InsufficientCreditsDialog
+        open={creditDialogOpen}
+        onClose={() => setCreditDialogOpen(false)}
+        requiredCredits={1}
+        featureName="Ταρό"
+      />
       <div className="min-h-screen flex flex-col">
         <Navbar />
 
@@ -195,7 +200,7 @@ export default function TarotPage() {
                     className={`flex-1 rounded-xl border px-5 py-4 text-sm font-medium text-left transition-all ${
                       spread === key
                         ? "border-amber-500/60 bg-amber-500/10 text-amber-300"
-                        : "border-violet-800/40 bg-[#12102a] text-violet-300 hover:border-violet-600/50"
+                        : "border-violet-800/40 bg-[#2e2a3a] text-violet-300 hover:border-violet-600/50"
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -277,7 +282,7 @@ export default function TarotPage() {
                           className="absolute inset-0 w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-violet-900 to-[#0c0a1a] flex flex-col items-center justify-center gap-3">
+                        <div className="absolute inset-0 bg-gradient-to-br from-violet-900 to-[#24242E] flex flex-col items-center justify-center gap-3">
                           <div className="w-10 h-10 rounded-full border-2 border-violet-600/50 flex items-center justify-center">
                             <Star className="w-5 h-5 text-violet-500" />
                           </div>
@@ -304,14 +309,14 @@ export default function TarotPage() {
                     <p className="text-sm text-violet-100 leading-relaxed">{result.reading.summary}</p>
                   </div>
 
-                  <div className="rounded-2xl border border-violet-800/30 bg-[#12102a] p-5">
+                  <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5">
                     <h2 className="text-sm font-semibold text-violet-300 mb-3">Ερμηνεία</h2>
                     <p className="text-sm text-violet-200 leading-relaxed whitespace-pre-line">
                       {result.reading.interpretation}
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-violet-800/30 bg-[#12102a] p-5">
+                  <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5">
                     <h2 className="text-sm font-semibold text-violet-300 mb-3">Συμβουλή</h2>
                     <p className="text-sm text-violet-200 leading-relaxed">{result.reading.advice}</p>
                   </div>

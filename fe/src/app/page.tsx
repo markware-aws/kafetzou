@@ -65,7 +65,7 @@ function HoroscopeSection() {
               className={`rounded-xl border py-3 flex flex-col items-center gap-1 text-xs font-medium transition-all ${
                 active
                   ? `${ELEMENT_BG[s.element]} ${ELEMENT_COLORS[s.element]} border-current/40`
-                  : "border-violet-800/30 bg-[#12102a] text-violet-400 hover:border-violet-600/40 hover:text-violet-200"
+                  : "border-violet-800/30 bg-[#2e2a3a] text-violet-400 hover:border-violet-600/40 hover:text-violet-200"
               }`}
             >
               <span className="text-lg leading-none">{s.symbol}</span>
@@ -78,7 +78,7 @@ function HoroscopeSection() {
       {selectedSign && (
         <div className="animate-fade-in">
           {/* Period tabs */}
-          <div className="flex gap-1 p-1 rounded-xl bg-[#12102a] border border-violet-800/30 mb-5">
+          <div className="flex gap-1 p-1 rounded-xl bg-[#2e2a3a] border border-violet-800/30 mb-5">
             {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(([key, label]) => (
               <button
                 key={key}
@@ -153,7 +153,7 @@ function HoroscopeSection() {
 
 function ReadingCard({ icon: Icon, label, text }: { icon: any; label: string; text: string }) {
   return (
-    <div className="rounded-2xl border border-violet-800/30 bg-[#12102a] p-4">
+    <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-4">
       <div className="flex items-center gap-2 mb-2">
         <Icon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
         <span className="text-xs font-semibold text-violet-400 uppercase tracking-wide">{label}</span>
@@ -218,7 +218,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
-      <nav className="border-b border-violet-900/30 bg-[#0e0b1f]/80 backdrop-blur-md sticky top-0 z-50">
+      <nav className="border-b border-violet-900/30 bg-[#1c1c25]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
@@ -277,13 +277,13 @@ export default function Home() {
               className={`rounded-2xl border bg-gradient-to-br p-5 ${f.color}`}
             >
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#0c0a1a]/60 flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-[#24242E]/60 flex items-center justify-center shrink-0">
                   <f.icon className={`w-5 h-5 ${f.iconColor}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="text-sm font-semibold text-violet-100">{f.title}</h3>
-                    <span className="text-[10px] font-medium bg-[#0c0a1a]/50 border border-violet-700/30 text-violet-400 rounded-full px-2 py-0.5">
+                    <span className="text-[10px] font-medium bg-[#24242E]/50 border border-violet-700/30 text-violet-400 rounded-full px-2 py-0.5">
                       {f.badge}
                     </span>
                   </div>

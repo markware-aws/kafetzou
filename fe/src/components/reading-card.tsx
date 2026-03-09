@@ -20,7 +20,7 @@ const sections = [
 export function ReadingCard({ reading, symbolsDetected, lettersDetected = [], imagePreview, index = 0 }: ReadingCardProps) {
   return (
     <div
-      className="animate-fade-in rounded-2xl border border-violet-800/40 bg-[#12102a] overflow-hidden"
+      className="animate-fade-in rounded-2xl border border-violet-800/40 bg-[#2e2a3a] overflow-hidden"
       style={{ animationDelay: `${index * 100}ms` }}
     >
       {/* Header */}
