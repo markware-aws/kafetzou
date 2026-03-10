@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /privacy
+Allow: /terms
+Disallow: /upload
+Disallow: /dashboard
+Disallow: /reading
+Disallow: /tarot
+Disallow: /tarot-reading
+Disallow: /astrology
+Disallow: /astrology-reading
+Disallow: /dream
+Disallow: /dream-reading
+Disallow: /profile
+Disallow: /buy-credits
+Disallow: /payment
+
+Sitemap: https://kafetzou.com/sitemap.xml

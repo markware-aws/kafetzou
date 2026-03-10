@@ -5,6 +5,9 @@ import {
   confirmSignUp,
   getCurrentUser,
   fetchAuthSession,
+  resetPassword,
+  confirmResetPassword,
+  signInWithRedirect,
 } from 'aws-amplify/auth';
 
 export async function login(email: string, password: string) {
@@ -27,6 +30,18 @@ export async function confirmRegistration(email: string, code: string) {
   return confirmSignUp({ username: email, confirmationCode: code });
 }
 
+export async function forgotPassword(email: string) {
+  return resetPassword({ username: email });
+}
+
+export async function confirmForgotPassword(email: string, code: string, newPassword: string) {
+  return confirmResetPassword({ username: email, confirmationCode: code, newPassword });
+}
+
+export async function loginWithGoogle() {
+  return signInWithRedirect({ provider: 'Google' });
+}
+
 export async function getUser() {
   try {
     return await getCurrentUser();
@@ -38,7 +53,10 @@ export async function getUser() {
 export async function getIdToken(): Promise<string | null> {
   try {
     const session = await fetchAuthSession();
-    return session.tokens?.idToken?.toString() ?? null;
+    const token = session.tokens?.idToken?.toString() ?? null;
+    if (token) return token;
+    const refreshed = await fetchAuthSession({ forceRefresh: true });
+    return refreshed.tokens?.idToken?.toString() ?? null;
   } catch {
     return null;
   }

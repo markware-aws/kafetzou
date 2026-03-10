@@ -10,13 +10,107 @@ async function authHeaders(): Promise<HeadersInit> {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+async function handleError(res: Response): Promise<never> {
+  const err = await res.json().catch(() => ({}));
+  const e = new Error((err as any).detail ?? `HTTP ${res.status}`) as any;
+  e.status = res.status;
+  throw e;
+}
+
+// ── User ──────────────────────────────────────────────────────────────────────
+
+export interface User {
+  user_id: string;
+  email: string;
+  credits: number;
+  plan: string;
+}
+
+export async function getMe(): Promise<User> {
+  const res = await fetch(`${API_URL}/auth/me`, { headers: await authHeaders() });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+
+export interface ChartData {
+  sun_sign: string;
+  sun_degree: number;
+  moon_sign: string;
+  moon_degree: number;
+  ascendant_sign: string | null;
+  ascendant_degree: number | null;
+  time_known: boolean;
+}
+
+export interface BirthProfile {
+  date_of_birth: string;
+  time_of_birth: string | null;
+  time_known: boolean;
+  birth_place: string;
+  birth_lat: number | null;
+  birth_lon: number | null;
+  chart: ChartData | null;
+  sex: string | null;
+  eye_color: string | null;
+}
+
+export interface BirthProfileRequest {
+  date_of_birth: string;
+  time_of_birth: string | null;
+  birth_place: string;
+  sex?: string;
+  eye_color?: string;
+}
+
+export async function getBirthProfile(): Promise<BirthProfile | null> {
+  const res = await fetch(`${API_URL}/profile/birth`, { headers: await authHeaders() });
+  if (res.status === 404) return null;
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+export async function saveBirthProfile(body: BirthProfileRequest): Promise<BirthProfile> {
+  const res = await fetch(`${API_URL}/profile/birth`, {
+    method: 'PUT',
+    headers: await authHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
 
 export interface UploadUrlResponse {
   upload_url: string;
   image_key: string;
   reading_id: string;
 }
+
+export async function getUploadUrl(): Promise<UploadUrlResponse> {
+  const res = await fetch(`${API_URL}/upload-url`, {
+    method: 'POST',
+    headers: await authHeaders(),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+// React Native: fetch local URI → blob → PUT to S3
+export async function uploadImageToS3(uploadUrl: string, imageUri: string): Promise<void> {
+  const fileRes = await fetch(imageUri);
+  const blob = await fileRes.blob();
+  const res = await fetch(uploadUrl, {
+    method: 'PUT',
+    body: blob,
+    headers: { 'Content-Type': 'image/jpeg' },
+  });
+  if (!res.ok) throw new Error('Failed to upload image to S3');
+}
+
+// ── Coffee Readings ───────────────────────────────────────────────────────────
 
 export interface CoffeeReading {
   general_message: string;
@@ -34,32 +128,6 @@ export interface ReadCoffeeResponse {
   letters_detected: string[];
 }
 
-// ── Upload ────────────────────────────────────────────────────────────────────
-
-export async function getUploadUrl(): Promise<UploadUrlResponse> {
-  const res = await fetch(`${API_URL}/upload-url`, {
-    method: 'POST',
-    headers: await authHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to get upload URL');
-  return res.json();
-}
-
-export async function uploadImageToS3(uploadUrl: string, imageUri: string): Promise<void> {
-  // In React Native we fetch the local file URI and send its blob to S3
-  const fileRes = await fetch(imageUri);
-  const blob = await fileRes.blob();
-
-  const res = await fetch(uploadUrl, {
-    method: 'PUT',
-    body: blob,
-    headers: { 'Content-Type': 'image/jpeg' },
-  });
-  if (!res.ok) throw new Error('Failed to upload image to S3');
-}
-
-// ── Readings ──────────────────────────────────────────────────────────────────
-
 export async function createReading(
   imageKey: string,
   readingId: string
@@ -69,23 +137,191 @@ export async function createReading(
     headers: await authHeaders(),
     body: JSON.stringify({ image_key: imageKey, reading_id: readingId }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as any).detail ?? 'Failed to create reading');
-  }
+  if (!res.ok) await handleError(res);
   return res.json();
 }
 
 export async function getReadings(): Promise<any[]> {
   const res = await fetch(`${API_URL}/readings`, { headers: await authHeaders() });
-  if (!res.ok) throw new Error('Failed to fetch readings');
+  if (!res.ok) await handleError(res);
   return res.json();
 }
 
 export async function getReading(readingId: string): Promise<any> {
-  const res = await fetch(`${API_URL}/readings/${readingId}`, {
+  const res = await fetch(`${API_URL}/readings/${readingId}`, { headers: await authHeaders() });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+// ── Tarot ─────────────────────────────────────────────────────────────────────
+
+export interface TarotReading {
+  cards: string[];
+  interpretation: string;
+  advice: string;
+  summary: string;
+}
+
+export interface TarotReadingResponse {
+  reading_id: string;
+  spread: string;
+  reading: TarotReading;
+}
+
+export async function getDailyTarotCard(): Promise<any> {
+  const res = await fetch(`${API_URL}/tarot/daily-card`, { headers: await authHeaders() });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+export async function createTarotReading(
+  spread: 'one_card' | 'three_card'
+): Promise<TarotReadingResponse> {
+  const res = await fetch(`${API_URL}/tarot/reading`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ spread }),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+export async function getTarotReadings(): Promise<any[]> {
+  const res = await fetch(`${API_URL}/tarot/readings`, { headers: await authHeaders() });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+export async function getTarotReading(readingId: string): Promise<any> {
+  const res = await fetch(`${API_URL}/tarot/readings/${readingId}`, { headers: await authHeaders() });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+// ── Dreams ────────────────────────────────────────────────────────────────────
+
+export interface DreamReading {
+  interpretation: string;
+  symbols: string[];
+  emotions: string;
+  advice: string;
+  summary: string;
+}
+
+export interface DreamReadingResponse {
+  reading_id: string;
+  dream_text: string;
+  reading: DreamReading;
+}
+
+export async function createDreamReading(dreamText: string): Promise<DreamReadingResponse> {
+  const res = await fetch(`${API_URL}/dreams/interpret`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ dream_text: dreamText }),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+export async function getDreamReadings(): Promise<any[]> {
+  const res = await fetch(`${API_URL}/dreams`, { headers: await authHeaders() });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+export async function getDreamReading(readingId: string): Promise<any> {
+  const res = await fetch(`${API_URL}/dreams/${readingId}`, { headers: await authHeaders() });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+// ── Astrology ─────────────────────────────────────────────────────────────────
+
+export interface AstrologyReading {
+  general: string;
+  love: string;
+  career: string;
+  luck: string;
+  summary: string;
+  warning: string;
+}
+
+export interface HoroscopeResponse {
+  sign: string;
+  period: string;
+  reading: AstrologyReading;
+  cached: boolean;
+}
+
+export interface PersonalizedAstrologyRequest {
+  sign: string;
+  sex: string;
+  date_of_birth: string;
+  eye_color: string;
+}
+
+export async function getHoroscope(
+  sign: string,
+  period: 'daily' | 'weekly' | 'monthly'
+): Promise<HoroscopeResponse> {
+  const res = await fetch(`${API_URL}/astrology/${sign}/${period}`);
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+export async function createPersonalizedAstrologyReading(
+  body: PersonalizedAstrologyRequest
+): Promise<{ reading_id: string; sign: string; reading: AstrologyReading }> {
+  const res = await fetch(`${API_URL}/astrology/personalized`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+export async function getPersonalizedAstrologyReadings(): Promise<any[]> {
+  const res = await fetch(`${API_URL}/astrology/personalized/history`, {
     headers: await authHeaders(),
   });
-  if (!res.ok) throw new Error('Reading not found');
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+export async function getPersonalizedAstrologyReading(readingId: string): Promise<any> {
+  const res = await fetch(`${API_URL}/astrology/personalized/${readingId}`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) await handleError(res);
+  return res.json();
+}
+
+// ── Payments ──────────────────────────────────────────────────────────────────
+
+export interface CreditBundle {
+  id: string;
+  credits: number;
+  price_cents: number;
+  price_eur: number;
+  label: string;
+  description: string;
+  popular: boolean;
+}
+
+export async function getCreditBundles(): Promise<CreditBundle[]> {
+  const res = await fetch(`${API_URL}/payments/bundles`);
+  if (!res.ok) throw new Error('Failed to load bundles');
+  return res.json();
+}
+
+export async function createCheckoutSession(bundleId: string): Promise<{ url: string }> {
+  const res = await fetch(`${API_URL}/payments/create-checkout-session`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ bundle_id: bundleId }),
+  });
+  if (!res.ok) await handleError(res);
   return res.json();
 }

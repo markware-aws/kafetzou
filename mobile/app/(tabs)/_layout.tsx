@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Upload, LayoutDashboard } from 'lucide-react-native';
+import { Upload, LayoutDashboard, Star, Sparkles, Moon, User } from 'lucide-react-native';
 import { theme } from '@/lib/theme';
 
 export default function TabsLayout() {
@@ -15,7 +15,7 @@ export default function TabsLayout() {
         },
         tabBarActiveTintColor: theme.amber,
         tabBarInactiveTintColor: theme.textDim,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
         headerStyle: { backgroundColor: '#0e0b1f' },
         headerTintColor: theme.textMuted,
         headerTitleStyle: { color: theme.text, fontSize: 15, fontWeight: '600' },
@@ -25,17 +25,49 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="upload"
         options={{
-          title: 'Νέα Ανάγνωση',
+          title: 'Καφές',
           tabBarIcon: ({ color, size }) => <Upload size={size - 2} color={color} />,
           headerTitle: '☕  Διάβασε τον Καφέ μου',
         }}
       />
       <Tabs.Screen
+        name="tarot"
+        options={{
+          title: 'Ταρό',
+          tabBarIcon: ({ color, size }) => <Star size={size - 2} color={color} />,
+          headerTitle: '🃏 Ταρό',
+        }}
+      />
+      <Tabs.Screen
+        name="astrology"
+        options={{
+          title: 'Αστρολογία',
+          tabBarIcon: ({ color, size }) => <Sparkles size={size - 2} color={color} />,
+          headerTitle: '✨ Αστρολογία',
+        }}
+      />
+      <Tabs.Screen
+        name="dream"
+        options={{
+          title: 'Όνειρα',
+          tabBarIcon: ({ color, size }) => <Moon size={size - 2} color={color} />,
+          headerTitle: '🌙 Ονειροκρίτης',
+        }}
+      />
+      <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Οι Αναγνώσεις μου',
+          title: 'Ιστορικό',
           tabBarIcon: ({ color, size }) => <LayoutDashboard size={size - 2} color={color} />,
-          headerTitle: 'Οι Αναγνώσεις μου',
+          headerTitle: 'Ιστορικό',
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Προφίλ',
+          tabBarIcon: ({ color, size }) => <User size={size - 2} color={color} />,
+          headerTitle: 'Προφίλ',
         }}
       />
     </Tabs>

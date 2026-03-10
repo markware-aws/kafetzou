@@ -8,7 +8,9 @@ import { useRouter } from 'expo-router';
 import {
   ImagePlus, X, Coffee, Sparkles, CheckCircle, AlertCircle,
 } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { ReadingCard } from '@/components/ReadingCard';
+import { InsufficientCreditsModal } from '@/components/InsufficientCreditsModal';
 import { getUploadUrl, uploadImageToS3, createReading, type ReadCoffeeResponse } from '@/lib/api';
 import { theme } from '@/lib/theme';
 
@@ -35,6 +37,7 @@ export default function UploadScreen() {
   const router = useRouter();
   const [slots, setSlots] = useState<Slot[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
 
   function resetSlots() {
     setSlots([]);
@@ -86,13 +89,20 @@ export default function UploadScreen() {
       update(slot.id, { status: 'reading' });
       const result = await createReading(image_key, reading_id);
       update(slot.id, { status: 'done', result });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e: any) {
-      update(slot.id, { status: 'error', error: e.message ?? 'Κάτι πήγε στραβά' });
+      if ((e as any).status === 402) {
+        update(slot.id, { status: 'error', error: 'Ανεπαρκή credits' });
+        setShowCreditsModal(true);
+      } else {
+        update(slot.id, { status: 'error', error: e.message ?? 'Κάτι πήγε στραβά' });
+      }
     }
   }
 
   async function handleReadAll() {
     if (processing) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const toProcess = slots.filter(s => s.status === 'idle' || s.status === 'error');
     if (toProcess.length === 0) return;
     setProcessing(true);
@@ -236,6 +246,10 @@ export default function UploadScreen() {
           ))}
         </View>
       )}
+      <InsufficientCreditsModal
+        visible={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+      />
     </ScrollView>
   );
 }

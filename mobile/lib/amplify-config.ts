@@ -11,7 +11,16 @@ export function configureAmplify() {
       Cognito: {
         userPoolId: extra.cognitoUserPoolId as string,
         userPoolClientId: extra.cognitoClientId as string,
-        loginWith: { email: true },
+        loginWith: {
+          email: true,
+          oauth: {
+            domain: extra.cognitoDomain as string,
+            scopes: ['email', 'openid', 'profile'],
+            redirectSignIn: ['kafetzou://'],
+            redirectSignOut: ['kafetzou://login'],
+            responseType: 'code',
+          },
+        },
       },
     },
   });

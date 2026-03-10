@@ -45,6 +45,8 @@
       "apiUrl": "http://localhost:8000",
       "cognitoUserPoolId": "eu-central-1_09pw1GdBI",
       "cognitoClientId": "76po52ir822bdh4pbm6dp24emv",
+      "cognitoDomain": "eu-central-109pw1gdbi.auth.eu-central-1.amazoncognito.com",
+      "storeUrl": "https://kafetzou.gr/credits",
       "eas": {
         "projectId": "your-eas-project-id"
       }

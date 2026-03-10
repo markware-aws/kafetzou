@@ -7,7 +7,12 @@
       "WebFetch(domain:stackoverflow.com)",
       "Bash(cp:*)",
       "Bash(python:*)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "Bash(ls C:/VSC/KAFETZOU/mobile/app/\\\\\\(tabs\\\\\\)/)",
+      "Bash(cd C:/VSC/KAFETZOU/mobile && npx --no-install tsc --noEmit 2>&1; echo \"EXIT:$?\")",
+      "Bash(cd C:/VSC/KAFETZOU/mobile && npx --no-install tsc --noEmit 2>&1 | head -60; echo \"EXIT:$?\")",
+      "Bash(cd C:/VSC/KAFETZOU/mobile && npx tsc --noEmit 2>&1 | head -80; echo \"EXIT:$?\")",
+      "Bash(cd C:/VSC/KAFETZOU/mobile && timeout 60 npx tsc --noEmit --pretty false 2>&1 | tail -30; echo \"DONE:$?\")"
     ]
   }
 }

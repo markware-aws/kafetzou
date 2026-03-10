@@ -9,6 +9,7 @@ import {
   fetchAuthSession,
   resetPassword,
   confirmResetPassword,
+  signInWithRedirect,
 } from "aws-amplify/auth";
 
 export async function login(email: string, password: string) {
@@ -25,6 +26,10 @@ export async function register(email: string, password: string) {
 
 export async function confirmRegistration(email: string, code: string) {
   return confirmSignUp({ username: email, confirmationCode: code });
+}
+
+export async function loginWithGoogle() {
+  return signInWithRedirect({ provider: "Google" });
 }
 
 export async function forgotPassword(email: string) {
