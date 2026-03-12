@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import astrology, auth, dreams, payments, profile, readings, tarot, upload
@@ -14,16 +14,27 @@ app = FastAPI(
     title="Kafetzou API",
     description="AI Greek Coffee Cup Reading — two-step vision + fortune pipeline",
     version="1.0.0",
+    root_path="/api",
 )
 
-# CORS — tighten origins in production
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://fortuneteller.gr",
+        "https://www.fortuneteller.gr",
+        "http://localhost:3000",  # local dev
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def no_cache_middleware(request: Request, call_next):
+    response: Response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    return response
 
 app.include_router(auth.router)
 app.include_router(profile.router)
