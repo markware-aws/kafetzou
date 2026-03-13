@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -193,17 +194,25 @@ export default function LoginPage() {
                   </div>
                 </div>
                 {error && <p className="text-rose-400 text-xs">{error}</p>}
-                <SubmitButton loading={loading} label="Δημιουργία λογαριασμού" loadingLabel="Δημιουργία…" />
-                <p className="text-[11px] text-violet-600 text-center leading-relaxed">
-                  Με τη δημιουργία λογαριασμού αποδέχεσαι τους{" "}
-                  <a href="/terms" target="_blank" className="text-violet-400 hover:text-amber-400 underline underline-offset-2 transition-colors">
-                    Όρους Χρήσης
-                  </a>{" "}
-                  και την{" "}
-                  <a href="/privacy" target="_blank" className="text-violet-400 hover:text-amber-400 underline underline-offset-2 transition-colors">
-                    Πολιτική Απορρήτου
-                  </a>
-                </p>
+                <label className="flex items-start gap-2.5 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border border-violet-700 bg-[#24242E] accent-amber-500 shrink-0 cursor-pointer"
+                  />
+                  <span className="text-[11px] text-violet-500 leading-relaxed group-hover:text-violet-400 transition-colors">
+                    Αποδέχομαι τους{" "}
+                    <a href="/terms" target="_blank" onClick={(e) => e.stopPropagation()} className="text-violet-400 hover:text-amber-400 underline underline-offset-2 transition-colors">
+                      Όρους Χρήσης
+                    </a>{" "}
+                    και την{" "}
+                    <a href="/privacy" target="_blank" onClick={(e) => e.stopPropagation()} className="text-violet-400 hover:text-amber-400 underline underline-offset-2 transition-colors">
+                      Πολιτική Απορρήτου
+                    </a>
+                  </span>
+                </label>
+                <SubmitButton loading={loading} label="Δημιουργία λογαριασμού" loadingLabel="Δημιουργία…" disabled={!agreedToTerms} />
               </form>
               <div className="flex items-center gap-3 my-4">
                 <div className="flex-1 h-px bg-violet-800/40" />
@@ -343,12 +352,12 @@ function GoogleButton() {
   );
 }
 
-function SubmitButton({ loading, label, loadingLabel }: { loading: boolean; label: string; loadingLabel: string }) {
+function SubmitButton({ loading, label, loadingLabel, disabled }: { loading: boolean; label: string; loadingLabel: string; disabled?: boolean }) {
   return (
     <button
       type="submit"
-      disabled={loading}
-      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-black font-semibold rounded-lg py-2.5 text-sm transition-all shadow-lg shadow-amber-500/20 mt-1"
+      disabled={loading || disabled}
+      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-black font-semibold rounded-lg py-2.5 text-sm transition-all shadow-lg shadow-amber-500/20 mt-1"
     >
       {loading ? loadingLabel : label}
     </button>

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, RefreshCw, Star, Coins, Sun } from "lucide-react";
+import { Sparkles, RefreshCw, Star, Coins, Sun, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/navbar";
-import { AuthGuard } from "@/components/auth-guard";
 import { createTarotReading, getDailyTarotCard, TarotReadingResponse } from "@/lib/api";
 import { getCardImagePath, getCardDisplayName } from "@/lib/tarot";
+import { getIdToken } from "@/lib/auth";
 import { notifyCreditsChanged } from "@/lib/user";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 
@@ -31,22 +32,67 @@ interface DailyCardResult {
 }
 
 function DailyCardSection() {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [daily, setDaily] = useState<DailyCardResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [revealed, setRevealed] = useState(false);
+  const [flipped, setFlipped] = useState(false);
 
   useEffect(() => {
-    getDailyTarotCard()
-      .then((d) => setDaily(d))
-      .catch(() => {})
+    getIdToken()
+      .then((token) => {
+        setIsLoggedIn(!!token);
+        if (token) {
+          return getDailyTarotCard()
+            .then((d) => setDaily(d))
+            .catch(() => {});
+        }
+      })
+      .catch(() => setIsLoggedIn(false))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
+  if (loading || isLoggedIn === null) {
     return (
       <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5 mb-8">
         <div className="h-5 shimmer rounded w-40 mb-4" />
-        <div className="h-4 shimmer rounded w-full" />
+        <div className="h-48 shimmer rounded-xl" />
+      </div>
+    );
+  }
+
+  // ── Guest teaser ──
+  if (!isLoggedIn) {
+    return (
+      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6 mb-8 flex flex-col items-center text-center gap-4">
+        <div className="flex items-center gap-2">
+          <Sun className="w-4 h-4 text-amber-400" />
+          <span className="text-sm font-semibold text-amber-300">Ημερήσια Κάρτα Τύχης</span>
+          <span className="text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">Δωρεάν</span>
+        </div>
+
+        {/* Locked card */}
+        <div className="relative w-28 mx-auto" style={{ paddingBottom: "calc(28px * 1.5)" }}>
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-900 to-[#24242E] border border-violet-700/40 flex flex-col items-center justify-center gap-2 shadow-xl shadow-violet-900/40">
+            <Lock className="w-6 h-6 text-violet-500" />
+            <Star className="w-4 h-4 text-violet-600" />
+          </div>
+        </div>
+
+        <div>
+          <p className="text-sm text-violet-200 font-medium mb-1">
+            Συνδέσου για δωρεάν ημερήσια κάρτα τύχης
+          </p>
+          <p className="text-xs text-violet-500 mb-4">
+            Κάθε μέρα μια νέα κάρτα σε περιμένει — χωρίς credits
+          </p>
+          <button
+            onClick={() => router.push("/login")}
+            className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold rounded-xl px-6 py-2.5 text-sm transition-all"
+          >
+            Σύνδεση / Εγγραφή
+          </button>
+        </div>
       </div>
     );
   }
@@ -60,55 +106,61 @@ function DailyCardSection() {
 
   return (
     <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 mb-8">
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-5">
         <Sun className="w-4 h-4 text-amber-400 shrink-0" />
         <h2 className="text-sm font-semibold text-amber-300">Η Ημερήσια Κάρτα σου</h2>
         <span className="ml-auto text-xs text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">Δωρεάν</span>
       </div>
 
-      <div className="flex gap-5 items-start">
-        {/* Card thumbnail */}
-        <div
-          onClick={() => setRevealed(true)}
-          className={`shrink-0 rounded-xl overflow-hidden border cursor-pointer transition-all ${
-            revealed
-              ? "border-amber-500/40 shadow-lg shadow-amber-500/10"
-              : "border-violet-700/40 hover:border-violet-600/60"
-          }`}
-          style={{ width: "80px" }}
-        >
-          <div style={{ paddingBottom: "150%", position: "relative" }}>
-            {revealed ? (
+      {!flipped ? (
+        /* ── Face-down: mystery state ── */
+        <div className="flex flex-col items-center gap-4 py-2">
+          <button
+            onClick={() => setFlipped(true)}
+            className="group relative w-32 cursor-pointer"
+            style={{ paddingBottom: "calc(128px * 1.5)" }}
+          >
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-800 to-[#24242E] border-2 border-violet-600/50 group-hover:border-amber-500/50 transition-all duration-300 flex flex-col items-center justify-center gap-3 shadow-2xl shadow-violet-900/50 group-hover:shadow-amber-500/10">
+              <div className="w-12 h-12 rounded-full border-2 border-violet-600/40 group-hover:border-amber-500/40 transition-colors flex items-center justify-center">
+                <Star className="w-6 h-6 text-violet-500 group-hover:text-amber-400 transition-colors" />
+              </div>
+              <span className="text-[11px] text-violet-500 group-hover:text-amber-400 transition-colors font-medium">Άγγιξε</span>
+            </div>
+          </button>
+          <div className="text-center">
+            <p className="text-sm font-medium text-violet-200">Δες την τύχη σου σήμερα</p>
+            <p className="text-xs text-violet-500 mt-0.5">Η κάρτα σε περιμένει — άγγιξέ την για αποκάλυψη</p>
+          </div>
+        </div>
+      ) : (
+        /* ── Revealed ── */
+        <div className="animate-fade-in flex gap-5 items-start">
+          <div className="shrink-0 rounded-xl overflow-hidden border border-amber-500/40 shadow-lg shadow-amber-500/10" style={{ width: "90px" }}>
+            <div style={{ paddingBottom: "150%", position: "relative" }}>
               <img
                 src={getCardImagePath(card)}
                 alt={card}
                 className="absolute inset-0 w-full h-full object-cover"
               />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-900 to-[#24242E] flex flex-col items-center justify-center gap-2">
-                <Star className="w-5 h-5 text-violet-500" />
-                <span className="text-[10px] text-violet-500 text-center px-1">Άγγιξε</span>
-              </div>
-            )}
+            </div>
           </div>
-        </div>
 
-        {/* Interpretation */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-amber-200 mb-1">{cardGr}</p>
-          <p className="text-xs text-violet-400 mb-2">{getCardDisplayName(card)}</p>
-          <div className="flex flex-col gap-1.5">
-            <div>
-              <span className="text-[10px] uppercase tracking-wide text-violet-500 font-medium">Ορθή</span>
-              <p className="text-xs text-violet-200">{meaningUpright}</p>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase tracking-wide text-violet-500 font-medium">Ανεστραμμένη</span>
-              <p className="text-xs text-violet-400">{meaningReversed}</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-200 mb-0.5">{cardGr}</p>
+            <p className="text-xs text-violet-400 mb-3">{getCardDisplayName(card)}</p>
+            <div className="flex flex-col gap-2">
+              <div>
+                <span className="text-[10px] uppercase tracking-wide text-violet-500 font-medium">Ορθή</span>
+                <p className="text-xs text-violet-200 mt-0.5">{meaningUpright}</p>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase tracking-wide text-violet-500 font-medium">Ανεστραμμένη</span>
+                <p className="text-xs text-violet-400 mt-0.5">{meaningReversed}</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -159,7 +211,7 @@ export default function TarotPage() {
   }
 
   return (
-    <AuthGuard>
+    <>
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => setCreditDialogOpen(false)}
@@ -342,6 +394,6 @@ export default function TarotPage() {
           )}
         </main>
       </div>
-    </AuthGuard>
+    </>
   );
 }

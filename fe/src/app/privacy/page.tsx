@@ -61,7 +61,8 @@ export default function PrivacyPage() {
           <ul className="list-disc list-inside space-y-1 mt-2 text-violet-400">
             <li>
               <span className="text-violet-300">Στοιχεία λογαριασμού:</span> διεύθυνση email, κωδικός
-              πρόσβασης (αποθηκεύεται κρυπτογραφημένος μέσω AWS Cognito)
+              πρόσβασης (αποθηκεύεται κρυπτογραφημένος — δεν αποθηκεύουμε ποτέ τον κωδικό σε
+              αναγνώσιμη μορφή)
             </li>
             <li>
               <span className="text-violet-300">Αστρολογικό προφίλ (προαιρετικό):</span> ημερομηνία,
@@ -69,7 +70,7 @@ export default function PrivacyPage() {
             </li>
             <li>
               <span className="text-violet-300">Φωτογραφίες φλιτζανιού:</span> εικόνες που ανεβάζετε
-              για την ανάγνωση καφέ, αποθηκευμένες στο AWS S3
+              για την ανάγνωση καφέ, αποθηκευμένες σε ασφαλείς διακομιστές εντός ΕΕ
             </li>
             <li>
               <span className="text-violet-300">Ιστορικό αναγνώσεων:</span> αποτελέσματα αναγνώσεων
@@ -77,11 +78,11 @@ export default function PrivacyPage() {
             </li>
             <li>
               <span className="text-violet-300">Δεδομένα πληρωμής:</span> διαχειρίζεται αποκλειστικά
-              η Stripe — δεν αποθηκεύουμε στοιχεία κάρτας
+              από τον πάροχο πληρωμών — δεν αποθηκεύουμε στοιχεία κάρτας
             </li>
             <li>
               <span className="text-violet-300">Τεχνικά δεδομένα:</span> διεύθυνση IP, τύπος
-              προγράμματος περιήγησης (μέσω αρχείων καταγραφής AWS)
+              προγράμματος περιήγησης
             </li>
           </ul>
         </Section>
@@ -108,21 +109,21 @@ export default function PrivacyPage() {
         </Section>
 
         <Section title="4. Διαβίβαση Δεδομένων σε Τρίτους">
-          <p>Χρησιμοποιούμε τους παρακάτω εμπιστευμένους παρόχους υπηρεσιών:</p>
+          <p>Χρησιμοποιούμε αξιόπιστους παρόχους υπηρεσιών για τη λειτουργία της πλατφόρμας:</p>
           <ul className="list-disc list-inside space-y-1 mt-2 text-violet-400">
             <li>
-              <span className="text-violet-300">Amazon Web Services (AWS):</span> φιλοξενία,
-              αποθήκευση (S3), βάση δεδομένων (DynamoDB), αυθεντικοποίηση (Cognito) — διακομιστές
-              στην ΕΕ (eu-central-1, Φρανκφούρτη)
+              <span className="text-violet-300">Πάροχος cloud υποδομής:</span> φιλοξενία,
+              αποθήκευση δεδομένων και διαχείριση λογαριασμών — οι διακομιστές βρίσκονται
+              εντός ΕΕ (Φρανκφούρτη, Γερμανία)
             </li>
             <li>
-              <span className="text-violet-300">OpenAI:</span> επεξεργασία εικόνων και κειμένου για
-              την παραγωγή αναγνώσεων — τα δεδομένα δεν χρησιμοποιούνται για εκπαίδευση μοντέλων
-              (API usage policy)
+              <span className="text-violet-300">Υπηρεσία τεχνητής νοημοσύνης:</span> επεξεργασία
+              εικόνων και κειμένου για την παραγωγή αναγνώσεων — τα δεδομένα σας δεν
+              χρησιμοποιούνται για εκπαίδευση μοντέλων
             </li>
             <li>
-              <span className="text-violet-300">Stripe:</span> επεξεργασία πληρωμών — υπόκειται στη
-              δική της Πολιτική Απορρήτου
+              <span className="text-violet-300">Πάροχος πληρωμών (Stripe):</span> ασφαλής
+              επεξεργασία συναλλαγών — υπόκειται στη δική του Πολιτική Απορρήτου
             </li>
           </ul>
           <p className="mt-2">
@@ -181,8 +182,8 @@ export default function PrivacyPage() {
 
         <Section title="8. Cookies">
           <p>
-            Χρησιμοποιούμε μόνο απαραίτητα cookies για την αυθεντικοποίηση (JWT tokens μέσω AWS
-            Cognito/Amplify). Δεν χρησιμοποιούμε cookies παρακολούθησης ή διαφήμισης.
+            Χρησιμοποιούμε μόνο απαραίτητα cookies για την αυθεντικοποίηση και τη διατήρηση της
+            σύνδεσής σας. Δεν χρησιμοποιούμε cookies παρακολούθησης ή διαφήμισης.
           </p>
         </Section>
 

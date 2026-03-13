@@ -32,6 +32,37 @@ const PERIOD_LABELS: Record<Period, string> = {
   monthly: "Μηνιαία",
 };
 
+const GREEK_MONTHS = [
+  "Ιανουαρίου", "Φεβρουαρίου", "Μαρτίου", "Απριλίου", "Μαΐου", "Ιουνίου",
+  "Ιουλίου", "Αυγούστου", "Σεπτεμβρίου", "Οκτωβρίου", "Νοεμβρίου", "Δεκεμβρίου",
+];
+
+const GREEK_MONTHS_NOM = [
+  "Ιανουάριος", "Φεβρουάριος", "Μάρτιος", "Απρίλιος", "Μάιος", "Ιούνιος",
+  "Ιούλιος", "Αύγουστος", "Σεπτέμβριος", "Οκτώβριος", "Νοέμβριος", "Δεκέμβριος",
+];
+
+const GREEK_DAYS = ["Κυριακή", "Δευτέρα", "Τρίτη", "Τετάρτη", "Πέμπτη", "Παρασκευή", "Σάββατο"];
+
+function getPeriodLabel(period: Period): string {
+  const now = new Date();
+  if (period === "daily") {
+    return `${GREEK_DAYS[now.getDay()]}, ${now.getDate()} ${GREEK_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  }
+  if (period === "weekly") {
+    const day = now.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diff);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const start = `${monday.getDate()} ${GREEK_MONTHS[monday.getMonth()]}`;
+    const end = `${sunday.getDate()} ${GREEK_MONTHS[sunday.getMonth()]} ${sunday.getFullYear()}`;
+    return `${start} – ${end}`;
+  }
+  return `${GREEK_MONTHS_NOM[now.getMonth()]} ${now.getFullYear()}`;
+}
+
 const SEX_OPTIONS = ["Άνδρας", "Γυναίκα", "Άλλο"];
 const EYE_COLORS = ["Μαύρα", "Καφέ", "Φουντουκί", "Πράσινα", "Μπλε", "Γκρι"];
 
@@ -129,6 +160,12 @@ function HoroscopePanel({ signId }: { signId: string }) {
             {label}
           </button>
         ))}
+      </div>
+
+      {/* Period label */}
+      <div className="flex items-center justify-center gap-1.5 -mt-1">
+        <Calendar className="w-3.5 h-3.5 text-violet-500" />
+        <span className="text-xs text-violet-500">{getPeriodLabel(period)}</span>
       </div>
 
       {/* Content */}
