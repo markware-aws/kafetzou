@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Coffee, Eye, EyeOff, Sparkles } from 'lucide-react-native';
@@ -22,6 +22,7 @@ export default function LoginScreen() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   async function handleLogin() {
     setLoading(true); setError('');
@@ -94,7 +95,7 @@ export default function LoginScreen() {
           <View style={s.logoOrb}>
             <Coffee size={32} color="#000" />
           </View>
-          <Text style={s.logoText}>Kafetzou</Text>
+          <Text style={s.logoText}>Fortune Teller</Text>
           <Text style={s.logoSub}>AI Ανάγνωση Ελληνικού Καφέ</Text>
         </View>
 
@@ -126,12 +127,28 @@ export default function LoginScreen() {
               <Field label="Email" value={email} onChange={setEmail} keyboardType="email-address" placeholder="you@example.com" />
               <PasswordField label="Κωδικός" value={password} onChange={setPassword} show={showPass} onToggle={() => setShowPass(p => !p)} placeholder="Τουλάχιστον 8 χαρακτήρες" />
               {error ? <Text style={s.error}>{error}</Text> : null}
-              <Btn label="Δημιουργία λογαριασμού" loadingLabel="Δημιουργία…" loading={loading} onPress={handleRegister} />
+              <TouchableOpacity
+                style={s.checkboxRow}
+                onPress={() => setAgreedToTerms(v => !v)}
+                activeOpacity={0.8}
+              >
+                <View style={[s.checkbox, agreedToTerms && s.checkboxChecked]}>
+                  {agreedToTerms && <Text style={s.checkmark}>✓</Text>}
+                </View>
+                <Text style={s.checkboxLabel}>
+                  Αποδέχομαι τους{' '}
+                  <Text style={s.checkboxLink} onPress={() => Linking.openURL('https://www.fortuneteller.gr/terms')}>
+                    Όρους Χρήσης
+                  </Text>
+                  {' '}και την{' '}
+                  <Text style={s.checkboxLink} onPress={() => Linking.openURL('https://www.fortuneteller.gr/privacy')}>
+                    Πολιτική Απορρήτου
+                  </Text>
+                </Text>
+              </TouchableOpacity>
+              <Btn label="Δημιουργία λογαριασμού" loadingLabel="Δημιουργία…" loading={loading} onPress={handleRegister} disabled={!agreedToTerms} />
               <Divider />
               <GoogleBtn onPress={handleGoogle} />
-              <Text style={[s.disclaimer]}>
-                Με τη δημιουργία λογαριασμού αποδέχεσαι τους Όρους Χρήσης και την Πολιτική Απορρήτου.
-              </Text>
               <Text style={s.switchText}>
                 Έχεις ήδη λογαριασμό;{' '}
                 <Text style={s.switchLink} onPress={() => goTo('login')}>Σύνδεση</Text>
@@ -232,9 +249,10 @@ function PasswordField({ label, value, onChange, show, onToggle, placeholder }: 
   );
 }
 
-function Btn({ label, loadingLabel, loading, onPress }: any) {
+function Btn({ label, loadingLabel, loading, onPress, disabled }: any) {
+  const isDisabled = loading || disabled;
   return (
-    <TouchableOpacity style={s.btn} onPress={onPress} disabled={loading} activeOpacity={0.8}>
+    <TouchableOpacity style={[s.btn, isDisabled && { opacity: 0.4 }]} onPress={onPress} disabled={isDisabled} activeOpacity={0.8}>
       {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>{label}</Text>}
     </TouchableOpacity>
   );
@@ -313,5 +331,14 @@ const s = StyleSheet.create({
   linkText: { fontSize: 12, color: theme.violetLight },
   switchText: { textAlign: 'center', fontSize: 12, color: theme.textMuted, marginTop: 12 },
   switchLink: { color: theme.amber, fontWeight: '600' },
-  disclaimer: { fontSize: 10, color: theme.textDim, textAlign: 'center', marginTop: 12, lineHeight: 15 },
+  checkboxRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 4, marginBottom: 4 },
+  checkbox: {
+    width: 18, height: 18, borderRadius: 4, borderWidth: 1.5,
+    borderColor: theme.border, backgroundColor: theme.bg,
+    alignItems: 'center', justifyContent: 'center', marginTop: 1, flexShrink: 0,
+  },
+  checkboxChecked: { borderColor: theme.amber, backgroundColor: 'rgba(245,158,11,0.15)' },
+  checkmark: { fontSize: 11, color: theme.amber, fontWeight: '700' },
+  checkboxLabel: { flex: 1, fontSize: 11, color: theme.textMuted, lineHeight: 17 },
+  checkboxLink: { color: theme.violetLight, textDecorationLine: 'underline' },
 });

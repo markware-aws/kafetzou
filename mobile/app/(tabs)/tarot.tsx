@@ -21,7 +21,7 @@ const CARD_W = (SCREEN_W - 48 - 24) / 3; // 3 cards with gaps
 function DailyCardSection() {
   const [daily, setDaily] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [revealed, setRevealed] = useState(false);
+  const [flipped, setFlipped] = useState(false);
 
   useEffect(() => {
     getDailyTarotCard()
@@ -51,27 +51,42 @@ function DailyCardSection() {
         <View style={s.freeBadge}><Text style={s.freeBadgeText}>Δωρεάν</Text></View>
       </View>
 
-      <View style={s.dailyBody}>
-        <TouchableOpacity onPress={() => setRevealed(true)} activeOpacity={0.8} style={s.dailyImgWrap}>
-          {revealed && imgSrc ? (
-            <Image source={imgSrc} style={s.dailyImg} resizeMode="cover" />
-          ) : (
-            <View style={s.cardBack}>
-              <Star size={18} color={theme.violetLight} />
-              <Text style={s.tapHint}>Άγγιξε</Text>
+      {!flipped ? (
+        <View style={s.dailyMysteryWrap}>
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setFlipped(true); }}
+            activeOpacity={0.85}
+            style={s.dailyMysteryCard}
+          >
+            <View style={s.cardBackCircle}>
+              <Star size={24} color={theme.violetLight} />
             </View>
-          )}
-        </TouchableOpacity>
-
-        <View style={s.dailyInfo}>
-          <Text style={s.dailyCardGr}>{cardGr}</Text>
-          <Text style={s.dailyCardEn}>{getCardDisplayName(card)}</Text>
-          <Text style={s.dailyLabel}>ΟΡΘΗ</Text>
-          <Text style={s.dailyMeaning}>{daily.reading_result.meaning_upright}</Text>
-          <Text style={[s.dailyLabel, { marginTop: 8 }]}>ΑΝΕΣΤΡΑΜΜΕΝΗ</Text>
-          <Text style={[s.dailyMeaning, { color: theme.textMuted }]}>{daily.reading_result.meaning_reversed}</Text>
+            <Text style={s.tapHint}>Άγγιξε</Text>
+          </TouchableOpacity>
+          <Text style={s.dailyMysteryTitle}>Δες την τύχη σου σήμερα</Text>
+          <Text style={s.dailyMysterySub}>Η κάρτα σε περιμένει — άγγιξέ την για αποκάλυψη</Text>
         </View>
-      </View>
+      ) : (
+        <View style={s.dailyBody}>
+          <View style={s.dailyImgWrap}>
+            {imgSrc ? (
+              <Image source={imgSrc} style={s.dailyImg} resizeMode="cover" />
+            ) : (
+              <View style={[s.cardBack, { flex: 1 }]}>
+                <Star size={18} color={theme.violetLight} />
+              </View>
+            )}
+          </View>
+          <View style={s.dailyInfo}>
+            <Text style={s.dailyCardGr}>{cardGr}</Text>
+            <Text style={s.dailyCardEn}>{getCardDisplayName(card)}</Text>
+            <Text style={s.dailyLabel}>ΟΡΘΗ</Text>
+            <Text style={s.dailyMeaning}>{daily.reading_result.meaning_upright}</Text>
+            <Text style={[s.dailyLabel, { marginTop: 8 }]}>ΑΝΕΣΤΡΑΜΜΕΝΗ</Text>
+            <Text style={[s.dailyMeaning, { color: theme.textMuted }]}>{daily.reading_result.meaning_reversed}</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -271,6 +286,18 @@ const s = StyleSheet.create({
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: theme.text, marginBottom: 4 },
   headerSub: { fontSize: 13, color: theme.textMuted, textAlign: 'center' },
+
+  // Daily mystery state
+  dailyMysteryWrap: { alignItems: 'center', gap: 12, paddingVertical: 8 },
+  dailyMysteryCard: {
+    width: 100, height: 150, borderRadius: 14,
+    backgroundColor: theme.surface, borderWidth: 2, borderColor: 'rgba(109,40,217,0.5)',
+    alignItems: 'center', justifyContent: 'center', gap: 10,
+    shadowColor: theme.violet, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  dailyMysteryTitle: { fontSize: 14, fontWeight: '600', color: theme.text },
+  dailyMysterySub: { fontSize: 12, color: theme.textMuted, textAlign: 'center' },
 
   // Daily card
   dailyCard: {

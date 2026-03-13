@@ -40,7 +40,7 @@ export default function PrivacyPage() {
 
         <div className="rounded-2xl border border-violet-800/30 bg-surface p-6 mb-6">
           <p className="text-sm text-violet-300 leading-relaxed">
-            Η Kafetzou («εμείς», «η υπηρεσία») σέβεται την ιδιωτικότητά σας και δεσμεύεται να
+            Η Fortune Teller («εμείς», «η υπηρεσία») σέβεται την ιδιωτικότητά σας και δεσμεύεται να
             προστατεύει τα προσωπικά σας δεδομένα σύμφωνα με τον Γενικό Κανονισμό Προστασίας
             Δεδομένων (GDPR — Κανονισμός ΕΕ 2016/679) και την ισχύουσα ελληνική νομοθεσία.
           </p>
@@ -48,10 +48,10 @@ export default function PrivacyPage() {
 
         <Section title="1. Υπεύθυνος Επεξεργασίας">
           <p>
-            Υπεύθυνος επεξεργασίας των δεδομένων σας είναι η Kafetzou. Για οποιοδήποτε ζήτημα
+            Υπεύθυνος επεξεργασίας των δεδομένων σας είναι η Fortune Teller. Για οποιοδήποτε ζήτημα
             σχετικό με την προστασία δεδομένων, επικοινωνήστε μαζί μας στη διεύθυνση:{" "}
-            <a href="mailto:privacy@kafetzou.com" className="text-amber-400 hover:underline">
-              privacy@kafetzou.com
+            <a href="mailto:privacy@fortuneteller.gr" className="text-amber-400 hover:underline">
+              privacy@fortuneteller.gr
             </a>
           </p>
         </Section>
@@ -161,8 +161,8 @@ export default function PrivacyPage() {
           </ul>
           <p className="mt-2">
             Για άσκηση των δικαιωμάτων σας αποστείλτε αίτηση στο{" "}
-            <a href="mailto:privacy@kafetzou.com" className="text-amber-400 hover:underline">
-              privacy@kafetzou.com
+            <a href="mailto:privacy@fortuneteller.gr" className="text-amber-400 hover:underline">
+              privacy@fortuneteller.gr
             </a>
             . Απαντούμε εντός 30 ημερών. Έχετε επίσης δικαίωμα καταγγελίας στην{" "}
             <span className="text-violet-300">
@@ -203,7 +203,7 @@ export default function PrivacyPage() {
         </Section>
 
         <div className="mt-8 pt-6 border-t border-violet-800/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-violet-600">
-          <span>© 2026 Kafetzou. Με επιφύλαξη παντός δικαιώματος.</span>
+          <span>© 2026 Fortune Teller. Με επιφύλαξη παντός δικαιώματος.</span>
           <div className="flex items-center gap-4">
             <Link href="/terms" className="hover:text-violet-400 transition-colors">Όροι Χρήσης</Link>
             <Link href="/" className="hover:text-violet-400 transition-colors">Αρχική</Link>

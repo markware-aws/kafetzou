@@ -46,7 +46,7 @@ export function Navbar() {
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-shadow">
             <Coffee className="w-4 h-4 text-black" />
           </div>
-          <span className="font-semibold text-amber-200 tracking-wide text-sm">Kafetzou</span>
+          <span className="font-semibold text-amber-200 tracking-wide text-sm">Fortune Teller</span>
         </Link>
 
         {/* Desktop nav */}

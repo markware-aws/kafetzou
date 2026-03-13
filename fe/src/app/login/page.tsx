@@ -16,6 +16,8 @@ export default function LoginPage() {
       if (user) router.replace("/upload");
     });
   }, [router]);
+  // Note: this is the only intentional auth-based redirect in the app.
+  // All other pages show content conditionally instead of redirecting.
   const [step, setStep] = useState<Step>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -117,7 +119,7 @@ export default function LoginPage() {
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-2xl shadow-amber-500/30 mb-4 glow-pulse">
             <Coffee className="w-8 h-8 text-black" />
           </div>
-          <h1 className="text-2xl font-bold text-amber-200 tracking-wide">Kafetzou</h1>
+          <h1 className="text-2xl font-bold text-amber-200 tracking-wide">Fortune Teller</h1>
           <p className="text-violet-400 text-sm mt-1">AI Ανάγνωση Ελληνικού Καφέ</p>
         </div>
 

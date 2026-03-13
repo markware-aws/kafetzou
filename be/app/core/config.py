@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     cognito_app_client_id: str
     cognito_region: str = ""
 
+    # Static horoscope CDN (S3 + CloudFront)
+    frontend_s3_bucket: str = ""          # e.g. kafetzou-frontend
+    cloudfront_distribution_id: str = "" # e.g. E103BRI0J3RZQA
+
     # Prewarm secret (used by EventBridge Scheduler to authenticate)
     prewarm_secret: str = ""
 

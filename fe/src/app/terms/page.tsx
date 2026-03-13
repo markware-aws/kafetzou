@@ -41,7 +41,7 @@ export default function TermsPage() {
         {/* Disclaimer banner */}
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 mb-8">
           <p className="text-sm text-amber-200 leading-relaxed">
-            <span className="font-semibold">Σημαντική Σημείωση:</span> Η Kafetzou παρέχει υπηρεσίες
+            <span className="font-semibold">Σημαντική Σημείωση:</span> Η Fortune Teller παρέχει υπηρεσίες
             αποκλειστικά για <span className="font-semibold">ψυχαγωγικούς σκοπούς</span>. Οι
             αναγνώσεις καφέ, ταρό, αστρολογίας και ονείρων δεν αποτελούν επαγγελματικές συμβουλές
             οποιουδήποτε είδους (ιατρικές, νομικές, οικονομικές, ψυχολογικές). Μην βασίζετε
@@ -51,14 +51,14 @@ export default function TermsPage() {
 
         <Section title="1. Αποδοχή Όρων">
           <p>
-            Με τη δημιουργία λογαριασμού ή τη χρήση της υπηρεσίας Kafetzou, αποδέχεστε πλήρως τους
+            Με τη δημιουργία λογαριασμού ή τη χρήση της υπηρεσίας Fortune Teller, αποδέχεστε πλήρως τους
             παρόντες Όρους Χρήσης. Εάν δεν συμφωνείτε, παρακαλούμε μη χρησιμοποιείτε την υπηρεσία.
           </p>
         </Section>
 
         <Section title="2. Περιγραφή Υπηρεσίας">
           <p>
-            Η Kafetzou είναι μια εφαρμογή τεχνητής νοημοσύνης που παρέχει:
+            Η Fortune Teller είναι μια εφαρμογή τεχνητής νοημοσύνης που παρέχει:
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2 text-violet-400">
             <li><span className="text-violet-300">Ανάγνωση καφέ</span> μέσω φωτογραφίας φλιτζανιού (2 credits)</li>
@@ -117,7 +117,7 @@ export default function TermsPage() {
             <li>Ακρίβεια, πληρότητα ή επικαιρότητα των αποτελεσμάτων</li>
           </ul>
           <p className="mt-2">
-            Η Kafetzou δεν ασκεί, δεν υποκαθιστά και δεν συνιστά επαγγελματική μαντεία.
+            Η Fortune Teller δεν ασκεί, δεν υποκαθιστά και δεν συνιστά επαγγελματική μαντεία.
           </p>
         </Section>
 
@@ -135,7 +135,7 @@ export default function TermsPage() {
         <Section title="8. Πνευματική Ιδιοκτησία">
           <p>
             Το σύνολο του περιεχομένου της υπηρεσίας (κώδικας, σχεδιασμός, κείμενα, εικόνες καρτών ταρό)
-            ανήκει στην Kafetzou ή σε δικαιοπάροχους. Επιτρέπεται η προσωπική, μη εμπορική χρήση.
+            ανήκει στην Fortune Teller ή σε δικαιοπάροχους. Επιτρέπεται η προσωπική, μη εμπορική χρήση.
           </p>
           <p>
             Τα αποτελέσματα αναγνώσεων που παράγονται για τον λογαριασμό σας ανήκουν σε εσάς. Μας
@@ -153,7 +153,7 @@ export default function TermsPage() {
 
         <Section title="10. Περιορισμός Ευθύνης">
           <p>
-            Στο μέγιστο βαθμό που επιτρέπεται από την ισχύουσα νομοθεσία, η Kafetzou δεν φέρει
+            Στο μέγιστο βαθμό που επιτρέπεται από την ισχύουσα νομοθεσία, η Fortune Teller δεν φέρει
             ευθύνη για έμμεσες, τυχαίες ή αποθετικές ζημίες. Η συνολική ευθύνη μας δεν υπερβαίνει
             το ποσό που καταβάλατε για credits τους τελευταίους 3 μήνες.
           </p>
@@ -171,14 +171,14 @@ export default function TermsPage() {
         <Section title="12. Επικοινωνία">
           <p>
             Για ερωτήσεις σχετικά με τους Όρους Χρήσης:{" "}
-            <a href="mailto:legal@kafetzou.com" className="text-amber-400 hover:underline">
-              legal@kafetzou.com
+            <a href="mailto:legal@fortuneteller.gr" className="text-amber-400 hover:underline">
+              legal@fortuneteller.gr
             </a>
           </p>
         </Section>
 
         <div className="mt-8 pt-6 border-t border-violet-800/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-violet-600">
-          <span>© 2026 Kafetzou. Με επιφύλαξη παντός δικαιώματος.</span>
+          <span>© 2026 Fortune Teller. Με επιφύλαξη παντός δικαιώματος.</span>
           <div className="flex items-center gap-4">
             <Link href="/privacy" className="hover:text-violet-400 transition-colors">Πολιτική Απορρήτου</Link>
             <Link href="/" className="hover:text-violet-400 transition-colors">Αρχική</Link>

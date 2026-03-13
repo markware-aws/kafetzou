@@ -300,6 +300,12 @@ export async function getHoroscope(
   sign: string,
   period: "daily" | "weekly" | "monthly"
 ): Promise<HoroscopeResponse> {
+  // Try static CDN first — zero Lambda cost, ~10ms response from CloudFront edge
+  try {
+    const static_res = await fetch(`/horoscopes/${period}/${sign}.json`);
+    if (static_res.ok) return static_res.json();
+  } catch {}
+  // Fall back to Lambda API (local dev, or before first prewarm runs)
   const res = await fetch(`${API_URL}/astrology/${sign}/${period}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

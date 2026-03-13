@@ -11,7 +11,7 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title="Kafetzou API",
+    title="Fortune Teller API",
     description="AI Greek Coffee Cup Reading — two-step vision + fortune pipeline",
     version="1.0.0",
     root_path="/api",

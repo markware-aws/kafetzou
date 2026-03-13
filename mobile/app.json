@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Kafetzou",
+    "name": "Fortune Teller",
     "slug": "kafetzou",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -43,6 +43,7 @@
     },
     "extra": {
       "apiUrl": "http://localhost:8000",
+      "staticUrl": "https://fortuneteller.gr",
       "cognitoUserPoolId": "eu-central-1_09pw1GdBI",
       "cognitoClientId": "76po52ir822bdh4pbm6dp24emv",
       "cognitoDomain": "eu-central-109pw1gdbi.auth.eu-central-1.amazoncognito.com",

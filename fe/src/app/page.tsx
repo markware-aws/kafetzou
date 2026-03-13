@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Coffee, Star, Sparkles, Globe, ChevronRight, RefreshCw,
   Heart, Briefcase, AlertTriangle, Coins,
@@ -203,17 +202,11 @@ const FEATURES = [
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const router = useRouter();
-  const [checked, setChecked] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
-    getUser().then((user) => {
-      if (user) router.replace("/upload");
-      else setChecked(true);
-    });
-  }, [router]);
-
-  if (!checked) return null;
+    getUser().then((user) => setIsAuthed(!!user));
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -224,21 +217,32 @@ export default function Home() {
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Coffee className="w-4 h-4 text-black" />
             </div>
-            <span className="font-semibold text-amber-200 tracking-wide text-sm">Kafetzou</span>
+            <span className="font-semibold text-amber-200 tracking-wide text-sm">Fortune Teller</span>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="text-sm text-violet-300 hover:text-amber-200 px-4 py-2 rounded-lg transition-colors"
-            >
-              Σύνδεση
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black rounded-xl px-4 py-2 transition-all shadow-lg shadow-amber-500/20"
-            >
-              Εγγραφή
-            </Link>
+            {isAuthed ? (
+              <Link
+                href="/upload"
+                className="text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black rounded-xl px-4 py-2 transition-all shadow-lg shadow-amber-500/20"
+              >
+                Μπες στην εφαρμογή →
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm text-violet-300 hover:text-amber-200 px-4 py-2 rounded-lg transition-colors"
+                >
+                  Σύνδεση
+                </Link>
+                <Link
+                  href="/login"
+                  className="text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black rounded-xl px-4 py-2 transition-all shadow-lg shadow-amber-500/20"
+                >
+                  Εγγραφή
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -249,7 +253,7 @@ export default function Home() {
           <Coffee className="w-10 h-10 text-black" />
         </div>
         <h1 className="text-4xl sm:text-5xl font-bold text-violet-100 mb-4 tracking-tight">
-          Kafetzou
+          Fortune Teller
         </h1>
         <p className="text-lg text-violet-300 max-w-md mb-3">
           Το ψηφιακό μαντείο σου. Ανάγνωση καφέ, ταρό και αστρολογία με τεχνητή νοημοσύνη.
@@ -304,6 +308,29 @@ export default function Home() {
             <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
+      </section>
+
+      {/* Daily tarot promo */}
+      <section className="max-w-3xl mx-auto w-full px-4 pb-10">
+        <Link
+          href="/login"
+          className="group flex items-center gap-5 rounded-2xl border border-violet-700/40 hover:border-amber-500/40 bg-gradient-to-r from-violet-900/40 to-[#2e2a3a] hover:from-violet-900/60 p-5 transition-all"
+        >
+          {/* Mystery card */}
+          <div className="shrink-0 w-14 rounded-xl bg-gradient-to-br from-violet-800 to-[#24242E] border-2 border-violet-600/40 group-hover:border-amber-500/40 transition-colors flex flex-col items-center justify-center gap-1 shadow-lg" style={{ height: "84px" }}>
+            <Star className="w-5 h-5 text-violet-500 group-hover:text-amber-400 transition-colors" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-semibold text-violet-100">Δωρεάν ημερήσια κάρτα τύχης</span>
+              <span className="text-[10px] font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full px-2 py-0.5">Δωρεάν</span>
+            </div>
+            <p className="text-xs text-violet-400 leading-relaxed">
+              Συνδέσου για να αποκαλύψεις τη δωρεάν κάρτα ταρό της ημέρας σου — χωρίς credits, κάθε μέρα νέα κάρτα.
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-violet-500 group-hover:text-amber-400 transition-colors shrink-0" />
+        </Link>
       </section>
 
       {/* Divider */}

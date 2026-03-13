@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Όροι Χρήσης",
-  description: "Όροι χρήσης της υπηρεσίας Kafetzou — καφεομαντεία, ταρό, αστρολογία και ονειροκρισία με τεχνητή νοημοσύνη.",
+  description: "Όροι χρήσης της υπηρεσίας Fortune Teller — καφεομαντεία, ταρό, αστρολογία και ονειροκρισία με τεχνητή νοημοσύνη.",
   robots: { index: true, follow: true },
 };
 
