@@ -303,7 +303,8 @@ export async function getHoroscope(
   // Try static CDN first — zero Lambda cost, ~10ms response from CloudFront edge
   try {
     const static_res = await fetch(`/horoscopes/${period}/${sign}.json`);
-    if (static_res.ok) return static_res.json();
+    const ct = static_res.headers.get("content-type") ?? "";
+    if (static_res.ok && ct.includes("application/json")) return static_res.json();
   } catch {}
   // Fall back to Lambda API (local dev, or before first prewarm runs)
   const res = await fetch(`${API_URL}/astrology/${sign}/${period}`);

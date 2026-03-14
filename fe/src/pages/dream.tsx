@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { Moon, Sparkles, Heart, Lightbulb, RefreshCw, Coins, AlertCircle, BookOpen } from "lucide-react";
 import { Navbar } from "@/components/navbar";
@@ -10,25 +8,11 @@ import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 
 const MAX_CHARS = 2000;
 
-function ResultCard({
-  icon: Icon,
-  label,
-  children,
-  accent = false,
-}: {
-  icon: any;
-  label: string;
-  children: React.ReactNode;
-  accent?: boolean;
+function ResultCard({ icon: Icon, label, children, accent = false }: {
+  icon: any; label: string; children: React.ReactNode; accent?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-2xl border p-4 ${
-        accent
-          ? "border-amber-500/20 bg-amber-500/5"
-          : "border-violet-800/30 bg-surface"
-      }`}
-    >
+    <div className={`rounded-2xl border p-4 ${accent ? "border-amber-500/20 bg-amber-500/5" : "border-violet-800/30 bg-surface"}`}>
       <div className="flex items-center gap-2 mb-2">
         <Icon className={`w-4 h-4 shrink-0 ${accent ? "text-amber-400" : "text-violet-400"}`} />
         <span className={`text-xs font-semibold uppercase tracking-wide ${accent ? "text-amber-300" : "text-violet-400"}`}>
@@ -85,15 +69,12 @@ export default function DreamPage() {
         <Navbar />
 
         <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-10">
-          {/* Header */}
           <div className="text-center mb-8">
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-700 to-violet-950 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/20 glow-pulse">
               <Moon className="w-6 h-6 text-violet-200" />
             </div>
             <h1 className="text-2xl font-bold text-violet-100 mb-1">Ονειροκρίτης</h1>
-            <p className="text-sm text-violet-400">
-              Περίγραψε το όνειρό σου και αποκάλυψε το κρυφό του μήνυμα
-            </p>
+            <p className="text-sm text-violet-400">Περίγραψε το όνειρό σου και αποκάλυψε το κρυφό του μήνυμα</p>
           </div>
 
           {!result ? (
@@ -145,18 +126,13 @@ export default function DreamPage() {
             </form>
           ) : (
             <div className="animate-fade-in flex flex-col gap-4">
-              {/* Summary quote */}
               <div className="rounded-2xl border border-violet-700/30 bg-gradient-to-br from-violet-900/30 to-violet-950/30 p-5 text-center">
                 <Moon className="w-5 h-5 text-violet-400 mx-auto mb-2" />
                 <p className="text-base text-violet-100 italic leading-relaxed">"{result.summary}"</p>
               </div>
 
-              {/* Main interpretation */}
-              <ResultCard icon={Sparkles} label="Ερμηνεία" accent>
-                {result.interpretation}
-              </ResultCard>
+              <ResultCard icon={Sparkles} label="Ερμηνεία" accent>{result.interpretation}</ResultCard>
 
-              {/* Symbols */}
               <div className="rounded-2xl border border-violet-800/30 bg-surface p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-base">✦</span>
@@ -164,27 +140,14 @@ export default function DreamPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {result.symbols.map((s, i) => (
-                    <span
-                      key={i}
-                      className="text-xs px-3 py-1 rounded-full border border-violet-700/40 bg-violet-900/20 text-violet-300"
-                    >
-                      {s}
-                    </span>
+                    <span key={i} className="text-xs px-3 py-1 rounded-full border border-violet-700/40 bg-violet-900/20 text-violet-300">{s}</span>
                   ))}
                 </div>
               </div>
 
-              {/* Emotions */}
-              <ResultCard icon={Heart} label="Συναισθήματα">
-                {result.emotions}
-              </ResultCard>
+              <ResultCard icon={Heart} label="Συναισθήματα">{result.emotions}</ResultCard>
+              <ResultCard icon={Lightbulb} label="Μήνυμα & Συμβουλή">{result.advice}</ResultCard>
 
-              {/* Advice */}
-              <ResultCard icon={Lightbulb} label="Μήνυμα & Συμβουλή">
-                {result.advice}
-              </ResultCard>
-
-              {/* New dream button */}
               <button
                 onClick={reset}
                 className="w-full border border-violet-700/40 hover:border-violet-600/60 text-violet-300 hover:text-violet-100 rounded-xl py-2.5 text-sm transition-all flex items-center justify-center gap-2 mt-1"

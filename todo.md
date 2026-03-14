@@ -136,10 +136,10 @@ See detailed plan below.
 | Credits UI            | Bottom sheet modal (not full screen)         | Less disruptive UX for 402 errors                                |
 | Location autocomplete | `expo-location` + Google Places API          | For birth profile astrology location                             |
 
-/trailing slash
-/list coffee readings
-/login with google origins
-/card is closed before draw
-/scheduled job for horoscope
 /Location autocomplete
 /contact
+/save daily users tarot
+/uiux
+/logout goes to main page
+/all logo clicks lead to main page
+/handle all emails

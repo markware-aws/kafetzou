@@ -1,10 +1,7 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Coffee, Star, Sparkles, Globe, ChevronRight, RefreshCw,
-  Heart, Briefcase, AlertTriangle, Coins,
+  Coffee, Star, Sparkles, Globe, ChevronRight, Heart, Briefcase, AlertTriangle, Coins,
 } from "lucide-react";
 import { getUser } from "@/lib/auth";
 import { getHoroscope } from "@/lib/api";
@@ -17,8 +14,6 @@ const PERIOD_LABELS: Record<Period, string> = {
   monthly: "Μηνιαία",
 };
 
-// ── Horoscope reader ──────────────────────────────────────────────────────────
-
 interface AstrologyReading {
   general: string;
   love: string;
@@ -26,6 +21,18 @@ interface AstrologyReading {
   luck: string;
   summary: string;
   warning: string;
+}
+
+function ReadingCard({ icon: Icon, label, text }: { icon: any; label: string; text: string }) {
+  return (
+    <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Icon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+        <span className="text-xs font-semibold text-violet-400 uppercase tracking-wide">{label}</span>
+      </div>
+      <p className="text-sm text-violet-200 leading-relaxed">{text}</p>
+    </div>
+  );
 }
 
 function HoroscopeSection() {
@@ -53,7 +60,6 @@ function HoroscopeSection() {
         <p className="text-sm text-violet-400">Επίλεξε το ζώδιό σου — δωρεάν, χωρίς εγγραφή</p>
       </div>
 
-      {/* Sign grid */}
       <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-6">
         {SIGNS.map((s) => {
           const active = selectedSign?.id === s.id;
@@ -76,7 +82,6 @@ function HoroscopeSection() {
 
       {selectedSign && (
         <div className="animate-fade-in">
-          {/* Period tabs */}
           <div className="flex gap-1 p-1 rounded-xl bg-[#2e2a3a] border border-violet-800/30 mb-5">
             {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(([key, label]) => (
               <button
@@ -109,7 +114,6 @@ function HoroscopeSection() {
 
           {reading && !loading && (
             <div className="flex flex-col gap-3 animate-fade-in">
-              {/* Sign header */}
               <div className={`rounded-2xl border p-4 flex items-center gap-3 ${ELEMENT_BG[selectedSign.element]}`}>
                 <span className="text-3xl">{selectedSign.symbol}</span>
                 <div>
@@ -150,20 +154,6 @@ function HoroscopeSection() {
   );
 }
 
-function ReadingCard({ icon: Icon, label, text }: { icon: any; label: string; text: string }) {
-  return (
-    <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-        <span className="text-xs font-semibold text-violet-400 uppercase tracking-wide">{label}</span>
-      </div>
-      <p className="text-sm text-violet-200 leading-relaxed">{text}</p>
-    </div>
-  );
-}
-
-// ── Features ──────────────────────────────────────────────────────────────────
-
 const FEATURES = [
   {
     icon: Coffee,
@@ -199,8 +189,6 @@ const FEATURES = [
   },
 ];
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
 export default function Home() {
   const [isAuthed, setIsAuthed] = useState(false);
 
@@ -210,7 +198,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Nav */}
       <nav className="border-b border-violet-900/30 bg-[#1c1c25]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -247,7 +234,6 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero */}
       <section className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center mb-6 shadow-2xl shadow-amber-500/30 glow-pulse">
           <Coffee className="w-10 h-10 text-black" />
@@ -271,15 +257,11 @@ export default function Home() {
         </Link>
       </section>
 
-      {/* Features */}
       <section className="max-w-3xl mx-auto w-full px-4 pb-16">
         <h2 className="text-xl font-bold text-violet-100 text-center mb-6">Τι περιλαμβάνει</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {FEATURES.map((f) => (
-            <div
-              key={f.title}
-              className={`rounded-2xl border bg-gradient-to-br p-5 ${f.color}`}
-            >
+            <div key={f.title} className={`rounded-2xl border bg-gradient-to-br p-5 ${f.color}`}>
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-xl bg-[#24242E]/60 flex items-center justify-center shrink-0">
                   <f.icon className={`w-5 h-5 ${f.iconColor}`} />
@@ -298,7 +280,6 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Sign up CTA below features */}
         <div className="mt-8 text-center">
           <Link
             href="/login"
@@ -310,13 +291,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Daily tarot promo */}
       <section className="max-w-3xl mx-auto w-full px-4 pb-10">
         <Link
           href="/login"
           className="group flex items-center gap-5 rounded-2xl border border-violet-700/40 hover:border-amber-500/40 bg-gradient-to-r from-violet-900/40 to-[#2e2a3a] hover:from-violet-900/60 p-5 transition-all"
         >
-          {/* Mystery card */}
           <div className="shrink-0 w-14 rounded-xl bg-gradient-to-br from-violet-800 to-[#24242E] border-2 border-violet-600/40 group-hover:border-amber-500/40 transition-colors flex flex-col items-center justify-center gap-1 shadow-lg" style={{ height: "84px" }}>
             <Star className="w-5 h-5 text-violet-500 group-hover:text-amber-400 transition-colors" />
           </div>
@@ -333,7 +312,6 @@ export default function Home() {
         </Link>
       </section>
 
-      {/* Divider */}
       <div className="max-w-3xl mx-auto w-full px-4 mb-12">
         <div className="flex items-center gap-4">
           <div className="h-px flex-1 bg-violet-900/40" />
@@ -342,7 +320,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Horoscope */}
       <HoroscopeSection />
     </div>
   );

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { User, Calendar, Clock, MapPin, Save, RefreshCw, Sun, Moon, ArrowUp, AlertCircle, CheckCircle2, Eye, Coins, Plus } from "lucide-react";
 import { Navbar } from "@/components/navbar";
@@ -12,11 +10,7 @@ const SEX_OPTIONS = ["Άνδρας", "Γυναίκα", "Άλλο"];
 const EYE_COLORS = ["Μαύρα", "Καφέ", "Φουντουκί", "Πράσινα", "Μπλε", "Γκρι"];
 
 function ChartCard({ label, icon: Icon, sign, degree, note }: {
-  label: string;
-  icon: any;
-  sign: string;
-  degree: number;
-  note?: string;
+  label: string; icon: any; sign: string; degree: number; note?: string;
 }) {
   const signData = SIGN_BY_ID[sign];
   return (
@@ -46,7 +40,6 @@ export default function ProfilePage() {
   const [credits, setCredits] = useState<number | null>(null);
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
 
-  // Form state
   const [dob, setDob] = useState("");
   const [timeUnknown, setTimeUnknown] = useState(false);
   const [birthTime, setBirthTime] = useState("");
@@ -56,7 +49,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     getMe().then((u) => setCredits(Number(u.credits ?? 0))).catch(() => {});
-
     getBirthProfile()
       .then((p) => {
         setProfile(p);
@@ -79,7 +71,6 @@ export default function ProfilePage() {
     setSaving(true);
     setError("");
     setSuccess(false);
-
     try {
       const saved = await saveBirthProfile({
         date_of_birth: dob,
@@ -110,7 +101,6 @@ export default function ProfilePage() {
         <Navbar />
 
         <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-10">
-          {/* Header */}
           <div className="flex items-center gap-3 mb-8">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
               <User className="w-6 h-6 text-black" />
@@ -121,7 +111,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Credits */}
           <div className="rounded-2xl border border-violet-800/30 bg-surface p-5 mb-6 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
@@ -144,7 +133,6 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {/* Calculated chart — shown when profile saved */}
           {profile?.chart && (
             <div className="mb-8 animate-fade-in">
               <div className="flex items-center gap-3 mb-4">
@@ -153,28 +141,10 @@ export default function ProfilePage() {
                 <div className="h-px flex-1 bg-violet-800/30" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <ChartCard
-                  label="Ήλιος ☉"
-                  icon={Sun}
-                  sign={profile.chart.sun_sign}
-                  degree={profile.chart.sun_degree}
-                  note="Ψυχή & ταυτότητα"
-                />
-                <ChartCard
-                  label="Σελήνη ☽"
-                  icon={Moon}
-                  sign={profile.chart.moon_sign}
-                  degree={profile.chart.moon_degree}
-                  note={profile.chart.time_known ? "Εσωτερικός κόσμος" : "Κατά προσέγγιση (ώρα άγνωστη)"}
-                />
+                <ChartCard label="Ήλιος ☉" icon={Sun} sign={profile.chart.sun_sign} degree={profile.chart.sun_degree} note="Ψυχή & ταυτότητα" />
+                <ChartCard label="Σελήνη ☽" icon={Moon} sign={profile.chart.moon_sign} degree={profile.chart.moon_degree} note={profile.chart.time_known ? "Εσωτερικός κόσμος" : "Κατά προσέγγιση (ώρα άγνωστη)"} />
                 {profile.chart.ascendant_sign ? (
-                  <ChartCard
-                    label="Ωροσκόπος ↑"
-                    icon={ArrowUp}
-                    sign={profile.chart.ascendant_sign}
-                    degree={profile.chart.ascendant_degree!}
-                    note="Εξωτερική εικόνα"
-                  />
+                  <ChartCard label="Ωροσκόπος ↑" icon={ArrowUp} sign={profile.chart.ascendant_sign} degree={profile.chart.ascendant_degree!} note="Εξωτερική εικόνα" />
                 ) : (
                   <div className="rounded-2xl border border-violet-800/20 bg-surface/50 p-4 flex items-center gap-3">
                     <ArrowUp className="w-4 h-4 text-violet-600 shrink-0" />
@@ -185,13 +155,10 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
-              <p className="text-xs text-violet-500 mt-3 text-center">
-                Αυτά τα δεδομένα χρησιμοποιούνται αυτόματα στις εξατομικευμένες αστρολογικές αναγνώσεις σου.
-              </p>
+              <p className="text-xs text-violet-500 mt-3 text-center">Αυτά τα δεδομένα χρησιμοποιούνται αυτόματα στις εξατομικευμένες αστρολογικές αναγνώσεις σου.</p>
             </div>
           )}
 
-          {/* Form */}
           <div className="rounded-2xl border border-violet-800/30 bg-surface p-6">
             {loading ? (
               <div className="flex flex-col gap-3">
@@ -199,22 +166,15 @@ export default function ProfilePage() {
               </div>
             ) : (
               <form onSubmit={handleSave} className="flex flex-col gap-5">
-                {/* Date of birth */}
                 <div>
                   <label className="flex items-center gap-1.5 text-xs text-violet-400 mb-2 font-medium">
                     <Calendar className="w-3.5 h-3.5" />
                     Ημερομηνία Γέννησης
                   </label>
-                  <input
-                    type="date"
-                    value={dob}
-                    onChange={(e) => setDob(e.target.value)}
-                    required
-                    className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60 [color-scheme:dark]"
-                  />
+                  <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} required
+                    className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60 [color-scheme:dark]" />
                 </div>
 
-                {/* Time of birth */}
                 <div>
                   <label className="flex items-center gap-1.5 text-xs text-violet-400 mb-2 font-medium">
                     <Clock className="w-3.5 h-3.5" />
@@ -222,78 +182,50 @@ export default function ProfilePage() {
                   </label>
                   <div className="flex items-center gap-3 mb-2">
                     <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={timeUnknown}
-                        onChange={(e) => { setTimeUnknown(e.target.checked); if (e.target.checked) setBirthTime(""); }}
-                        className="w-4 h-4 rounded accent-amber-500"
-                      />
+                      <input type="checkbox" checked={timeUnknown} onChange={(e) => { setTimeUnknown(e.target.checked); if (e.target.checked) setBirthTime(""); }}
+                        className="w-4 h-4 rounded accent-amber-500" />
                       <span className="text-xs text-violet-400">Δεν γνωρίζω την ώρα</span>
                     </label>
                   </div>
                   {!timeUnknown ? (
-                    <input
-                      type="time"
-                      value={birthTime}
-                      onChange={(e) => setBirthTime(e.target.value)}
-                      className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60 [color-scheme:dark]"
-                    />
+                    <input type="time" value={birthTime} onChange={(e) => setBirthTime(e.target.value)}
+                      className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60 [color-scheme:dark]" />
                   ) : (
                     <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
                       <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-300 leading-relaxed">
-                        Θα χρησιμοποιηθεί 12:00 μεσημέρι. Το ζώδιο Σελήνης ενδέχεται να διαφέρει κατά ±1 ζώδιο και ο Ωροσκόπος δεν θα υπολογιστεί.
-                      </p>
+                      <p className="text-xs text-amber-300 leading-relaxed">Θα χρησιμοποιηθεί 12:00 μεσημέρι. Το ζώδιο Σελήνης ενδέχεται να διαφέρει κατά ±1 ζώδιο και ο Ωροσκόπος δεν θα υπολογιστεί.</p>
                     </div>
                   )}
                 </div>
 
-                {/* Place of birth */}
                 <div>
                   <label className="flex items-center gap-1.5 text-xs text-violet-400 mb-2 font-medium">
                     <MapPin className="w-3.5 h-3.5" />
                     Τόπος Γέννησης
                   </label>
-                  <input
-                    type="text"
-                    value={birthPlace}
-                    onChange={(e) => setBirthPlace(e.target.value)}
-                    required
-                    placeholder="π.χ. Αθήνα, Ελλάδα"
-                    className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 placeholder-violet-600 focus:outline-none focus:border-violet-600/60"
-                  />
+                  <input type="text" value={birthPlace} onChange={(e) => setBirthPlace(e.target.value)} required placeholder="π.χ. Αθήνα, Ελλάδα"
+                    className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 placeholder-violet-600 focus:outline-none focus:border-violet-600/60" />
                   <p className="text-[11px] text-violet-600 mt-1">Χρησιμοποιείται για τον υπολογισμό του Ωροσκόπου</p>
                 </div>
 
-                {/* Divider */}
                 <div className="flex items-center gap-3">
                   <div className="h-px flex-1 bg-violet-800/30" />
                   <span className="text-[10px] text-violet-600 uppercase tracking-widest">Για αστρολογικές αναγνώσεις</span>
                   <div className="h-px flex-1 bg-violet-800/30" />
                 </div>
 
-                {/* Sex */}
                 <div>
                   <label className="text-xs text-violet-400 mb-2 block font-medium">Φύλο</label>
                   <div className="flex gap-2">
                     {SEX_OPTIONS.map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => setSex(opt)}
-                        className={`flex-1 rounded-xl border py-2 text-sm transition-all ${
-                          sex === opt
-                            ? "border-amber-500/60 bg-amber-500/10 text-amber-300"
-                            : "border-violet-800/40 text-violet-400 hover:border-violet-600/50"
-                        }`}
-                      >
+                      <button key={opt} type="button" onClick={() => setSex(opt)}
+                        className={`flex-1 rounded-xl border py-2 text-sm transition-all ${sex === opt ? "border-amber-500/60 bg-amber-500/10 text-amber-300" : "border-violet-800/40 text-violet-400 hover:border-violet-600/50"}`}>
                         {opt}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Eye color */}
                 <div>
                   <label className="flex items-center gap-1.5 text-xs text-violet-400 mb-2 font-medium">
                     <Eye className="w-3.5 h-3.5" />
@@ -301,16 +233,8 @@ export default function ProfilePage() {
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {EYE_COLORS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setEyeColor(c)}
-                        className={`rounded-xl border py-2 text-xs transition-all ${
-                          eyeColor === c
-                            ? "border-amber-500/60 bg-amber-500/10 text-amber-300"
-                            : "border-violet-800/40 text-violet-400 hover:border-violet-600/50"
-                        }`}
-                      >
+                      <button key={c} type="button" onClick={() => setEyeColor(c)}
+                        className={`rounded-xl border py-2 text-xs transition-all ${eyeColor === c ? "border-amber-500/60 bg-amber-500/10 text-amber-300" : "border-violet-800/40 text-violet-400 hover:border-violet-600/50"}`}>
                         {c}
                       </button>
                     ))}
@@ -324,11 +248,8 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={saving || !dob || !birthPlace}
-                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-black font-semibold rounded-xl py-3 text-sm transition-all shadow-lg shadow-amber-500/20"
-                >
+                <button type="submit" disabled={saving || !dob || !birthPlace}
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-black font-semibold rounded-xl py-3 text-sm transition-all shadow-lg shadow-amber-500/20">
                   {saving ? (
                     <><RefreshCw className="w-4 h-4 animate-spin" /> Υπολογισμός χάρτη…</>
                   ) : success ? (
