@@ -8,7 +8,7 @@ export function Footer() {
         <div className="flex items-center gap-4">
           <Link href="/privacy" className="hover:text-violet-400 transition-colors">Απόρρητο</Link>
           <Link href="/terms" className="hover:text-violet-400 transition-colors">Όροι Χρήσης</Link>
-          <a href="mailto:hello@fortuneteller.gr" className="hover:text-violet-400 transition-colors">Επικοινωνία</a>
+          <Link href="/contact" className="hover:text-violet-400 transition-colors">Επικοινωνία</Link>
         </div>
       </div>
     </footer>

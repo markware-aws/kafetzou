@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { Coffee, Eye, EyeOff, Sparkles } from "lucide-react";
 import { login, register, confirmRegistration, forgotPassword, confirmForgotPassword, getUser, loginWithGoogle } from "@/lib/auth";
 
@@ -8,11 +9,17 @@ type Step = "login" | "register" | "confirm" | "forgot" | "reset";
 export default function LoginPage() {
   const router = useRouter();
 
+  function getDestination() {
+    const returnTo = router.query.returnTo as string | undefined;
+    return returnTo && returnTo.startsWith("/") ? returnTo : "/";
+  }
+
   useEffect(() => {
+    if (!router.isReady) return;
     getUser().then((user) => {
-      if (user) router.replace("/upload");
+      if (user) router.replace(getDestination());
     });
-  }, [router]);
+  }, [router.isReady]);
 
   const [step, setStep] = useState<Step>("login");
   const [email, setEmail] = useState("");
@@ -31,7 +38,7 @@ export default function LoginPage() {
     setError("");
     try {
       await login(email, password);
-      router.push("/upload");
+      router.push(getDestination());
     } catch (err: any) {
       setError(err.message ?? "Login failed");
     } finally {
@@ -78,7 +85,7 @@ export default function LoginPage() {
     try {
       await confirmForgotPassword(email, code, newPassword);
       await login(email, newPassword);
-      router.push("/upload");
+      router.push(getDestination());
     } catch (err: any) {
       setError(err.message ?? "Αποτυχία επαναφοράς κωδικού");
     } finally {
@@ -93,7 +100,7 @@ export default function LoginPage() {
     try {
       await confirmRegistration(email, code);
       await login(email, password);
-      router.push("/upload");
+      router.push(getDestination());
     } catch (err: any) {
       setError(err.message ?? "Confirmation failed");
     } finally {
@@ -110,11 +117,11 @@ export default function LoginPage() {
 
       <div className="w-full max-w-sm relative">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-2xl shadow-amber-500/30 mb-4 glow-pulse">
+          <Link href="/" className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-2xl shadow-amber-500/30 mb-4 glow-pulse">
             <Coffee className="w-8 h-8 text-black" />
-          </div>
+          </Link>
           <h1 className="text-2xl font-bold text-amber-200 tracking-wide">Fortune Teller</h1>
-          <p className="text-violet-400 text-sm mt-1">AI Ανάγνωση Ελληνικού Καφέ</p>
+          <p className="text-violet-400 text-sm mt-1">Ανάγνωση Ελληνικού Καφέ</p>
         </div>
 
         <div className="rounded-2xl border border-violet-800/40 bg-[#2e2a3a] p-8 shadow-2xl">

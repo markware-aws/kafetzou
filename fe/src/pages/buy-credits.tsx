@@ -6,7 +6,7 @@ import { getCreditBundles, createCheckoutSession, CreditBundle } from "@/lib/api
 
 const CREDIT_COST_EXAMPLES = [
   { icon: Coffee, label: "Ανάγνωση καφέ", cost: 2 },
-  { icon: Star, label: "Ανάλυση Ταρό (AI)", cost: 1 },
+  { icon: Star, label: "Ανάλυση Ταρό", cost: 1 },
   { icon: Sparkles, label: "Εξατομικευμένη Αστρολογία", cost: 1 },
   { icon: Moon, label: "Ερμηνεία Ονείρου", cost: 1 },
 ];

@@ -140,6 +140,4 @@ See detailed plan below.
 /contact
 /save daily users tarot
 /uiux
-/logout goes to main page
-/all logo clicks lead to main page
 /handle all emails

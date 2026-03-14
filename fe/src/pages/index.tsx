@@ -5,7 +5,9 @@ import {
 } from "lucide-react";
 import { getUser } from "@/lib/auth";
 import { getHoroscope } from "@/lib/api";
-import { SIGNS, SIGN_BY_ID, ELEMENT_COLORS, ELEMENT_BG, type SignData } from "@/lib/astrology";
+import { SIGNS, ELEMENT_COLORS, ELEMENT_BG, type SignData } from "@/lib/astrology";
+import { Navbar } from "@/components/navbar";
+import { DailyCardSection } from "@/components/daily-card";
 
 type Period = "daily" | "weekly" | "monthly";
 const PERIOD_LABELS: Record<Period, string> = {
@@ -54,7 +56,7 @@ function HoroscopeSection() {
   }, [selectedSign, period]);
 
   return (
-    <section className="max-w-3xl mx-auto w-full px-4 pb-20">
+    <section id="horoscope" className="max-w-3xl mx-auto w-full px-4 pb-20">
       <div className="text-center mb-8">
         <h2 className="text-xl font-bold text-violet-100 mb-1">Ωροσκόπιο</h2>
         <p className="text-sm text-violet-400">Επίλεξε το ζώδιό σου — δωρεάν, χωρίς εγγραφή</p>
@@ -158,10 +160,12 @@ const FEATURES = [
   {
     icon: Coffee,
     title: "Ανάγνωση Καφέ",
-    description: "Φωτογράφισε το φλιτζάνι σου και η AI καφετζού αποκαλύπτει τι κρύβει ο κατακάθι.",
+    description: "Φωτογράφισε το φλιτζάνι σου και η καφετζού αποκαλύπτει τι κρύβει ο κατακάθι.",
     badge: "2 credits",
     color: "from-amber-500/20 to-amber-600/5 border-amber-500/20",
     iconColor: "text-amber-400",
+    href: "/upload",
+    requiresAuth: true,
   },
   {
     icon: Star,
@@ -170,6 +174,8 @@ const FEATURES = [
     badge: "1 credit · 1 δωρεάν/μέρα",
     color: "from-violet-500/20 to-violet-600/5 border-violet-500/20",
     iconColor: "text-violet-400",
+    href: "/tarot",
+    requiresAuth: true,
   },
   {
     icon: Sparkles,
@@ -178,6 +184,8 @@ const FEATURES = [
     badge: "1 credit",
     color: "from-sky-500/20 to-sky-600/5 border-sky-500/20",
     iconColor: "text-sky-400",
+    href: "/astrology",
+    requiresAuth: true,
   },
   {
     icon: Globe,
@@ -186,6 +194,8 @@ const FEATURES = [
     badge: "Δωρεάν",
     color: "from-emerald-500/20 to-emerald-600/5 border-emerald-500/20",
     iconColor: "text-emerald-400",
+    href: "#horoscope",
+    requiresAuth: false,
   },
 ];
 
@@ -198,41 +208,28 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="border-b border-violet-900/30 bg-[#1c1c25]/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <Coffee className="w-4 h-4 text-black" />
-            </div>
-            <span className="font-semibold text-amber-200 tracking-wide text-sm">Fortune Teller</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {isAuthed ? (
-              <Link
-                href="/upload"
-                className="text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black rounded-xl px-4 py-2 transition-all shadow-lg shadow-amber-500/20"
-              >
-                Μπες στην εφαρμογή →
+      {isAuthed ? (
+        <Navbar />
+      ) : (
+        <nav className="border-b border-violet-900/30 bg-[#1c1c25]/80 backdrop-blur-md sticky top-0 z-50">
+          <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                <Coffee className="w-4 h-4 text-black" />
+              </div>
+              <span className="font-semibold text-amber-200 tracking-wide text-sm">Fortune Teller</span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/login" className="text-sm text-violet-300 hover:text-amber-200 px-4 py-2 rounded-lg transition-colors">
+                Σύνδεση
               </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-sm text-violet-300 hover:text-amber-200 px-4 py-2 rounded-lg transition-colors"
-                >
-                  Σύνδεση
-                </Link>
-                <Link
-                  href="/login"
-                  className="text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black rounded-xl px-4 py-2 transition-all shadow-lg shadow-amber-500/20"
-                >
-                  Εγγραφή
-                </Link>
-              </>
-            )}
+              <Link href="/login" className="text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black rounded-xl px-4 py-2 transition-all shadow-lg shadow-amber-500/20">
+                Εγγραφή
+              </Link>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
 
       <section className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center mb-6 shadow-2xl shadow-amber-500/30 glow-pulse">
@@ -241,75 +238,88 @@ export default function Home() {
         <h1 className="text-4xl sm:text-5xl font-bold text-violet-100 mb-4 tracking-tight">
           Fortune Teller
         </h1>
-        <p className="text-lg text-violet-300 max-w-md mb-3">
-          Το ψηφιακό μαντείο σου. Ανάγνωση καφέ, ταρό και αστρολογία με τεχνητή νοημοσύνη.
+        <p className="text-lg text-violet-300 max-w-md mb-8">
+          Το ψηφιακό μαντείο σου. Ανάγνωση καφέ, ταρό και αστρολογία.
         </p>
-        <p className="text-sm text-violet-500 mb-8">
-          Εγγράψου και λάβε <span className="text-amber-400 font-semibold">5 δωρεάν credits</span> για να ξεκινήσεις.
-        </p>
-        <Link
-          href="/login"
-          className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold rounded-2xl px-8 py-4 text-base transition-all shadow-2xl shadow-amber-500/25"
-        >
-          <Coins className="w-5 h-5" />
-          Ξεκίνα με 5 δωρεάν credits
-          <ChevronRight className="w-4 h-4" />
-        </Link>
+        {!isAuthed && (
+          <>
+            <p className="text-sm text-violet-500 mb-8">
+              Εγγράψου και λάβε <span className="text-amber-400 font-semibold">5 δωρεάν credits</span> για να ξεκινήσεις.
+            </p>
+            <Link
+              href="/login"
+              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold rounded-2xl px-8 py-4 text-base transition-all shadow-2xl shadow-amber-500/25"
+            >
+              <Coins className="w-5 h-5" />
+              Ξεκίνα με 5 δωρεάν credits
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </>
+        )}
       </section>
 
       <section className="max-w-3xl mx-auto w-full px-4 pb-16">
         <h2 className="text-xl font-bold text-violet-100 text-center mb-6">Τι περιλαμβάνει</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {FEATURES.map((f) => (
-            <div key={f.title} className={`rounded-2xl border bg-gradient-to-br p-5 ${f.color}`}>
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#24242E]/60 flex items-center justify-center shrink-0">
-                  <f.icon className={`w-5 h-5 ${f.iconColor}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h3 className="text-sm font-semibold text-violet-100">{f.title}</h3>
-                    <span className="text-[10px] font-medium bg-[#24242E]/50 border border-violet-700/30 text-violet-400 rounded-full px-2 py-0.5">
-                      {f.badge}
-                    </span>
+          {FEATURES.map((f) => {
+            const href = f.requiresAuth && !isAuthed ? `/login?returnTo=${f.href}` : f.href;
+            return (
+              <Link key={f.title} href={href} className={`rounded-2xl border bg-gradient-to-br p-5 transition-all hover:brightness-110 ${f.color}`}>
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#24242E]/60 flex items-center justify-center shrink-0">
+                    <f.icon className={`w-5 h-5 ${f.iconColor}`} />
                   </div>
-                  <p className="text-xs text-violet-400 leading-relaxed">{f.description}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="text-sm font-semibold text-violet-100">{f.title}</h3>
+                      <span className="text-[10px] font-medium bg-[#24242E]/50 border border-violet-700/30 text-violet-400 rounded-full px-2 py-0.5">
+                        {f.badge}
+                      </span>
+                    </div>
+                    <p className="text-xs text-violet-400 leading-relaxed">{f.description}</p>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </Link>
+            );
+          })}
         </div>
 
-        <div className="mt-8 text-center">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 border border-amber-500/40 hover:border-amber-500/70 text-amber-400 hover:text-amber-300 rounded-xl px-6 py-3 text-sm font-medium transition-all"
-          >
-            Δημιούργησε λογαριασμό — δωρεάν
-            <ChevronRight className="w-4 h-4" />
-          </Link>
-        </div>
+        {!isAuthed && (
+          <div className="mt-8 text-center">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 border border-amber-500/40 hover:border-amber-500/70 text-amber-400 hover:text-amber-300 rounded-xl px-6 py-3 text-sm font-medium transition-all"
+            >
+              Δημιούργησε λογαριασμό — δωρεάν
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
       </section>
 
       <section className="max-w-3xl mx-auto w-full px-4 pb-10">
-        <Link
-          href="/login"
-          className="group flex items-center gap-5 rounded-2xl border border-violet-700/40 hover:border-amber-500/40 bg-gradient-to-r from-violet-900/40 to-[#2e2a3a] hover:from-violet-900/60 p-5 transition-all"
-        >
-          <div className="shrink-0 w-14 rounded-xl bg-gradient-to-br from-violet-800 to-[#24242E] border-2 border-violet-600/40 group-hover:border-amber-500/40 transition-colors flex flex-col items-center justify-center gap-1 shadow-lg" style={{ height: "84px" }}>
-            <Star className="w-5 h-5 text-violet-500 group-hover:text-amber-400 transition-colors" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-semibold text-violet-100">Δωρεάν ημερήσια κάρτα τύχης</span>
-              <span className="text-[10px] font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full px-2 py-0.5">Δωρεάν</span>
+        {isAuthed ? (
+          <DailyCardSection />
+        ) : (
+          <Link
+            href="/login"
+            className="group flex items-center gap-5 rounded-2xl border border-violet-700/40 hover:border-amber-500/40 bg-gradient-to-r from-violet-900/40 to-[#2e2a3a] hover:from-violet-900/60 p-5 transition-all"
+          >
+            <div className="shrink-0 w-14 rounded-xl bg-gradient-to-br from-violet-800 to-[#24242E] border-2 border-violet-600/40 group-hover:border-amber-500/40 transition-colors flex flex-col items-center justify-center gap-1 shadow-lg" style={{ height: "84px" }}>
+              <Star className="w-5 h-5 text-violet-500 group-hover:text-amber-400 transition-colors" />
             </div>
-            <p className="text-xs text-violet-400 leading-relaxed">
-              Συνδέσου για να αποκαλύψεις τη δωρεάν κάρτα ταρό της ημέρας σου — χωρίς credits, κάθε μέρα νέα κάρτα.
-            </p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-violet-500 group-hover:text-amber-400 transition-colors shrink-0" />
-        </Link>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-semibold text-violet-100">Δωρεάν ημερήσια κάρτα τύχης</span>
+                <span className="text-[10px] font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full px-2 py-0.5">Δωρεάν</span>
+              </div>
+              <p className="text-xs text-violet-400 leading-relaxed">
+                Συνδέσου για να αποκαλύψεις τη δωρεάν κάρτα ταρό της ημέρας σου — χωρίς credits, κάθε μέρα νέα κάρτα.
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-violet-500 group-hover:text-amber-400 transition-colors shrink-0" />
+          </Link>
+        )}
       </section>
 
       <div className="max-w-3xl mx-auto w-full px-4 mb-12">

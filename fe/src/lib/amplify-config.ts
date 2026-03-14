@@ -12,7 +12,7 @@ export function configureAmplify() {
           oauth: {
             domain: process.env.NEXT_PUBLIC_COGNITO_DOMAIN!,
             scopes: ["email", "openid", "profile"],
-            redirectSignIn: [`${appUrl}/`],
+            redirectSignIn: [appUrl],
             redirectSignOut: [`${appUrl}/login`],
             responseType: "code",
           },
