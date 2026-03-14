@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { Coins, Star, Sparkles, Coffee, Moon, Check, Loader2, AlertCircle } from "lucide-react";
 import { Navbar } from "@/components/navbar";
@@ -8,41 +6,30 @@ import { getCreditBundles, createCheckoutSession, CreditBundle } from "@/lib/api
 
 const CREDIT_COST_EXAMPLES = [
   { icon: Coffee, label: "Ανάγνωση καφέ", cost: 2 },
-  { icon: Star, label: "Ανάλυση Ταρό (AI)", cost: 1 },
+  { icon: Star, label: "Ανάλυση Ταρό", cost: 1 },
   { icon: Sparkles, label: "Εξατομικευμένη Αστρολογία", cost: 1 },
   { icon: Moon, label: "Ερμηνεία Ονείρου", cost: 1 },
 ];
 
-function BundleCard({
-  bundle,
-  onSelect,
-  loading,
-}: {
-  bundle: CreditBundle;
-  onSelect: (id: string) => void;
-  loading: boolean;
+function BundleCard({ bundle, onSelect, loading }: {
+  bundle: CreditBundle; onSelect: (id: string) => void; loading: boolean;
 }) {
   const perCredit = (bundle.price_eur / bundle.credits).toFixed(2);
-
   return (
-    <div
-      className={`relative flex flex-col rounded-2xl border p-5 transition-all ${
-        bundle.popular
-          ? "border-amber-500/50 bg-gradient-to-b from-amber-500/5 to-transparent shadow-lg shadow-amber-500/10"
-          : "border-violet-800/30 bg-surface hover:border-violet-700/50"
-      }`}
-    >
+    <div className={`relative flex flex-col rounded-2xl border p-5 transition-all ${
+      bundle.popular
+        ? "border-amber-500/50 bg-gradient-to-b from-amber-500/5 to-transparent shadow-lg shadow-amber-500/10"
+        : "border-violet-800/30 bg-surface hover:border-violet-700/50"
+    }`}>
       {bundle.popular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-black text-[11px] font-bold uppercase tracking-wider shadow">
           Πιο Δημοφιλές
         </div>
       )}
-
       <div className="mb-4">
         <p className="text-base font-semibold text-violet-100">{bundle.label}</p>
         <p className="text-xs text-violet-400 mt-0.5">{bundle.description}</p>
       </div>
-
       <div className="mb-4">
         <div className="flex items-baseline gap-1">
           <span className="text-3xl font-bold text-violet-100">€{bundle.price_eur.toFixed(2)}</span>
@@ -53,7 +40,6 @@ function BundleCard({
           <span className="text-xs text-violet-500">· €{perCredit}/credit</span>
         </div>
       </div>
-
       <button
         onClick={() => onSelect(bundle.id)}
         disabled={loading}
@@ -98,9 +84,7 @@ export default function BuyCreditsPage() {
     <AuthGuard>
       <div className="min-h-screen flex flex-col">
         <Navbar />
-
         <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-12">
-          {/* Header */}
           <div className="text-center mb-10">
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
               <Coins className="w-6 h-6 text-black" />
@@ -111,7 +95,6 @@ export default function BuyCreditsPage() {
             </p>
           </div>
 
-          {/* Cost reference */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
             {CREDIT_COST_EXAMPLES.map(({ icon: Icon, label, cost }) => (
               <div key={label} className="rounded-xl border border-violet-800/30 bg-surface p-3 flex flex-col items-center gap-1.5 text-center">
@@ -125,7 +108,6 @@ export default function BuyCreditsPage() {
             ))}
           </div>
 
-          {/* Bundles */}
           {loadingBundles ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[...Array(4)].map((_, i) => <div key={i} className="h-52 rounded-2xl shimmer" />)}
@@ -133,12 +115,7 @@ export default function BuyCreditsPage() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
               {bundles.map((b) => (
-                <BundleCard
-                  key={b.id}
-                  bundle={b}
-                  onSelect={handleSelect}
-                  loading={checkoutLoading === b.id}
-                />
+                <BundleCard key={b.id} bundle={b} onSelect={handleSelect} loading={checkoutLoading === b.id} />
               ))}
             </div>
           )}
@@ -150,7 +127,6 @@ export default function BuyCreditsPage() {
             </div>
           )}
 
-          {/* Trust badges */}
           <div className="mt-10 flex flex-col items-center gap-2 text-center">
             <div className="flex items-center gap-2 text-xs text-violet-500">
               <Check className="w-3.5 h-3.5 text-violet-600" />

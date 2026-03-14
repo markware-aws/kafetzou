@@ -1,7 +1,6 @@
-"use client";
-
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
+import Link from "next/link";
 import { Coffee, Eye, EyeOff, Sparkles } from "lucide-react";
 import { login, register, confirmRegistration, forgotPassword, confirmForgotPassword, getUser, loginWithGoogle } from "@/lib/auth";
 
@@ -10,12 +9,18 @@ type Step = "login" | "register" | "confirm" | "forgot" | "reset";
 export default function LoginPage() {
   const router = useRouter();
 
-  // Redirect already-authenticated users away from the login page
+  function getDestination() {
+    const returnTo = router.query.returnTo as string | undefined;
+    return returnTo && returnTo.startsWith("/") ? returnTo : "/";
+  }
+
   useEffect(() => {
+    if (!router.isReady) return;
     getUser().then((user) => {
-      if (user) router.replace("/upload");
+      if (user) router.replace(getDestination());
     });
-  }, [router]);
+  }, [router.isReady]);
+
   const [step, setStep] = useState<Step>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +38,7 @@ export default function LoginPage() {
     setError("");
     try {
       await login(email, password);
-      router.push("/upload");
+      router.push(getDestination());
     } catch (err: any) {
       setError(err.message ?? "Login failed");
     } finally {
@@ -80,7 +85,7 @@ export default function LoginPage() {
     try {
       await confirmForgotPassword(email, code, newPassword);
       await login(email, newPassword);
-      router.push("/upload");
+      router.push(getDestination());
     } catch (err: any) {
       setError(err.message ?? "Αποτυχία επαναφοράς κωδικού");
     } finally {
@@ -95,7 +100,7 @@ export default function LoginPage() {
     try {
       await confirmRegistration(email, code);
       await login(email, password);
-      router.push("/upload");
+      router.push(getDestination());
     } catch (err: any) {
       setError(err.message ?? "Confirmation failed");
     } finally {
@@ -105,23 +110,20 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
-      {/* Background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full bg-violet-900/20 blur-3xl" />
         <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full bg-amber-900/15 blur-3xl" />
       </div>
 
       <div className="w-full max-w-sm relative">
-        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-2xl shadow-amber-500/30 mb-4 glow-pulse">
+          <Link href="/" className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-2xl shadow-amber-500/30 mb-4 glow-pulse">
             <Coffee className="w-8 h-8 text-black" />
-          </div>
-          <h1 className="text-2xl font-bold text-amber-200 tracking-wide">Kafetzou</h1>
-          <p className="text-violet-400 text-sm mt-1">AI Ανάγνωση Ελληνικού Καφέ</p>
+          </Link>
+          <h1 className="text-2xl font-bold text-amber-200 tracking-wide">Fortune Teller</h1>
+          <p className="text-violet-400 text-sm mt-1">Ανάγνωση Ελληνικού Καφέ</p>
         </div>
 
-        {/* Card */}
         <div className="rounded-2xl border border-violet-800/40 bg-[#2e2a3a] p-8 shadow-2xl">
           {step === "login" && (
             <>
@@ -139,11 +141,7 @@ export default function LoginPage() {
                       className="w-full bg-[#24242E] border border-violet-800/50 rounded-lg px-3 py-2.5 text-sm text-violet-100 placeholder-violet-600 focus:outline-none focus:border-amber-500/60 transition-colors pr-10"
                       placeholder="••••••••"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPass((s) => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-500 hover:text-violet-300"
-                    >
+                    <button type="button" onClick={() => setShowPass((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-500 hover:text-violet-300">
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -255,7 +253,7 @@ export default function LoginPage() {
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <h2 className="text-lg font-semibold text-violet-100">Νέος κωδικός</h2>
               </div>
-              <p className="text-sm text-violet-400 mb-6">Στείλαμε κωδικό στο <span className="text-violet-200">{email}</span>. Εισήγαγε τον κωδικό και τον νέο σου κωδικό πρόσβασης.</p>
+              <p className="text-sm text-violet-400 mb-6">Στείλαμε κωδικό στο <span className="text-violet-200">{email}</span>.</p>
               <form onSubmit={handleReset} className="flex flex-col gap-4">
                 <Input label="Κωδικός επαλήθευσης" type="text" value={code} onChange={setCode} placeholder="123456" autoComplete="one-time-code" />
                 <div>

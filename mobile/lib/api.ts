@@ -261,10 +261,20 @@ export interface PersonalizedAstrologyRequest {
   eye_color: string;
 }
 
+const STATIC_URL: string = (Constants.expoConfig?.extra?.staticUrl as string) ?? '';
+
 export async function getHoroscope(
   sign: string,
   period: 'daily' | 'weekly' | 'monthly'
 ): Promise<HoroscopeResponse> {
+  // Try static CDN first — zero Lambda cost, ~10ms from CloudFront edge
+  if (STATIC_URL) {
+    try {
+      const static_res = await fetch(`${STATIC_URL}/horoscopes/${period}/${sign}.json`);
+      if (static_res.ok) return static_res.json();
+    } catch {}
+  }
+  // Fall back to Lambda API (local dev or before first prewarm)
   const res = await fetch(`${API_URL}/astrology/${sign}/${period}`);
   if (!res.ok) await handleError(res);
   return res.json();

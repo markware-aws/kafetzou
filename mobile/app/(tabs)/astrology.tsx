@@ -22,6 +22,25 @@ type Period = 'daily' | 'weekly' | 'monthly';
 const PERIOD_LABELS: Record<Period, string> = {
   daily: 'Ημερήσια', weekly: 'Εβδομαδιαία', monthly: 'Μηνιαία',
 };
+
+const GREEK_MONTHS = ['Ιανουαρίου','Φεβρουαρίου','Μαρτίου','Απριλίου','Μαΐου','Ιουνίου','Ιουλίου','Αυγούστου','Σεπτεμβρίου','Οκτωβρίου','Νοεμβρίου','Δεκεμβρίου'];
+const GREEK_MONTHS_NOM = ['Ιανουάριος','Φεβρουάριος','Μάρτιος','Απρίλιος','Μάιος','Ιούνιος','Ιούλιος','Αύγουστος','Σεπτέμβριος','Οκτώβριος','Νοέμβριος','Δεκέμβριος'];
+const GREEK_DAYS = ['Κυριακή','Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο'];
+
+function getPeriodLabel(period: Period): string {
+  const now = new Date();
+  if (period === 'daily') {
+    return `${GREEK_DAYS[now.getDay()]}, ${now.getDate()} ${GREEK_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  }
+  if (period === 'weekly') {
+    const day = now.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now); monday.setDate(now.getDate() + diff);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+    return `${monday.getDate()} ${GREEK_MONTHS[monday.getMonth()]} – ${sunday.getDate()} ${GREEK_MONTHS[sunday.getMonth()]} ${sunday.getFullYear()}`;
+  }
+  return `${GREEK_MONTHS_NOM[now.getMonth()]} ${now.getFullYear()}`;
+}
 const SEX_OPTIONS = ['Άνδρας', 'Γυναίκα', 'Άλλο'];
 const EYE_COLORS = ['Μαύρα', 'Καφέ', 'Φουντουκί', 'Πράσινα', 'Μπλε', 'Γκρι'];
 
@@ -83,6 +102,8 @@ function HoroscopePanel({ signId }: { signId: string }) {
           </TouchableOpacity>
         ))}
       </View>
+
+      <Text style={s.periodDateLabel}>{getPeriodLabel(period)}</Text>
 
       {loading && <ActivityIndicator color={theme.amber} style={{ marginVertical: 24 }} />}
       {!!error && <Text style={s.error}>{error}</Text>}
@@ -299,6 +320,7 @@ const s = StyleSheet.create({
   periodTabActive: { backgroundColor: 'rgba(109,40,217,0.5)' },
   periodLabel: { fontSize: 13, color: theme.textMuted, fontWeight: '500' },
   periodLabelActive: { color: theme.amber, fontWeight: '600' },
+  periodDateLabel: { fontSize: 11, color: theme.textDim, textAlign: 'center', marginTop: 4 },
   sectionBox: { borderWidth: 1, borderRadius: 14, padding: 14 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
   sectionLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },

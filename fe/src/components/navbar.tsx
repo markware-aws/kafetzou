@@ -3,7 +3,19 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Coffee, LayoutDashboard, Upload, LogOut, Menu, X, Star, Sparkles, Coins, User, Moon } from "lucide-react";
+import {
+  Coffee,
+  LayoutDashboard,
+  Upload,
+  LogOut,
+  Menu,
+  X,
+  Star,
+  Sparkles,
+  Coins,
+  User,
+  Moon,
+} from "lucide-react";
 import { logout } from "@/lib/auth";
 import { getMe } from "@/lib/api";
 
@@ -24,9 +36,13 @@ export function Navbar() {
   const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
-    getMe().then((u) => setCredits(Number(u.credits ?? 0))).catch(() => {});
+    getMe()
+      .then((u) => setCredits(Number(u.credits ?? 0)))
+      .catch(() => {});
     const handler = () => {
-      getMe().then((u) => setCredits(Number(u.credits ?? 0))).catch(() => {});
+      getMe()
+        .then((u) => setCredits(Number(u.credits ?? 0)))
+        .catch(() => {});
     };
     window.addEventListener("credits-changed", handler);
     return () => window.removeEventListener("credits-changed", handler);
@@ -35,18 +51,20 @@ export function Navbar() {
   async function handleLogout() {
     setLoggingOut(true);
     await logout();
-    router.push("/login");
+    window.location.replace("/");
   }
 
   return (
     <nav className="border-b border-violet-900/30 bg-[#1c1c25]/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/upload" className="flex items-center gap-2 group">
+        <Link href="/" className="flex items-center gap-2 group">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-shadow">
             <Coffee className="w-4 h-4 text-black" />
           </div>
-          <span className="font-semibold text-amber-200 tracking-wide text-sm">Kafetzou</span>
+          <span className="font-semibold text-amber-200 tracking-wide text-sm">
+            Fortune Teller
+          </span>
         </Link>
 
         {/* Desktop nav */}
@@ -73,7 +91,9 @@ export function Navbar() {
             >
               <Coins className="w-3.5 h-3.5" />
               {credits}
-              <span className="text-amber-600 group-hover:text-amber-400 transition-colors text-xs font-bold">+</span>
+              <span className="text-amber-600 group-hover:text-amber-400 transition-colors text-xs font-bold">
+                +
+              </span>
             </Link>
           )}
 
@@ -105,7 +125,9 @@ export function Navbar() {
               href={href}
               onClick={() => setMenuOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                pathname === href ? "bg-violet-800/50 text-amber-300" : "text-violet-300"
+                pathname === href
+                  ? "bg-violet-800/50 text-amber-300"
+                  : "text-violet-300"
               }`}
             >
               <Icon className="w-4 h-4" />

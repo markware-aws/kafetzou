@@ -1,7 +1,5 @@
-"use client";
-
 import { useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import { Upload, X, Coffee, Sparkles, ImagePlus, AlertCircle, CheckCircle2, Coins } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
@@ -101,7 +99,6 @@ export default function UploadPage() {
   async function handleReadAll() {
     if (slots.length === 0 || processing) return;
     setProcessing(true);
-    // Process sequentially to avoid Cognito token issues and rate limits
     for (const slot of slots.filter((s) => s.status === "idle" || s.status === "error")) {
       await processSlot(slot);
     }
@@ -125,7 +122,6 @@ export default function UploadPage() {
         <Navbar />
 
         <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
-          {/* Hero */}
           <div className="text-center mb-10">
             <div className="flex items-center justify-center gap-2 mb-3">
               <Sparkles className="w-5 h-5 text-amber-400" />
@@ -137,7 +133,6 @@ export default function UploadPage() {
             </p>
           </div>
 
-          {/* Drop zone — only when no images selected yet */}
           {slots.length === 0 && (
             <div
               className={`relative border-2 border-dashed rounded-2xl transition-all cursor-pointer mb-6 ${
@@ -157,16 +152,13 @@ export default function UploadPage() {
                 <p className="text-violet-200 text-sm font-medium mb-1">
                   {dragOver ? "Αφήστε τις φωτογραφίες εδώ" : "Σύρετε τις φωτογραφίες του φλιτζανιού σας"}
                 </p>
-                <p className="text-violet-500 text-xs">
-                  ή κάντε κλικ — έως {MAX_IMAGES} φωτογραφίες
-                </p>
+                <p className="text-violet-500 text-xs">ή κάντε κλικ — έως {MAX_IMAGES} φωτογραφίες</p>
                 <p className="text-violet-600 text-xs mt-2">JPG, PNG, WEBP</p>
               </div>
               <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={onFileChange} />
             </div>
           )}
 
-          {/* Image previews + add more tile */}
           {slots.length > 0 && (
             <div className="grid grid-cols-3 gap-4 mb-6">
               {slots.map((slot, i) => (
@@ -174,7 +166,6 @@ export default function UploadPage() {
                   <div className="relative rounded-xl overflow-hidden border border-violet-800/40 bg-[#2e2a3a] aspect-square">
                     <img src={slot.preview} alt={`Cup ${i + 1}`} className="w-full h-full object-cover" />
 
-                    {/* Status overlay */}
                     {slot.status !== "idle" && (
                       <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
                         {(slot.status === "uploading" || slot.status === "reading") && (
@@ -193,7 +184,6 @@ export default function UploadPage() {
                       </div>
                     )}
 
-                    {/* Remove button */}
                     {!processing && (slot.status === "idle" || slot.status === "error") && (
                       <button
                         onClick={(e) => { e.stopPropagation(); removeSlot(slot.id); }}
@@ -203,7 +193,6 @@ export default function UploadPage() {
                       </button>
                     )}
 
-                    {/* Slot number badge */}
                     <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-violet-900/80 flex items-center justify-center">
                       <span className="text-xs text-violet-300 font-medium">{i + 1}</span>
                     </div>
@@ -211,7 +200,6 @@ export default function UploadPage() {
                 </div>
               ))}
 
-              {/* Add more tile */}
               {slots.length < MAX_IMAGES && !processing && (
                 <button
                   onClick={() => addMoreRef.current?.click()}
@@ -225,7 +213,6 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* CTA */}
           {slots.length > 0 && !allDone && (
             <div className="flex flex-col items-center gap-3">
               <button
@@ -268,7 +255,6 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* Results */}
           {results.length > 0 && (
             <div className="mt-10 flex flex-col gap-6">
               <div className="flex items-center gap-3">

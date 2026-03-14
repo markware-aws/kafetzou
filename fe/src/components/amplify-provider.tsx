@@ -1,15 +1,25 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Hub } from "aws-amplify/utils";
 import { configureAmplify } from "@/lib/amplify-config";
 
-// Configure Amplify at module load time (client-only).
-// This runs before any React component renders or effects fire,
-// ensuring auth calls (getCurrentUser, fetchAuthSession) always
-// find a configured Amplify instance regardless of component order.
 if (typeof window !== "undefined") {
   configureAmplify();
 }
 
 export function AmplifyProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    // After Google OAuth, Amplify fires this event. Navigate to the app.
+    const unsubscribe = Hub.listen("auth", ({ payload }) => {
+      if (payload.event === "signInWithRedirect") router.replace("/upload");
+      if (payload.event === "signInWithRedirect_failure") router.replace("/login");
+    });
+    return unsubscribe;
+  }, [router]);
+
   return <>{children}</>;
 }

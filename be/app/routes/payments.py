@@ -90,7 +90,7 @@ async def create_checkout_session(
                         "currency": "eur",
                         "unit_amount": bundle["price_cents"],
                         "product_data": {
-                            "name": f"Kafetzou — {bundle['label']} ({bundle['credits']} credits)",
+                            "name": f"Fortune Teller — {bundle['label']} ({bundle['credits']} credits)",
                             "description": bundle["description"],
                         },
                     },

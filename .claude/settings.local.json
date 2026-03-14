@@ -12,7 +12,8 @@
       "Bash(cd C:/VSC/KAFETZOU/mobile && npx --no-install tsc --noEmit 2>&1; echo \"EXIT:$?\")",
       "Bash(cd C:/VSC/KAFETZOU/mobile && npx --no-install tsc --noEmit 2>&1 | head -60; echo \"EXIT:$?\")",
       "Bash(cd C:/VSC/KAFETZOU/mobile && npx tsc --noEmit 2>&1 | head -80; echo \"EXIT:$?\")",
-      "Bash(cd C:/VSC/KAFETZOU/mobile && timeout 60 npx tsc --noEmit --pretty false 2>&1 | tail -30; echo \"DONE:$?\")"
+      "Bash(cd C:/VSC/KAFETZOU/mobile && timeout 60 npx tsc --noEmit --pretty false 2>&1 | tail -30; echo \"DONE:$?\")",
+      "Bash(cd /c/VSC/KAFETZOU/fe && rm src/app/page.tsx src/app/layout.tsx src/app/login/page.tsx src/app/login/layout.tsx src/app/upload/page.tsx src/app/dashboard/page.tsx src/app/reading/page.tsx src/app/tarot/page.tsx src/app/astrology/page.tsx src/app/tarot-reading/page.tsx src/app/astrology-reading/page.tsx src/app/dream/page.tsx src/app/dream-reading/page.tsx src/app/profile/page.tsx src/app/buy-credits/page.tsx src/app/payment/success/page.tsx src/app/privacy/page.tsx src/app/privacy/layout.tsx src/app/terms/page.tsx src/app/terms/layout.tsx && echo \"Done\")"
     ]
   }
 }

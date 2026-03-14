@@ -53,7 +53,6 @@ export async function getIdToken(): Promise<string | null> {
     const session = await fetchAuthSession();
     const token = session.tokens?.idToken?.toString() ?? null;
     if (token) return token;
-    // Token missing from cached session (e.g. after logout/login) — force a refresh
     const refreshed = await fetchAuthSession({ forceRefresh: true });
     return refreshed.tokens?.idToken?.toString() ?? null;
   } catch {
