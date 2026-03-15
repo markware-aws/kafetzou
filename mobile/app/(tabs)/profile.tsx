@@ -1,18 +1,96 @@
-import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import * as Haptics from 'expo-haptics';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, ActivityIndicator, Alert, Switch,
+  TextInput, ActivityIndicator, Alert, Switch, Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { User, LogOut, Coins, Star, Moon, Sun, Edit2, Check, X } from 'lucide-react-native';
+import { User, LogOut, Coins, Edit2, Check, X, MapPin, FileText, Shield } from 'lucide-react-native';
+import Constants from 'expo-constants';
 import { getMe, getBirthProfile, saveBirthProfile, User as UserType, BirthProfile } from '@/lib/api';
 import { SIGN_BY_ID } from '@/lib/astrology';
 import { logout } from '@/lib/auth';
 import { theme } from '@/lib/theme';
 
+const STATIC_URL: string = (Constants.expoConfig?.extra?.staticUrl ?? 'https://fortuneteller.gr').replace(/\/$/, '');
+
 const SEX_OPTIONS = ['Άνδρας', 'Γυναίκα', 'Άλλο'];
 const EYE_OPTIONS = ['Καστανά', 'Μπλε', 'Πράσινα', 'Γκρι', 'Μαύρα', 'Ανοιχτά'];
+
+interface PhotonFeature {
+  properties: { name?: string; city?: string; state?: string; country?: string };
+}
+function formatPlace(f: PhotonFeature): string {
+  const p = f.properties;
+  const parts = [p.name];
+  if (p.state && p.state !== p.name) parts.push(p.state);
+  if (p.country) parts.push(p.country);
+  return parts.filter(Boolean).join(', ');
+}
+
+function PlaceAutocomplete({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [query, setQuery] = useState(value);
+  const [results, setResults] = useState<PhotonFeature[]>([]);
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => { setQuery(value); }, [value]);
+
+  function handleChange(text: string) {
+    setQuery(text);
+    onChange(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (text.length < 2) { setResults([]); return; }
+    debounceRef.current = setTimeout(() => {
+      setLoading(true);
+      const tags = ['place:city', 'place:town', 'place:village']
+        .map(t => `&osm_tag=${encodeURIComponent(t)}`).join('');
+      fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(text)}&limit=5${tags}`)
+        .then(r => r.json())
+        .then(d => setResults(d.features ?? []))
+        .catch(() => setResults([]))
+        .finally(() => setLoading(false));
+    }, 350);
+  }
+
+  function select(f: PhotonFeature) {
+    const label = formatPlace(f);
+    setQuery(label);
+    onChange(label);
+    setResults([]);
+  }
+
+  return (
+    <View>
+      <View style={s.autocompleteInputWrap}>
+        <TextInput
+          style={[s.input, { flex: 1 }]}
+          value={query}
+          onChangeText={handleChange}
+          placeholder="Αθήνα, Ελλάδα"
+          placeholderTextColor={theme.textDim}
+          autoCorrect={false}
+        />
+        {loading && <ActivityIndicator size="small" color={theme.textDim} style={{ marginRight: 10 }} />}
+      </View>
+      {results.length > 0 && (
+        <View style={s.autocompleteList}>
+          {results.map((f, i) => (
+            <TouchableOpacity
+              key={i}
+              style={[s.autocompleteItem, i < results.length - 1 && s.autocompleteItemBorder]}
+              onPress={() => select(f)}
+              activeOpacity={0.7}
+            >
+              <MapPin size={13} color={theme.textDim} />
+              <Text style={s.autocompleteItemText}>{formatPlace(f)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 function PillSelect({ options, value, onChange }: {
   options: string[]; value: string; onChange: (v: string) => void;
@@ -270,14 +348,7 @@ export default function ProfileScreen() {
             </Field>
 
             <Field label="Τόπος γέννησης">
-              <TextInput
-                style={s.input}
-                value={birthPlace}
-                onChangeText={setBirthPlace}
-                placeholder="Αθήνα, Ελλάδα"
-                placeholderTextColor={theme.textDim}
-                autoCorrect={false}
-              />
+              <PlaceAutocomplete value={birthPlace} onChange={setBirthPlace} />
             </Field>
 
             <Field label="Φύλο">
@@ -291,6 +362,19 @@ export default function ProfileScreen() {
             {!!saveError && <Text style={s.saveError}>{saveError}</Text>}
           </View>
         )}
+      </View>
+
+      {/* Legal links */}
+      <View style={s.legalRow}>
+        <TouchableOpacity style={s.legalLink} onPress={() => Linking.openURL(`${STATIC_URL}/privacy`)} activeOpacity={0.7}>
+          <Shield size={13} color={theme.textDim} />
+          <Text style={s.legalLinkText}>Πολιτική Απορρήτου</Text>
+        </TouchableOpacity>
+        <Text style={s.legalDot}>·</Text>
+        <TouchableOpacity style={s.legalLink} onPress={() => Linking.openURL(`${STATIC_URL}/terms`)} activeOpacity={0.7}>
+          <FileText size={13} color={theme.textDim} />
+          <Text style={s.legalLinkText}>Όροι Χρήσης</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Logout */}
@@ -408,6 +492,22 @@ const s = StyleSheet.create({
   pillActive: { borderColor: 'rgba(109,40,217,0.5)', backgroundColor: 'rgba(109,40,217,0.15)' },
   pillText: { fontSize: 12, color: theme.textMuted },
   pillTextActive: { color: theme.violetLight, fontWeight: '600' },
+
+  // Autocomplete
+  autocompleteInputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border, borderRadius: 10 },
+  autocompleteList: {
+    marginTop: 4, borderWidth: 1, borderColor: theme.border,
+    borderRadius: 10, backgroundColor: theme.surface, overflow: 'hidden',
+  },
+  autocompleteItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10 },
+  autocompleteItemBorder: { borderBottomWidth: 1, borderBottomColor: theme.borderLight },
+  autocompleteItemText: { fontSize: 13, color: theme.text, flex: 1 },
+
+  // Legal
+  legalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 },
+  legalLink: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 6 },
+  legalLinkText: { fontSize: 12, color: theme.textDim },
+  legalDot: { fontSize: 12, color: theme.textDim },
 
   // Logout
   logoutBtn: {
