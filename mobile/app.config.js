@@ -10,14 +10,8 @@ module.exports = {
     slug: "kafetzou",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/icon.png",
     scheme: IS_PROD ? "kafetzou" : "kafetzou-dev",
     userInterfaceStyle: "dark",
-    splash: {
-      image: "./assets/splash.png",
-      resizeMode: "contain",
-      backgroundColor: "#0c0a1a",
-    },
     ios: {
       supportsTablet: false,
       bundleIdentifier: IS_PROD ? "com.kafetzou.app" : "com.kafetzou.app.dev",
@@ -29,10 +23,6 @@ module.exports = {
       },
     },
     android: {
-      adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#0c0a1a",
-      },
       package: IS_PROD ? "com.kafetzou.app" : "com.kafetzou.app.dev",
       permissions: ["READ_EXTERNAL_STORAGE", "CAMERA"],
     },
