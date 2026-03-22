@@ -45,8 +45,7 @@ export default function LoginScreen() {
   async function handleConfirm() {
     setLoading(true); setError('');
     try {
-      await confirmRegistration(email, code);
-      await login(email, password);
+      await confirmRegistration(email, code, password); // handles auto-sign-in internally
       router.replace('/(tabs)/upload');
     } catch (e: any) { setError(e.message ?? 'Confirmation failed'); }
     finally { setLoading(false); }
@@ -71,7 +70,9 @@ export default function LoginScreen() {
       await confirmForgotPassword(email, code, newPassword);
       await login(email, newPassword);
       router.replace('/(tabs)/upload');
-    } catch (e: any) { setError(e.message ?? 'Αποτυχία επαναφοράς κωδικού'); }
+    } catch (e: any) {
+      setError(e.message ?? 'Αποτυχία επαναφοράς κωδικού');
+    }
     finally { setLoading(false); }
   }
 
@@ -96,7 +97,7 @@ export default function LoginScreen() {
             <Coffee size={32} color="#000" />
           </View>
           <Text style={s.logoText}>Fortune Teller</Text>
-          <Text style={s.logoSub}>AI Ανάγνωση Ελληνικού Καφέ</Text>
+          <Text style={s.logoSub}>Ανάγνωση Ελληνικού Καφέ</Text>
         </View>
 
         <View style={s.card}>

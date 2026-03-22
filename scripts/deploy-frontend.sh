@@ -17,20 +17,24 @@ cd fe
 npm run build
 
 echo "▶ Syncing to S3..."
+# Static assets — long cache, immutable (hashed filenames)
 aws s3 sync out/ "s3://${S3_BUCKET}" \
   --delete \
   --region "$AWS_REGION" \
   --cache-control "public, max-age=31536000, immutable" \
   --exclude "*.html" \
-  --exclude "*.json"
+  --exclude "*.json" \
+  --exclude "horoscopes/*"
 
-# HTML and JSON files should not be cached aggressively (they reference hashed assets)
+# HTML + JSON pages — short cache (not content-hashed, can change on deploy)
 aws s3 sync out/ "s3://${S3_BUCKET}" \
   --delete \
   --region "$AWS_REGION" \
   --cache-control "public, max-age=0, must-revalidate" \
+  --exclude "*" \
   --include "*.html" \
-  --include "*.json"
+  --include "*.json" \
+  --exclude "horoscopes/*"
 
 echo "▶ Invalidating CloudFront cache..."
 aws cloudfront create-invalidation \

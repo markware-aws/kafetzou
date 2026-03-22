@@ -46,6 +46,28 @@ def generate_presigned_upload_url(user_id: str, reading_id: str, content_type: s
     return url, key
 
 
+def write_horoscope_json(sign: str, period: str, payload: dict) -> None:
+    """Write a horoscope JSON file to the frontend S3 bucket for CloudFront serving."""
+    if not settings.frontend_s3_bucket:
+        logger.warning("FRONTEND_S3_BUCKET not set — skipping S3 horoscope write")
+        return
+    s3 = get_s3_client()
+    key = f"horoscopes/{period}/{sign}.json"
+    try:
+        import json
+        s3.put_object(
+            Bucket=settings.frontend_s3_bucket,
+            Key=key,
+            Body=json.dumps(payload),
+            ContentType="application/json",
+            CacheControl="public, max-age=3600",
+        )
+        logger.info("Wrote horoscope to s3://%s/%s", settings.frontend_s3_bucket, key)
+    except Exception as exc:
+        logger.error("Failed to write horoscope JSON to S3: %s", exc)
+        raise
+
+
 def get_image_url(object_key: str, expires_in: int = 3600) -> str:
     """Generate a presigned GET URL for reading an image from S3."""
     s3 = get_s3_client()

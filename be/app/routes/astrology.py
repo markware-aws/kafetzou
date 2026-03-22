@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 
@@ -8,7 +9,7 @@ from app.core.config import settings
 from app.core.credits import RequireCredits
 from app.core.security import get_current_user
 from app.schemas.astrology import AstrologyReading, PersonalizedReadingRequest, ZodiacSign, PeriodType
-from app.services import astrology_service, dynamodb_service
+from app.services import astrology_service, dynamodb_service, s3_service
 
 ALL_SIGNS: list[ZodiacSign] = [
     "aries", "taurus", "gemini", "cancer", "leo", "virgo",
@@ -49,25 +50,36 @@ async def prewarm_horoscopes(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid prewarm secret")
 
     period_key = astrology_service.get_period_key(period)
-    results = {"period": period, "period_key": period_key, "generated": [], "cached": [], "errors": []}
+    generated, cached, errors = [], [], []
 
-    for sign in ALL_SIGNS:
-        # Skip if already cached
-        if dynamodb_service.get_astrology_reading(sign, period_key):
-            results["cached"].append(sign)
-            continue
+    async def prewarm_sign(sign: str) -> None:
         try:
-            reading, _ = await astrology_service.generate_horoscope(sign, period)
-            dynamodb_service.save_astrology_reading(
-                sign=sign, period_key=period_key, period=period, reading=reading
-            )
-            results["generated"].append(sign)
-            logger.info("Prewarmed %s/%s", sign, period_key)
+            cached_item = dynamodb_service.get_astrology_reading(sign, period_key)
+            if cached_item:
+                reading = cached_item["reading_result"]
+                cached.append(sign)
+            else:
+                reading_obj, _ = await astrology_service.generate_horoscope(sign, period)
+                dynamodb_service.save_astrology_reading(
+                    sign=sign, period_key=period_key, period=period, reading=reading_obj
+                )
+                reading = reading_obj.model_dump()
+                generated.append(sign)
+                logger.info("Prewarmed %s/%s", sign, period_key)
+
+            s3_service.write_horoscope_json(sign, period, {
+                "sign": sign,
+                "period": period,
+                "reading": reading,
+                "cached": True,
+            })
         except Exception as exc:
             logger.error("Prewarm failed for %s/%s: %s", sign, period_key, exc)
-            results["errors"].append({"sign": sign, "error": str(exc)})
+            errors.append({"sign": sign, "error": str(exc)})
 
-    return results
+    await asyncio.gather(*[prewarm_sign(sign) for sign in ALL_SIGNS])
+
+    return {"period": period, "period_key": period_key, "generated": generated, "cached": cached, "errors": errors}
 
 
 # ── Personalized (defined BEFORE parameterized route to avoid path conflict) ──

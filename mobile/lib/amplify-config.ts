@@ -5,6 +5,7 @@ import Constants from 'expo-constants';
 
 export function configureAmplify() {
   const extra = Constants.expoConfig?.extra ?? {};
+  const scheme = Constants.expoConfig?.scheme ?? 'kafetzou';
 
   Amplify.configure({
     Auth: {
@@ -16,8 +17,8 @@ export function configureAmplify() {
           oauth: {
             domain: extra.cognitoDomain as string,
             scopes: ['email', 'openid', 'profile'],
-            redirectSignIn: ['kafetzou://'],
-            redirectSignOut: ['kafetzou://login'],
+            redirectSignIn: [`${scheme}://`],
+            redirectSignOut: [`${scheme}://login`],
             responseType: 'code',
           },
         },

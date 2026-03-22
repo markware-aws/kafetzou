@@ -180,7 +180,7 @@ export default function TarotScreen() {
           {/* Divider */}
           <View style={s.divider}>
             <View style={s.dividerLine} />
-            <Text style={s.dividerLabel}>AI ΑΝΑΓΝΩΣΗ</Text>
+            <Text style={s.dividerLabel}>ΑΝΑΓΝΩΣΗ</Text>
             <View style={s.dividerLine} />
           </View>
 
