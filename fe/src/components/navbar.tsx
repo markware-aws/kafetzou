@@ -84,7 +84,7 @@ export function Navbar() {
             </Link>
           ))}
 
-          {credits !== null && (
+          {credits !== null ? (
             <Link
               href="/buy-credits"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium ml-1 hover:bg-amber-500/20 hover:border-amber-500/40 transition-colors group"
@@ -95,6 +95,8 @@ export function Navbar() {
                 +
               </span>
             </Link>
+          ) : (
+            <div className="h-7 w-14 rounded-lg shimmer ml-1" />
           )}
 
           <button

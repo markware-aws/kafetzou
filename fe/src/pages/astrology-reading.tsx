@@ -63,8 +63,17 @@ export default function AstrologyReadingPage() {
 
           {loading && (
             <div className="flex flex-col gap-4">
-              <div className="h-8 w-48 rounded-lg shimmer" />
-              <div className="h-64 rounded-2xl shimmer" />
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full shimmer" />
+                <div className="flex flex-col gap-1.5">
+                  <div className="h-4 w-24 rounded shimmer" />
+                  <div className="h-3 w-32 rounded shimmer" />
+                </div>
+              </div>
+              <div className="h-14 rounded-2xl shimmer" />
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-20 rounded-2xl shimmer" />
+              ))}
             </div>
           )}
 

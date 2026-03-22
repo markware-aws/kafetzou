@@ -58,8 +58,21 @@ export default function TarotReadingPage() {
 
           {loading && (
             <div className="flex flex-col gap-4">
-              <div className="h-8 w-48 rounded-lg shimmer" />
-              <div className="h-64 rounded-2xl shimmer" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full shimmer" />
+                <div className="flex flex-col gap-1.5">
+                  <div className="h-4 w-28 rounded shimmer" />
+                  <div className="h-3 w-24 rounded shimmer" />
+                </div>
+              </div>
+              <div className="flex gap-3 justify-center">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="w-24 h-40 rounded-xl shimmer" />
+                ))}
+              </div>
+              <div className="h-16 rounded-2xl shimmer" />
+              <div className="h-20 rounded-2xl shimmer" />
+              <div className="h-20 rounded-2xl shimmer" />
             </div>
           )}
 

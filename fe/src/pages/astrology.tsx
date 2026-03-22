@@ -119,7 +119,12 @@ function HoroscopePanel({ signId }: { signId: string }) {
 
       {loading && (
         <div className="flex flex-col gap-3">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-20 rounded-2xl shimmer" />)}
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-4 flex flex-col gap-2">
+              <div className="h-3 w-24 rounded shimmer" />
+              <div className="h-12 rounded shimmer" />
+            </div>
+          ))}
         </div>
       )}
       {error && <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 text-sm text-rose-300">{error}</div>}
