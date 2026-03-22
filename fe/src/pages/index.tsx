@@ -10,6 +10,7 @@ import {
   Briefcase,
   AlertTriangle,
   Coins,
+  type LucideIcon,
 } from "lucide-react";
 import { getUser } from "@/lib/auth";
 import { getHoroscope } from "@/lib/api";
@@ -43,7 +44,7 @@ function ReadingCard({
   label,
   text,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   text: string;
 }) {
@@ -68,13 +69,20 @@ function HoroscopeSection() {
   const [error, setError] = useState("");
   useEffect(() => {
     if (!selectedSign) return;
-    setLoading(true);
-    setError("");
-    // setReading(null);
+    let cancelled = false;
     getHoroscope(selectedSign.id, period)
-      .then((r) => setReading(r.reading))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .then((r) => {
+        if (!cancelled) setReading(r.reading);
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedSign, period]);
 
   return (
@@ -92,10 +100,16 @@ function HoroscopeSection() {
           return (
             <button
               key={s.id}
-              onClick={() => setSelectedSign(s)}
+              onClick={() => {
+                setError("");
+                setLoading(true);
+                setSelectedSign(s);
+              }}
               className={`rounded-xl border py-3 flex flex-col items-center gap-1 text-xs font-medium transition-all ${
                 active
-                  ? `${ELEMENT_BG[s.element]} ${ELEMENT_COLORS[s.element]} border-current/40`
+                  ? `${ELEMENT_BG[s.element]} ${
+                      ELEMENT_COLORS[s.element]
+                    } border-current/40`
                   : "border-violet-800/30 bg-[#2e2a3a] text-violet-400 hover:border-violet-600/40 hover:text-violet-200"
               }`}
             >
@@ -113,7 +127,12 @@ function HoroscopeSection() {
               ([key, label]) => (
                 <button
                   key={key}
-                  onClick={() => setPeriod(key)}
+                  onClick={() => {
+                    if (period === key) return;
+                    setError("");
+                    setLoading(true);
+                    setPeriod(key);
+                  }}
                   className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
                     period === key
                       ? "bg-violet-800/60 text-amber-300"
@@ -122,11 +141,12 @@ function HoroscopeSection() {
                 >
                   {label}
                 </button>
-              ),
+              )
             )}
           </div>
 
-          {loading && (
+          {/* Keep current reading visible while fetching next one to avoid height flicker. */}
+          {loading && !reading && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[...Array(4)].map((_, i) => (
                 <div
@@ -146,15 +166,19 @@ function HoroscopeSection() {
             </div>
           )}
 
-          {reading && !loading && (
+          {reading && (
             <div className="flex flex-col gap-3 animate-fade-in">
               <div
-                className={`rounded-2xl border p-4 flex items-center gap-3 ${ELEMENT_BG[selectedSign.element]}`}
+                className={`rounded-2xl border p-4 flex items-center gap-3 ${
+                  ELEMENT_BG[selectedSign.element]
+                }`}
               >
                 <span className="text-3xl">{selectedSign.symbol}</span>
                 <div>
                   <p
-                    className={`font-semibold text-base ${ELEMENT_COLORS[selectedSign.element]}`}
+                    className={`font-semibold text-base ${
+                      ELEMENT_COLORS[selectedSign.element]
+                    }`}
                   >
                     {selectedSign.nameGr}
                   </p>
@@ -163,7 +187,7 @@ function HoroscopeSection() {
                   </p>
                 </div>
                 <p className="ml-auto text-sm text-violet-200 italic max-w-[55%] text-right leading-snug">
-                  "{reading.summary}"
+                  &ldquo;{reading.summary}&rdquo;
                 </p>
               </div>
 
@@ -191,6 +215,12 @@ function HoroscopeSection() {
                 </div>
               )}
             </div>
+          )}
+
+          {loading && reading && (
+            <p className="text-xs text-violet-500 mt-3 text-center">
+              Ανανέωση ωροσκοπίου...
+            </p>
           )}
         </div>
       )}
