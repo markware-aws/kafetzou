@@ -5,6 +5,7 @@ import {
   signOut,
   signUp,
   confirmSignUp,
+  resendSignUpCode,
   getCurrentUser,
   fetchAuthSession,
   resetPassword,
@@ -26,6 +27,10 @@ export async function register(email: string, password: string) {
 
 export async function confirmRegistration(email: string, code: string) {
   return confirmSignUp({ username: email, confirmationCode: code });
+}
+
+export async function resendRegistrationCode(email: string) {
+  return resendSignUpCode({ username: email });
 }
 
 export async function loginWithGoogle() {

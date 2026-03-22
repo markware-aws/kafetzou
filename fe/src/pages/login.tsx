@@ -1,25 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { Coffee, Eye, EyeOff, Sparkles } from "lucide-react";
-import { login, register, confirmRegistration, forgotPassword, confirmForgotPassword, getUser, loginWithGoogle } from "@/lib/auth";
+import { Check, Coffee, Eye, EyeOff, Sparkles, X } from "lucide-react";
+import { login, register, confirmRegistration, forgotPassword, confirmForgotPassword, getUser, loginWithGoogle, resendRegistrationCode } from "@/lib/auth";
 
 type Step = "login" | "register" | "confirm" | "forgot" | "reset";
+
+type PasswordRule = {
+  label: string;
+  met: boolean;
+};
 
 export default function LoginPage() {
   const router = useRouter();
 
-  function getDestination() {
+  const getDestination = useCallback(() => {
     const returnTo = router.query.returnTo as string | undefined;
     return returnTo && returnTo.startsWith("/") ? returnTo : "/";
-  }
+  }, [router.query.returnTo]);
 
   useEffect(() => {
     if (!router.isReady) return;
     getUser().then((user) => {
       if (user) router.replace(getDestination());
     });
-  }, [router.isReady]);
+  }, [getDestination, router, router.isReady]);
 
   const [step, setStep] = useState<Step>("login");
   const [email, setEmail] = useState("");
@@ -29,8 +34,31 @@ export default function LoginPage() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [error, setError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const passwordRules: PasswordRule[] = [
+    { label: "Τουλάχιστον 8 χαρακτήρες", met: password.length >= 8 },
+    { label: "Ένα κεφαλαίο γράμμα", met: /[A-Z]/.test(password) },
+    { label: "Ένα μικρό γράμμα", met: /[a-z]/.test(password) },
+    { label: "Έναν αριθμό", met: /\d/.test(password) },
+    { label: "Έναν ειδικό χαρακτήρα", met: /[^A-Za-z0-9]/.test(password) },
+  ];
+
+  const metRules = passwordRules.filter((rule) => rule.met).length;
+  const passwordScore = Math.round((metRules / passwordRules.length) * 100);
+  const isPasswordStrongEnough = metRules >= 4 && password.length >= 8;
+
+  useEffect(() => {
+    if (!resendCooldown) return;
+    const timer = setInterval(() => {
+      setResendCooldown((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -39,8 +67,8 @@ export default function LoginPage() {
     try {
       await login(email, password);
       router.push(getDestination());
-    } catch (err: any) {
-      setError(err.message ?? "Login failed");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }
@@ -48,13 +76,18 @@ export default function LoginPage() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
+    if (!isPasswordStrongEnough) {
+      setError("Ο κωδικός δεν είναι αρκετά ισχυρός.");
+      return;
+    }
     setLoading(true);
     setError("");
+    setResendMessage("");
     try {
       await register(email, password);
       setStep("confirm");
-    } catch (err: any) {
-      setError(err.message ?? "Registration failed");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Registration failed"));
     } finally {
       setLoading(false);
     }
@@ -67,8 +100,8 @@ export default function LoginPage() {
     try {
       await forgotPassword(email);
       setStep("reset");
-    } catch (err: any) {
-      setError(err.message ?? "Αποτυχία αποστολής κωδικού");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Αποτυχία αποστολής κωδικού"));
     } finally {
       setLoading(false);
     }
@@ -86,8 +119,8 @@ export default function LoginPage() {
       await confirmForgotPassword(email, code, newPassword);
       await login(email, newPassword);
       router.push(getDestination());
-    } catch (err: any) {
-      setError(err.message ?? "Αποτυχία επαναφοράς κωδικού");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Αποτυχία επαναφοράς κωδικού"));
     } finally {
       setLoading(false);
     }
@@ -101,10 +134,26 @@ export default function LoginPage() {
       await confirmRegistration(email, code);
       await login(email, password);
       router.push(getDestination());
-    } catch (err: any) {
-      setError(err.message ?? "Confirmation failed");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Confirmation failed"));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResendCode() {
+    if (!email || resendCooldown > 0) return;
+    setResendLoading(true);
+    setError("");
+    setResendMessage("");
+    try {
+      await resendRegistrationCode(email);
+      setResendMessage("Στείλαμε νέο κωδικό επιβεβαίωσης.");
+      setResendCooldown(30);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Αποτυχία αποστολής νέου κωδικού"));
+    } finally {
+      setResendLoading(false);
     }
   }
 
@@ -190,6 +239,34 @@ export default function LoginPage() {
                       {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {password.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <div className="w-full h-1.5 rounded-full bg-violet-900/50 overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${
+                            passwordScore < 50
+                              ? "bg-rose-500"
+                              : passwordScore < 80
+                                ? "bg-amber-500"
+                                : "bg-amber-400"
+                          }`}
+                          style={{ width: `${passwordScore}%` }}
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 gap-1.5">
+                        {passwordRules.map((rule) => (
+                          <div key={rule.label} className="flex items-center gap-1.5 text-[11px]">
+                            {rule.met ? (
+                              <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            ) : (
+                              <X className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+                            )}
+                            <span className={rule.met ? "text-amber-300" : "text-violet-500"}>{rule.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {error && <p className="text-rose-400 text-xs">{error}</p>}
                 <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -210,7 +287,7 @@ export default function LoginPage() {
                     </a>
                   </span>
                 </label>
-                <SubmitButton loading={loading} label="Δημιουργία λογαριασμού" loadingLabel="Δημιουργία…" disabled={!agreedToTerms} />
+                <SubmitButton loading={loading} label="Δημιουργία λογαριασμού" loadingLabel="Δημιουργία…" disabled={!agreedToTerms || !isPasswordStrongEnough} />
               </form>
               <div className="flex items-center gap-3 my-4">
                 <div className="flex-1 h-px bg-violet-800/40" />
@@ -301,14 +378,37 @@ export default function LoginPage() {
               <form onSubmit={handleConfirm} className="flex flex-col gap-4">
                 <Input label="Verification code" type="text" value={code} onChange={setCode} placeholder="123456" autoComplete="one-time-code" />
                 {error && <p className="text-rose-400 text-xs">{error}</p>}
+                {resendMessage && <p className="text-amber-300 text-xs">{resendMessage}</p>}
                 <SubmitButton loading={loading} label="Επιβεβαίωση & Σύνδεση" loadingLabel="Επιβεβαίωση…" />
               </form>
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={resendLoading || resendCooldown > 0}
+                className="mt-4 text-xs text-violet-400 hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {resendLoading
+                  ? "Αποστολή νέου κωδικού..."
+                  : resendCooldown > 0
+                    ? `Αποστολή ξανά σε ${resendCooldown}s`
+                    : "Δεν έλαβες κωδικό; Στείλε ξανά"}
+              </button>
             </>
           )}
         </div>
       </div>
     </div>
   );
+}
+
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === "object" && "message" in err) {
+    const message = (err as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+  }
+  return fallback;
 }
 
 function Input({
