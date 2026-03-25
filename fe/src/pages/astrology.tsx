@@ -350,7 +350,7 @@ function PersonalizedForm({
               required
               className="w-full bg-[#24242E] border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60"
             >
-              <option value="">— Επίλεξε ζώδιο —</option>
+              <option value="">— Επέλεξε ζώδιο —</option>
               {SIGNS.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.symbol} {s.nameGr}

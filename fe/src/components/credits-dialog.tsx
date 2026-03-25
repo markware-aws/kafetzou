@@ -152,50 +152,61 @@ export function InsufficientCreditsDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="p-0">
-        {/* Header section */}
-        <DialogHeader className="p-6 pb-4">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-              <Coins className="w-5 h-5 text-amber-400" />
+        {/* Header section — only shown when credits are actually insufficient */}
+        {requiredCredits > 0 ? (
+          <DialogHeader className="p-6 pb-4">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <Coins className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <DialogTitle>Ανεπαρκή credits</DialogTitle>
+                <DialogDescription className="mt-0.5">
+                  Χρειάζεσαι{" "}
+                  <span className="text-amber-400 font-semibold">
+                    {requiredCredits} credits
+                  </span>{" "}
+                  για {featureName}
+                  {missing !== null && missing > 0 && (
+                    <>
+                      {" "}
+                      — σου λείπουν{" "}
+                      <span className="text-rose-400 font-semibold">
+                        {missing}
+                      </span>
+                    </>
+                  )}
+                </DialogDescription>
+              </div>
             </div>
-            <div>
-              <DialogTitle>Ανεπαρκή credits</DialogTitle>
-              <DialogDescription className="mt-0.5">
-                Χρειάζεσαι{" "}
-                <span className="text-amber-400 font-semibold">
-                  {requiredCredits} credits
-                </span>{" "}
-                για {featureName}
-                {missing !== null && missing > 0 && (
-                  <>
-                    {" "}
-                    — σου λείπουν{" "}
-                    <span className="text-rose-400 font-semibold">
-                      {missing}
-                    </span>
-                  </>
-                )}
-              </DialogDescription>
-            </div>
-          </div>
 
-          {currentCredits !== undefined && (
-            <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl bg-violet-900/30 border border-violet-800/30">
-              <Coins className="w-3.5 h-3.5 text-violet-500" />
-              <span className="text-xs text-violet-400">
-                Τρέχον υπόλοιπο:{" "}
-                <span className="text-violet-200 font-semibold">
-                  {currentCredits} credits
+            {currentCredits !== undefined && (
+              <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl bg-violet-900/30 border border-violet-800/30">
+                <Coins className="w-3.5 h-3.5 text-violet-500" />
+                <span className="text-xs text-violet-400">
+                  Τρέχον υπόλοιπο:{" "}
+                  <span className="text-violet-200 font-semibold">
+                    {currentCredits} credits
+                  </span>
                 </span>
-              </span>
+              </div>
+            )}
+          </DialogHeader>
+        ) : (
+          <DialogHeader className="p-6 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                <Coins className="w-5 h-5 text-amber-400" />
+              </div>
+              <DialogTitle>Αγόρασε Credits</DialogTitle>
             </div>
-          )}
-        </DialogHeader>
+          </DialogHeader>
+        )}
 
         {/* Bundles */}
         <div className="px-6 pb-6 flex flex-col gap-2">
           <p className="text-xs text-violet-500 uppercase tracking-widest font-medium mb-1">
-            Επίλεξε πακέτο
+            ΕΠΕΛΕΞΕ ΠΑΚΕΤΟ
           </p>
 
           {loadingBundles && (
