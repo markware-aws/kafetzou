@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Coins, Loader2, Sparkles, Star, Coffee, Moon, AlertCircle } from "lucide-react";
+import {
+  Coins,
+  Loader2,
+  Sparkles,
+  Star,
+  Coffee,
+  Moon,
+  AlertCircle,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +17,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { getCreditBundles, createCheckoutSession, CreditBundle } from "@/lib/api";
+import {
+  getCreditBundles,
+  createCheckoutSession,
+  CreditBundle,
+} from "@/lib/api";
 
 interface Props {
   open: boolean;
@@ -24,8 +36,8 @@ interface Props {
 
 const FEATURE_ICONS: Record<string, any> = {
   "Ανάγνωση Καφέ": Coffee,
-  "Ταρό": Star,
-  "Αστρολογία": Sparkles,
+  Ταρό: Star,
+  Αστρολογία: Sparkles,
   "Ερμηνεία Ονείρου": Moon,
 };
 
@@ -49,13 +61,17 @@ function BundleRow({
       } disabled:opacity-50`}
     >
       <div className="flex items-center gap-3 min-w-0">
-        <div className={`flex items-center gap-1.5 shrink-0 ${bundle.popular ? "text-amber-300" : "text-violet-300"}`}>
+        <div
+          className={`flex items-center gap-1.5 shrink-0 ${bundle.popular ? "text-amber-300" : "text-violet-300"}`}
+        >
           <Coins className="w-4 h-4" />
           <span className="font-bold text-sm">{bundle.credits}</span>
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-medium ${bundle.popular ? "text-amber-200" : "text-violet-200"}`}>
+            <span
+              className={`text-sm font-medium ${bundle.popular ? "text-amber-200" : "text-violet-200"}`}
+            >
               {bundle.label}
             </span>
             {bundle.popular && (
@@ -64,23 +80,29 @@ function BundleRow({
               </span>
             )}
           </div>
-          <p className="text-xs text-violet-500 truncate">{bundle.description}</p>
+          <p className="text-xs text-violet-500 truncate">
+            {bundle.description}
+          </p>
         </div>
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <span className={`text-sm font-bold ${bundle.popular ? "text-amber-300" : "text-violet-200"}`}>
+        <span
+          className={`text-sm font-bold ${bundle.popular ? "text-amber-300" : "text-violet-200"}`}
+        >
           €{bundle.price_eur.toFixed(2)}
         </span>
         {buying ? (
           <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
         ) : (
-          <span className={`text-xs px-2.5 py-1 rounded-lg font-medium ${
-            bundle.popular
-              ? "bg-amber-500 text-black"
-              : "bg-violet-800/50 text-violet-200 border border-violet-700/40"
-          }`}>
-            Αγόρασε
+          <span
+            className={`text-xs px-2.5 py-1 rounded-lg font-medium ${
+              bundle.popular
+                ? "bg-amber-500 text-black"
+                : "bg-violet-800/50 text-violet-200 border border-violet-700/40"
+            }`}
+          >
+            Αγορά
           </span>
         )}
       </div>
@@ -121,8 +143,11 @@ export function InsufficientCreditsDialog({
     }
   }
 
-  const FeatureIcon = featureName ? (FEATURE_ICONS[featureName] ?? Coins) : Coins;
-  const missing = currentCredits !== undefined ? requiredCredits - currentCredits : null;
+  const FeatureIcon = featureName
+    ? (FEATURE_ICONS[featureName] ?? Coins)
+    : Coins;
+  const missing =
+    currentCredits !== undefined ? requiredCredits - currentCredits : null;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -136,9 +161,19 @@ export function InsufficientCreditsDialog({
             <div>
               <DialogTitle>Ανεπαρκή credits</DialogTitle>
               <DialogDescription className="mt-0.5">
-                Χρειάζεσαι <span className="text-amber-400 font-semibold">{requiredCredits} credits</span> για {featureName}
+                Χρειάζεσαι{" "}
+                <span className="text-amber-400 font-semibold">
+                  {requiredCredits} credits
+                </span>{" "}
+                για {featureName}
                 {missing !== null && missing > 0 && (
-                  <> — σου λείπουν <span className="text-rose-400 font-semibold">{missing}</span></>
+                  <>
+                    {" "}
+                    — σου λείπουν{" "}
+                    <span className="text-rose-400 font-semibold">
+                      {missing}
+                    </span>
+                  </>
                 )}
               </DialogDescription>
             </div>
@@ -148,7 +183,10 @@ export function InsufficientCreditsDialog({
             <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl bg-violet-900/30 border border-violet-800/30">
               <Coins className="w-3.5 h-3.5 text-violet-500" />
               <span className="text-xs text-violet-400">
-                Τρέχον υπόλοιπο: <span className="text-violet-200 font-semibold">{currentCredits} credits</span>
+                Τρέχον υπόλοιπο:{" "}
+                <span className="text-violet-200 font-semibold">
+                  {currentCredits} credits
+                </span>
               </span>
             </div>
           )}
@@ -156,7 +194,9 @@ export function InsufficientCreditsDialog({
 
         {/* Bundles */}
         <div className="px-6 pb-6 flex flex-col gap-2">
-          <p className="text-xs text-violet-500 uppercase tracking-widest font-medium mb-1">Επίλεξε πακέτο</p>
+          <p className="text-xs text-violet-500 uppercase tracking-widest font-medium mb-1">
+            Επίλεξε πακέτο
+          </p>
 
           {loadingBundles && (
             <div className="flex items-center justify-center py-8">
@@ -164,14 +204,15 @@ export function InsufficientCreditsDialog({
             </div>
           )}
 
-          {!loadingBundles && bundles.map((b) => (
-            <BundleRow
-              key={b.id}
-              bundle={b}
-              onBuy={handleBuy}
-              buying={buyingId === b.id}
-            />
-          ))}
+          {!loadingBundles &&
+            bundles.map((b) => (
+              <BundleRow
+                key={b.id}
+                bundle={b}
+                onBuy={handleBuy}
+                buying={buyingId === b.id}
+              />
+            ))}
 
           {error && (
             <div className="flex items-center gap-2 rounded-xl border border-rose-800/30 bg-rose-900/10 px-3 py-2 mt-1">

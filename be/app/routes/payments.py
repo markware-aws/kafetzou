@@ -20,29 +20,29 @@ BUNDLES: dict[str, dict] = {
     "starter": {
         "credits": 10,
         "price_cents": 199,
-        "label": "Δοκιμαστικό",
-        "description": "Ιδανικό για να δοκιμάσεις την εφαρμογή",
+        "label": "Try out",
+        "description": "Δοκίμασε την εφαρμογή",
         "popular": False,
     },
     "popular": {
         "credits": 30,
         "price_cents": 499,
-        "label": "Δημοφιλές",
-        "description": "Η καλύτερη επιλογή για τακτική χρήση",
+        "label": "Regular",
+        "description": "Για τακτική χρήση",
         "popular": True,
     },
     "power": {
         "credits": 75,
         "price_cents": 999,
         "label": "Power",
-        "description": "Για τους αφοσιωμένους χρήστες",
+        "description": "Για αφοσιωμένους χρήστες",
         "popular": False,
     },
     "premium": {
         "credits": 200,
         "price_cents": 1999,
         "label": "Premium",
-        "description": "Μέγιστη αξία — ιδανικό για δώρο",
+        "description": "Μέγιστη αξία",
         "popular": False,
     },
 }
@@ -53,6 +53,7 @@ class CheckoutRequest(BaseModel):
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
 
 @router.get("/bundles")
 async def list_bundles() -> list[dict]:
@@ -75,11 +76,15 @@ async def create_checkout_session(
     """Create a Stripe Checkout Session and return its URL."""
     bundle = BUNDLES.get(body.bundle_id)
     if not bundle:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid bundle")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid bundle"
+        )
 
     user_id = current_user.get("sub")
     if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )
 
     try:
         session = stripe.checkout.Session.create(
@@ -122,10 +127,14 @@ async def stripe_webhook(request: Request) -> dict:
         )
     except stripe.errors.SignatureVerificationError as exc:
         logger.warning("Invalid Stripe webhook signature: %s", exc)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature"
+        )
     except Exception as exc:
         logger.error("Webhook parse error: %s", exc)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bad payload")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad payload"
+        )
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]

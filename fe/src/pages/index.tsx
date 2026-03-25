@@ -90,7 +90,7 @@ function HoroscopeSection() {
       <div className="text-center mb-8">
         <h2 className="text-xl font-bold text-violet-100 mb-1">Ωροσκόπιο</h2>
         <p className="text-sm text-violet-400">
-          Επίλεξε το ζώδιό σου — δωρεάν, χωρίς εγγραφή
+          Διάλεξε ένα ζώδιο για να δεις το ωροσκόπιό σου
         </p>
       </div>
 
@@ -141,7 +141,7 @@ function HoroscopeSection() {
                 >
                   {label}
                 </button>
-              )
+              ),
             )}
           </div>
 
@@ -224,12 +224,6 @@ function HoroscopeSection() {
           )}
         </div>
       )}
-
-      {!selectedSign && (
-        <div className="text-center py-12 text-violet-600 text-sm">
-          ↑ Επίλεξε ένα ζώδιο για να δεις το ωροσκόπιό σου
-        </div>
-      )}
     </section>
   );
 }
@@ -239,7 +233,7 @@ const FEATURES = [
     icon: Coffee,
     title: "Ανάγνωση Καφέ",
     description:
-      "Φωτογράφισε το φλιτζάνι σου και η καφετζού αποκαλύπτει τι κρύβει ο κατακάθι.",
+      "Φωτογράφισε το φλιτζάνι σου και θα σου αποκαλύψουμε τα μυστικά που κρύβει.",
     badge: "2 credits",
     color: "from-amber-500/20 to-amber-600/5 border-amber-500/20",
     iconColor: "text-amber-400",
@@ -250,7 +244,7 @@ const FEATURES = [
     icon: Star,
     title: "Ανάγνωση Ταρό",
     description:
-      "Τράβηξε κάρτες και λάβε ερμηνεία. Μία δωρεάν κάρτα την ημέρα, χωρίς credits.",
+      "Τράβηξε κάρτες και λάβε ερμηνεία. Μία δωρεάν κάρτα την ημέρα.",
     badge: "1 credit · 1 δωρεάν/μέρα",
     color: "from-violet-500/20 to-violet-600/5 border-violet-500/20",
     iconColor: "text-violet-400",
@@ -261,7 +255,7 @@ const FEATURES = [
     icon: Sparkles,
     title: "Εξατομικευμένη Αστρολογία",
     description:
-      "Ανάγνωση βασισμένη στο ζώδιό σου, την ηλικία σου, το φύλο και το χρώμα των ματιών σου.",
+      "Ανάγνωση βασισμένη στον ωροσκόπο σου και τα προσωπικά σου χαρακτηριστικά.",
     badge: "1 credit",
     color: "from-sky-500/20 to-sky-600/5 border-sky-500/20",
     iconColor: "text-sky-400",
@@ -321,7 +315,7 @@ export default function Home() {
         </nav>
       )}
 
-      <section className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20">
+      <section className="flex-1 flex flex-col items-center justify-center text-center px-4 pt-16 pb-8">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center mb-6 shadow-2xl shadow-amber-500/30 glow-pulse">
           <Coffee className="w-10 h-10 text-black" />
         </div>
@@ -329,12 +323,12 @@ export default function Home() {
           Fortune Teller
         </h1>
         <p className="text-lg text-violet-300 max-w-md mb-8">
-          Το ψηφιακό μαντείο σου. Ανάγνωση καφέ, ταρό και αστρολογία.
+          Το ψηφιακό σου μαντείο. Ανάγνωση καφέ, ταρό και αστρολογία.
         </p>
         {!isAuthed && (
           <>
             <p className="text-sm text-violet-500 mb-8">
-              Εγγράψου και λάβε{" "}
+              Κάνε εγγραφή και κέρδισε{" "}
               <span className="text-amber-400 font-semibold">
                 5 δωρεάν credits
               </span>{" "}
@@ -353,9 +347,6 @@ export default function Home() {
       </section>
 
       <section className="max-w-3xl mx-auto w-full px-4 pb-16">
-        <h2 className="text-xl font-bold text-violet-100 text-center mb-6">
-          Τι περιλαμβάνει
-        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {FEATURES.map((f) => {
             const href =
@@ -436,17 +427,6 @@ export default function Home() {
           </Link>
         )}
       </section>
-
-      <div className="max-w-3xl mx-auto w-full px-4 mb-12">
-        <div className="flex items-center gap-4">
-          <div className="h-px flex-1 bg-violet-900/40" />
-          <span className="text-xs text-violet-500 uppercase tracking-widest font-medium">
-            Δωρεάν Ωροσκόπια
-          </span>
-          <div className="h-px flex-1 bg-violet-900/40" />
-        </div>
-      </div>
-
       <HoroscopeSection />
     </div>
   );

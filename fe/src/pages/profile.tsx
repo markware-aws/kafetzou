@@ -28,7 +28,7 @@ import { SIGN_BY_ID } from "@/lib/astrology";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 
 const SEX_OPTIONS = ["Άνδρας", "Γυναίκα", "Άλλο"];
-const EYE_COLORS = ["Μαύρα", "Καφέ", "Φουντουκί", "Πράσινα", "Μπλε", "Γκρι"];
+const EYE_COLORS = ["Μαύρα", "Καφέ", "Καφέ σκούρο", "Πράσινα", "Μπλε", "Γκρι"];
 
 interface PhotonFeature {
   properties: {

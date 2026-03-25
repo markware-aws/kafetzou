@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { Moon, Sparkles, Heart, Lightbulb, RefreshCw, Coins, AlertCircle, BookOpen } from "lucide-react";
+import {
+  Moon,
+  Sparkles,
+  Heart,
+  Lightbulb,
+  RefreshCw,
+  Coins,
+  AlertCircle,
+  BookOpen,
+} from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { createDreamReading, DreamReading } from "@/lib/api";
@@ -8,14 +17,28 @@ import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 
 const MAX_CHARS = 2000;
 
-function ResultCard({ icon: Icon, label, children, accent = false }: {
-  icon: any; label: string; children: React.ReactNode; accent?: boolean;
+function ResultCard({
+  icon: Icon,
+  label,
+  children,
+  accent = false,
+}: {
+  icon: any;
+  label: string;
+  children: React.ReactNode;
+  accent?: boolean;
 }) {
   return (
-    <div className={`rounded-2xl border p-4 ${accent ? "border-amber-500/20 bg-amber-500/5" : "border-violet-800/30 bg-surface"}`}>
+    <div
+      className={`rounded-2xl border p-4 ${accent ? "border-amber-500/20 bg-amber-500/5" : "border-violet-800/30 bg-surface"}`}
+    >
       <div className="flex items-center gap-2 mb-2">
-        <Icon className={`w-4 h-4 shrink-0 ${accent ? "text-amber-400" : "text-violet-400"}`} />
-        <span className={`text-xs font-semibold uppercase tracking-wide ${accent ? "text-amber-300" : "text-violet-400"}`}>
+        <Icon
+          className={`w-4 h-4 shrink-0 ${accent ? "text-amber-400" : "text-violet-400"}`}
+        />
+        <span
+          className={`text-xs font-semibold uppercase tracking-wide ${accent ? "text-amber-300" : "text-violet-400"}`}
+        >
           {label}
         </span>
       </div>
@@ -73,8 +96,12 @@ export default function DreamPage() {
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-700 to-violet-950 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/20 glow-pulse">
               <Moon className="w-6 h-6 text-violet-200" />
             </div>
-            <h1 className="text-2xl font-bold text-violet-100 mb-1">Ονειροκρίτης</h1>
-            <p className="text-sm text-violet-400">Περίγραψε το όνειρό σου και αποκάλυψε το κρυφό του μήνυμα</p>
+            <h1 className="text-2xl font-bold text-violet-100 mb-1">
+              Ονειροκρίτης
+            </h1>
+            <p className="text-sm text-violet-400">
+              Περιέγραψε το όνειρό σου για να αποκαλύψεις το κρυφό του μήνυμα
+            </p>
           </div>
 
           {!result ? (
@@ -82,18 +109,24 @@ export default function DreamPage() {
               <div className="rounded-2xl border border-violet-800/30 bg-surface p-5">
                 <label className="flex items-center gap-1.5 text-xs text-violet-400 mb-3 font-medium">
                   <BookOpen className="w-3.5 h-3.5" />
-                  Διήγησε το όνειρό σου
+                  Διηγήσου το όνειρό σου
                 </label>
                 <textarea
                   value={dreamText}
-                  onChange={(e) => setDreamText(e.target.value.slice(0, MAX_CHARS))}
-                  placeholder="Ήμουν σε έναν παλιό ναό, η σελήνη ήταν πλήρης και μια αράχνη ύφαινε έναν ιστό από χρυσή κλωστή…"
+                  onChange={(e) =>
+                    setDreamText(e.target.value.slice(0, MAX_CHARS))
+                  }
+                  placeholder=""
                   rows={7}
                   className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-3 text-sm text-violet-100 placeholder-violet-700 focus:outline-none focus:border-violet-600/60 resize-none leading-relaxed"
                 />
                 <div className="flex items-center justify-between mt-2">
-                  <p className="text-[11px] text-violet-600">Τουλάχιστον 10 χαρακτήρες</p>
-                  <span className={`text-[11px] ${dreamText.length > MAX_CHARS * 0.9 ? "text-amber-500" : "text-violet-600"}`}>
+                  <p className="text-[11px] text-violet-600">
+                    Τουλάχιστον 10 χαρακτήρες
+                  </p>
+                  <span
+                    className={`text-[11px] ${dreamText.length > MAX_CHARS * 0.9 ? "text-amber-500" : "text-violet-600"}`}
+                  >
                     {dreamText.length}/{MAX_CHARS}
                   </span>
                 </div>
@@ -112,9 +145,13 @@ export default function DreamPage() {
                 className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 disabled:opacity-50 text-white font-semibold rounded-xl py-3 text-sm transition-all shadow-lg shadow-violet-500/20"
               >
                 {loading ? (
-                  <><RefreshCw className="w-4 h-4 animate-spin" /> Διαβάζω τα σύμβολα…</>
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Ανάλυση
+                  </>
                 ) : (
-                  <><Moon className="w-4 h-4" /> Ερμήνευσε το Όνειρο</>
+                  <>
+                    <Moon className="w-4 h-4" /> Ερμήνευσε
+                  </>
                 )}
               </button>
               {!loading && (
@@ -128,25 +165,40 @@ export default function DreamPage() {
             <div className="animate-fade-in flex flex-col gap-4">
               <div className="rounded-2xl border border-violet-700/30 bg-gradient-to-br from-violet-900/30 to-violet-950/30 p-5 text-center">
                 <Moon className="w-5 h-5 text-violet-400 mx-auto mb-2" />
-                <p className="text-base text-violet-100 italic leading-relaxed">"{result.summary}"</p>
+                <p className="text-base text-violet-100 italic leading-relaxed">
+                  "{result.summary}"
+                </p>
               </div>
 
-              <ResultCard icon={Sparkles} label="Ερμηνεία" accent>{result.interpretation}</ResultCard>
+              <ResultCard icon={Sparkles} label="Ερμηνεία" accent>
+                {result.interpretation}
+              </ResultCard>
 
               <div className="rounded-2xl border border-violet-800/30 bg-surface p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-base">✦</span>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-violet-400">Σύμβολα & Θέματα</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-violet-400">
+                    Σύμβολα & Θέματα
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {result.symbols.map((s, i) => (
-                    <span key={i} className="text-xs px-3 py-1 rounded-full border border-violet-700/40 bg-violet-900/20 text-violet-300">{s}</span>
+                    <span
+                      key={i}
+                      className="text-xs px-3 py-1 rounded-full border border-violet-700/40 bg-violet-900/20 text-violet-300"
+                    >
+                      {s}
+                    </span>
                   ))}
                 </div>
               </div>
 
-              <ResultCard icon={Heart} label="Συναισθήματα">{result.emotions}</ResultCard>
-              <ResultCard icon={Lightbulb} label="Μήνυμα & Συμβουλή">{result.advice}</ResultCard>
+              <ResultCard icon={Heart} label="Συναισθήματα">
+                {result.emotions}
+              </ResultCard>
+              <ResultCard icon={Lightbulb} label="Μήνυμα & Συμβουλή">
+                {result.advice}
+              </ResultCard>
 
               <button
                 onClick={reset}

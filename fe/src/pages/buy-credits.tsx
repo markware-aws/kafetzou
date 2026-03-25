@@ -1,8 +1,21 @@
 import { useEffect, useState } from "react";
-import { Coins, Star, Sparkles, Coffee, Moon, Check, Loader2, AlertCircle } from "lucide-react";
+import {
+  Coins,
+  Star,
+  Sparkles,
+  Coffee,
+  Moon,
+  Check,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
-import { getCreditBundles, createCheckoutSession, CreditBundle } from "@/lib/api";
+import {
+  getCreditBundles,
+  createCheckoutSession,
+  CreditBundle,
+} from "@/lib/api";
 
 const CREDIT_COST_EXAMPLES = [
   { icon: Coffee, label: "Ανάγνωση καφέ", cost: 2 },
@@ -11,32 +24,46 @@ const CREDIT_COST_EXAMPLES = [
   { icon: Moon, label: "Ερμηνεία Ονείρου", cost: 1 },
 ];
 
-function BundleCard({ bundle, onSelect, loading }: {
-  bundle: CreditBundle; onSelect: (id: string) => void; loading: boolean;
+function BundleCard({
+  bundle,
+  onSelect,
+  loading,
+}: {
+  bundle: CreditBundle;
+  onSelect: (id: string) => void;
+  loading: boolean;
 }) {
   const perCredit = (bundle.price_eur / bundle.credits).toFixed(2);
   return (
-    <div className={`relative flex flex-col rounded-2xl border p-5 transition-all ${
-      bundle.popular
-        ? "border-amber-500/50 bg-gradient-to-b from-amber-500/5 to-transparent shadow-lg shadow-amber-500/10"
-        : "border-violet-800/30 bg-surface hover:border-violet-700/50"
-    }`}>
+    <div
+      className={`relative flex flex-col rounded-2xl border p-5 transition-all ${
+        bundle.popular
+          ? "border-amber-500/50 bg-gradient-to-b from-amber-500/5 to-transparent shadow-lg shadow-amber-500/10"
+          : "border-violet-800/30 bg-surface hover:border-violet-700/50"
+      }`}
+    >
       {bundle.popular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-black text-[11px] font-bold uppercase tracking-wider shadow">
           Πιο Δημοφιλές
         </div>
       )}
       <div className="mb-4">
-        <p className="text-base font-semibold text-violet-100">{bundle.label}</p>
+        <p className="text-base font-semibold text-violet-100">
+          {bundle.label}
+        </p>
         <p className="text-xs text-violet-400 mt-0.5">{bundle.description}</p>
       </div>
       <div className="mb-4">
         <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-bold text-violet-100">€{bundle.price_eur.toFixed(2)}</span>
+          <span className="text-3xl font-bold text-violet-100">
+            €{bundle.price_eur.toFixed(2)}
+          </span>
         </div>
         <div className="flex items-center gap-1.5 mt-1">
           <Coins className="w-3.5 h-3.5 text-amber-400" />
-          <span className="text-sm font-semibold text-amber-300">{bundle.credits} credits</span>
+          <span className="text-sm font-semibold text-amber-300">
+            {bundle.credits} credits
+          </span>
           <span className="text-xs text-violet-500">· €{perCredit}/credit</span>
         </div>
       </div>
@@ -49,7 +76,7 @@ function BundleCard({ bundle, onSelect, loading }: {
             : "border border-violet-700/50 hover:border-violet-600 text-violet-200 hover:bg-violet-900/20"
         } disabled:opacity-50`}
       >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Αγόρασε"}
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Αγορά"}
       </button>
     </div>
   );
@@ -89,17 +116,25 @@ export default function BuyCreditsPage() {
             <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
               <Coins className="w-6 h-6 text-black" />
             </div>
-            <h1 className="text-2xl font-bold text-violet-100 mb-2">Αγόρασε Credits</h1>
+            <h1 className="text-2xl font-bold text-violet-100 mb-2">
+              Αγόρασε Credits
+            </h1>
             <p className="text-sm text-violet-400 max-w-sm mx-auto">
-              Χρησιμοποίησε credits για ανάγνωση καφέ, Ταρό, αστρολογία και ερμηνεία ονείρων
+              Χρησιμοποίησε credits για ανάγνωση καφέ, Ταρό, αστρολογία και
+              ερμηνεία ονείρων
             </p>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
             {CREDIT_COST_EXAMPLES.map(({ icon: Icon, label, cost }) => (
-              <div key={label} className="rounded-xl border border-violet-800/30 bg-surface p-3 flex flex-col items-center gap-1.5 text-center">
+              <div
+                key={label}
+                className="rounded-xl border border-violet-800/30 bg-surface p-3 flex flex-col items-center gap-1.5 text-center"
+              >
                 <Icon className="w-4 h-4 text-violet-400" />
-                <p className="text-[11px] text-violet-300 leading-snug">{label}</p>
+                <p className="text-[11px] text-violet-300 leading-snug">
+                  {label}
+                </p>
                 <div className="flex items-center gap-1 text-xs text-amber-400 font-semibold">
                   <Coins className="w-3 h-3" />
                   {cost}
@@ -110,12 +145,19 @@ export default function BuyCreditsPage() {
 
           {loadingBundles ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {[...Array(4)].map((_, i) => <div key={i} className="h-52 rounded-2xl shimmer" />)}
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-52 rounded-2xl shimmer" />
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
               {bundles.map((b) => (
-                <BundleCard key={b.id} bundle={b} onSelect={handleSelect} loading={checkoutLoading === b.id} />
+                <BundleCard
+                  key={b.id}
+                  bundle={b}
+                  onSelect={handleSelect}
+                  loading={checkoutLoading === b.id}
+                />
               ))}
             </div>
           )}

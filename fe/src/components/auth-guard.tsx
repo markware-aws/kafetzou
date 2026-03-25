@@ -45,7 +45,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center glow-pulse">
             <Coffee className="w-6 h-6 text-black" />
           </div>
-          <p className="text-violet-400 text-sm animate-pulse">Διαβάζω τον καφέ…</p>
+          <p className="text-violet-400 text-sm animate-pulse">Ανάλυση…</p>
         </div>
       </div>
     );
