@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import useSWR from "swr";
 import {
   Sparkles,
   Heart,
@@ -13,6 +14,7 @@ import {
   Calendar,
   Eye,
   Coins,
+  type LucideIcon,
 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import {
@@ -31,6 +33,7 @@ import {
 import { getIdToken } from "@/lib/auth";
 import { notifyCreditsChanged } from "@/lib/user";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
+import { useAuthedSWR } from "@/lib/use-authed-swr";
 
 type Period = "daily" | "weekly" | "monthly";
 
@@ -104,7 +107,7 @@ function ReadingSection({
   accent = false,
   warning = false,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   text: string;
   accent?: boolean;
@@ -132,19 +135,14 @@ function ReadingSection({
 function HoroscopePanel({ signId }: { signId: string }) {
   const sign = SIGN_BY_ID[signId];
   const [period, setPeriod] = useState<Period>("daily");
-  const [reading, setReading] = useState<AstrologyReading | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    setReading(null);
-    setError("");
-    setLoading(true);
-    getHoroscope(signId, period)
-      .then((r) => setReading(r.reading))
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [signId, period]);
+  const { data, error, isLoading, isValidating } = useSWR(
+    ["astrology-horoscope", signId, period],
+    ([, resolvedSign, selectedPeriod]) =>
+      getHoroscope(String(resolvedSign), selectedPeriod as Period),
+    { keepPreviousData: true, revalidateOnFocus: false },
+  );
+  const reading: AstrologyReading | null = data?.reading ?? null;
+  const errorMessage = error instanceof Error ? error.message : "";
 
   if (!sign) return null;
 
@@ -186,7 +184,7 @@ function HoroscopePanel({ signId }: { signId: string }) {
         </span>
       </div>
 
-      {loading && (
+      {isLoading && !reading && (
         <div className="flex flex-col gap-3">
           {[...Array(4)].map((_, i) => (
             <div
@@ -199,12 +197,12 @@ function HoroscopePanel({ signId }: { signId: string }) {
           ))}
         </div>
       )}
-      {error && (
+      {errorMessage && (
         <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 text-sm text-rose-300">
-          {error}
+          {errorMessage}
         </div>
       )}
-      {reading && !loading && (
+      {reading && (
         <div className="animate-fade-in flex flex-col gap-3">
           <ReadingSection
             icon={Sparkles}
@@ -221,7 +219,7 @@ function HoroscopePanel({ signId }: { signId: string }) {
           <ReadingSection icon={Star} label="Τύχη" text={reading.luck} />
           <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-violet-500/5 p-4">
             <p className="text-sm text-amber-200 italic leading-relaxed">
-              "{reading.summary}"
+              &ldquo;{reading.summary}&rdquo;
             </p>
           </div>
           <ReadingSection
@@ -231,6 +229,9 @@ function HoroscopePanel({ signId }: { signId: string }) {
             warning
           />
         </div>
+      )}
+      {isValidating && reading && (
+        <p className="text-xs text-violet-500 text-center">Ανανέωση ωροσκοπίου...</p>
       )}
     </div>
   );
@@ -242,7 +243,6 @@ function PersonalizedForm({
   onInsufficientCredits: () => void;
 }) {
   const router = useRouter();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [sign, setSign] = useState("");
   const [sex, setSex] = useState("");
   const [dob, setDob] = useState("");
@@ -252,26 +252,23 @@ function PersonalizedForm({
   const [result, setResult] = useState<AstrologyReading | null>(null);
   const [error, setError] = useState("");
 
+  const { data: token } = useSWR(["astrology-auth-token"], () => getIdToken(), {
+    revalidateOnFocus: false,
+  });
+  const isLoggedIn = token === undefined ? null : !!token;
+  const { data: birthProfile } = useAuthedSWR(
+    token ? ["astrology-prefill-birth-profile"] : null,
+    () => getBirthProfile(),
+  );
+
   useEffect(() => {
-    getIdToken()
-      .then((t) => {
-        setIsLoggedIn(!!t);
-        if (t) {
-          getBirthProfile()
-            .then((p) => {
-              if (p) {
-                if (p.chart?.sun_sign) setSign(p.chart.sun_sign);
-                if (p.sex) setSex(p.sex);
-                if (p.date_of_birth) setDob(p.date_of_birth);
-                if (p.eye_color) setEyeColor(p.eye_color);
-                setProfileLoaded(true);
-              }
-            })
-            .catch(() => {});
-        }
-      })
-      .catch(() => setIsLoggedIn(false));
-  }, []);
+    if (!birthProfile) return;
+    if (birthProfile.chart?.sun_sign) setSign(birthProfile.chart.sun_sign);
+    if (birthProfile.sex) setSex(birthProfile.sex);
+    if (birthProfile.date_of_birth) setDob(birthProfile.date_of_birth);
+    if (birthProfile.eye_color) setEyeColor(birthProfile.eye_color);
+    setProfileLoaded(true);
+  }, [birthProfile]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -288,8 +285,8 @@ function PersonalizedForm({
       });
       setResult(data.reading);
       notifyCreditsChanged();
-    } catch (e: any) {
-      const msg = e.message ?? "Κάτι πήγε στραβά";
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Κάτι πήγε στραβά";
       const isLowCredits = msg.includes("credits") || msg.includes("402");
       if (isLowCredits) onInsufficientCredits();
       else setError(msg);
@@ -447,7 +444,7 @@ function PersonalizedForm({
       ) : (
         <div className="animate-fade-in flex flex-col gap-3">
           <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-violet-500/5 p-4 mb-1">
-            <p className="text-sm text-amber-200 italic">"{result.summary}"</p>
+            <p className="text-sm text-amber-200 italic">&ldquo;{result.summary}&rdquo;</p>
           </div>
           <ReadingSection
             icon={Sparkles}

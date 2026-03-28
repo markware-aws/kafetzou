@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Coins,
   Star,
@@ -16,6 +16,7 @@ import {
   createCheckoutSession,
   CreditBundle,
 } from "@/lib/api";
+import useSWR from "swr";
 
 const CREDIT_COST_EXAMPLES = [
   { icon: Coffee, label: "Ανάγνωση καφέ", cost: 2 },
@@ -83,26 +84,25 @@ function BundleCard({
 }
 
 export default function BuyCreditsPage() {
-  const [bundles, setBundles] = useState<CreditBundle[]>([]);
-  const [loadingBundles, setLoadingBundles] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    getCreditBundles()
-      .then(setBundles)
-      .catch(() => setError("Αδυναμία φόρτωσης πακέτων"))
-      .finally(() => setLoadingBundles(false));
-  }, []);
+  const [checkoutError, setCheckoutError] = useState("");
+  const { data: bundles, error: bundlesError, isLoading: loadingBundles } = useSWR<
+    CreditBundle[]
+  >(["credit-bundles"], () => getCreditBundles(), {
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
+  const errorMessage = checkoutError || (bundlesError ? "Αδυναμία φόρτωσης πακέτων" : "");
 
   async function handleSelect(bundleId: string) {
     setCheckoutLoading(bundleId);
-    setError("");
+    setCheckoutError("");
     try {
       const { url } = await createCheckoutSession(bundleId);
       window.location.href = url;
-    } catch (e: any) {
-      setError(e.message ?? "Κάτι πήγε στραβά");
+    } catch (e: unknown) {
+      if (e instanceof Error) setCheckoutError(e.message);
+      else setCheckoutError("Κάτι πήγε στραβά");
       setCheckoutLoading(null);
     }
   }
@@ -151,7 +151,7 @@ export default function BuyCreditsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4">
-              {bundles.map((b) => (
+              {(bundles ?? []).map((b) => (
                 <BundleCard
                   key={b.id}
                   bundle={b}
@@ -162,10 +162,10 @@ export default function BuyCreditsPage() {
             </div>
           )}
 
-          {error && (
+          {errorMessage && (
             <div className="mt-6 rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-              <p className="text-sm text-rose-300">{error}</p>
+              <p className="text-sm text-rose-300">{errorMessage}</p>
             </div>
           )}
 

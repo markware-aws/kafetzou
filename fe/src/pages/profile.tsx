@@ -22,10 +22,11 @@ import {
   getBirthProfile,
   saveBirthProfile,
   getMe,
-  BirthProfile,
 } from "@/lib/api";
 import { SIGN_BY_ID } from "@/lib/astrology";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
+import { useAuthedSWR } from "@/lib/use-authed-swr";
+import type { LucideIcon } from "lucide-react";
 
 const SEX_OPTIONS = ["Άνδρας", "Γυναίκα", "Άλλο"];
 const EYE_COLORS = ["Μαύρα", "Καφέ", "Καφέ σκούρο", "Πράσινα", "Μπλε", "Γκρι"];
@@ -174,7 +175,7 @@ function ChartCard({
   note,
 }: {
   label: string;
-  icon: any;
+  icon: LucideIcon;
   sign: string;
   degree: number;
   note?: string;
@@ -203,12 +204,9 @@ function ChartCard({
 }
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<BirthProfile | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [credits, setCredits] = useState<number | null>(null);
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
 
   const [dob, setDob] = useState("");
@@ -218,25 +216,28 @@ export default function ProfilePage() {
   const [sex, setSex] = useState("");
   const [eyeColor, setEyeColor] = useState("");
 
+  const { data: meData, mutate: mutateMe } = useAuthedSWR(["me"], () => getMe());
+  const {
+    data: profile,
+    error: profileLoadError,
+    isLoading: profileLoading,
+    mutate: mutateProfile,
+  } = useAuthedSWR(["birth-profile"], () => getBirthProfile());
+
+  const credits = meData ? Number(meData.credits ?? 0) : null;
+  const loading = profile === undefined && profileLoading;
+  const loadErrorMessage =
+    profileLoadError instanceof Error ? profileLoadError.message : "";
+
   useEffect(() => {
-    getMe()
-      .then((u) => setCredits(Number(u.credits ?? 0)))
-      .catch(() => {});
-    getBirthProfile()
-      .then((p) => {
-        setProfile(p);
-        if (p) {
-          setDob(p.date_of_birth ?? "");
-          setTimeUnknown(!p.time_known);
-          setBirthTime(p.time_of_birth ?? "");
-          setBirthPlace(p.birth_place ?? "");
-          setSex(p.sex ?? "");
-          setEyeColor(p.eye_color ?? "");
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    if (!profile) return;
+    setDob(profile.date_of_birth ?? "");
+    setTimeUnknown(!profile.time_known);
+    setBirthTime(profile.time_of_birth ?? "");
+    setBirthPlace(profile.birth_place ?? "");
+    setSex(profile.sex ?? "");
+    setEyeColor(profile.eye_color ?? "");
+  }, [profile]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -252,11 +253,12 @@ export default function ProfilePage() {
         sex: sex || undefined,
         eye_color: eyeColor || undefined,
       });
-      setProfile(saved);
+      await mutateProfile(saved, { revalidate: false });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) setError(e.message);
+      else setError("Αποτυχία αποθήκευσης προφίλ");
     } finally {
       setSaving(false);
     }
@@ -268,9 +270,7 @@ export default function ProfilePage() {
         open={creditDialogOpen}
         onClose={() => {
           setCreditDialogOpen(false);
-          getMe()
-            .then((u) => setCredits(Number(u.credits ?? 0)))
-            .catch(() => {});
+          mutateMe();
         }}
         requiredCredits={0}
         featureName="Αγόρασε credits"
@@ -498,10 +498,10 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {error && (
+                {(error || loadErrorMessage) && (
                   <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-3 flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                    <p className="text-sm text-rose-300">{error}</p>
+                    <p className="text-sm text-rose-300">{error || loadErrorMessage}</p>
                   </div>
                 )}
 
