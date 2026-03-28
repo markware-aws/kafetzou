@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { ArrowLeft, Clock, Moon, Sparkles, Heart, Lightbulb } from "lucide-react";
+import { ArrowLeft, Clock, Moon, Sparkles, Heart, Lightbulb, type LucideIcon } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { getDreamReading } from "@/lib/api";
+import { useAuthedSWR } from "@/lib/use-authed-swr";
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -16,7 +16,7 @@ function timeAgo(iso: string) {
   return `πριν ${Math.floor(h / 24)} μέρες`;
 }
 
-function Section({ icon: Icon, label, text }: { icon: any; label: string; text: string }) {
+function Section({ icon: Icon, label, text }: { icon: LucideIcon; label: string; text: string }) {
   return (
     <div className="rounded-2xl border border-violet-800/30 bg-surface p-4">
       <div className="flex items-center gap-2 mb-2">
@@ -30,19 +30,17 @@ function Section({ icon: Icon, label, text }: { icon: any; label: string; text: 
 
 export default function DreamReadingPage() {
   const router = useRouter();
-  const id = router.query.id as string | undefined;
-  const [item, setItem] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!router.isReady) return;
-    if (!id) { setError("Δεν βρέθηκε ID"); setLoading(false); return; }
-    getDreamReading(id)
-      .then(setItem)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [router.isReady, id]);
+  const id = router.isReady ? (router.query.id as string | undefined) : undefined;
+  const idMissing = router.isReady && !id;
+  const { data: item, error, isLoading } = useAuthedSWR(
+    id ? ["dream-reading", id] : null,
+    ([, readingId]) => getDreamReading(String(readingId)),
+  );
+  const errorMessage = idMissing
+    ? "Δεν βρέθηκε ID"
+    : error instanceof Error
+      ? error.message
+      : "";
 
   return (
     <AuthGuard>
@@ -54,7 +52,7 @@ export default function DreamReadingPage() {
             Πίσω στις αναγνώσεις
           </Link>
 
-          {loading && (
+          {isLoading && !idMissing && (
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full shimmer" />
@@ -76,11 +74,11 @@ export default function DreamReadingPage() {
             </div>
           )}
 
-          {error && (
-            <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-5 text-sm text-rose-300">{error}</div>
+          {errorMessage && (
+            <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-5 text-sm text-rose-300">{errorMessage}</div>
           )}
 
-          {!loading && !error && item && (
+          {!isLoading && !errorMessage && item && (
             <div className="flex flex-col gap-5 animate-fade-in">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-700 to-violet-950 flex items-center justify-center shadow-lg shadow-violet-500/20">
@@ -97,12 +95,12 @@ export default function DreamReadingPage() {
 
               <div className="rounded-2xl border border-violet-800/20 bg-violet-900/10 p-4">
                 <p className="text-[11px] text-violet-500 uppercase tracking-widest mb-1.5 font-medium">Το Όνειρό σου</p>
-                <p className="text-sm text-violet-300 leading-relaxed italic">"{item.dream_text}"</p>
+                <p className="text-sm text-violet-300 leading-relaxed italic">&ldquo;{item.dream_text}&rdquo;</p>
               </div>
 
               <div className="rounded-2xl border border-violet-700/30 bg-gradient-to-br from-violet-900/30 to-violet-950/30 p-5 text-center">
                 <Moon className="w-5 h-5 text-violet-400 mx-auto mb-2" />
-                <p className="text-base text-violet-100 italic leading-relaxed">"{item.reading_result?.summary}"</p>
+                <p className="text-base text-violet-100 italic leading-relaxed">&ldquo;{item.reading_result?.summary}&rdquo;</p>
               </div>
 
               <Section icon={Sparkles} label="Ερμηνεία" text={item.reading_result?.interpretation} />
