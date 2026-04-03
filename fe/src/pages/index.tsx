@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import useSWR from "swr";
 import {
   Coffee,
   Star,
@@ -64,26 +65,14 @@ function ReadingCard({
 function HoroscopeSection() {
   const [selectedSign, setSelectedSign] = useState<SignData | null>(null);
   const [period, setPeriod] = useState<Period>("daily");
-  const [reading, setReading] = useState<AstrologyReading | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    if (!selectedSign) return;
-    let cancelled = false;
-    getHoroscope(selectedSign.id, period)
-      .then((r) => {
-        if (!cancelled) setReading(r.reading);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedSign, period]);
+  const { data, error, isLoading, isValidating } = useSWR(
+    selectedSign ? ["home-horoscope", selectedSign.id, period] : null,
+    ([, signId, selectedPeriod]) =>
+      getHoroscope(String(signId), selectedPeriod as Period),
+    { keepPreviousData: true, revalidateOnFocus: false },
+  );
+  const reading: AstrologyReading | null = data?.reading ?? null;
+  const errorMessage = error instanceof Error ? error.message : "";
 
   return (
     <section id="horoscope" className="max-w-3xl mx-auto w-full px-4 pb-20">
@@ -100,11 +89,7 @@ function HoroscopeSection() {
           return (
             <button
               key={s.id}
-              onClick={() => {
-                setError("");
-                setLoading(true);
-                setSelectedSign(s);
-              }}
+              onClick={() => setSelectedSign(s)}
               className={`rounded-xl border py-3 flex flex-col items-center gap-1 text-xs font-medium transition-all ${
                 active
                   ? `${ELEMENT_BG[s.element]} ${
@@ -129,8 +114,6 @@ function HoroscopeSection() {
                   key={key}
                   onClick={() => {
                     if (period === key) return;
-                    setError("");
-                    setLoading(true);
                     setPeriod(key);
                   }}
                   className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${
@@ -146,7 +129,7 @@ function HoroscopeSection() {
           </div>
 
           {/* Keep current reading visible while fetching next one to avoid height flicker. */}
-          {loading && !reading && (
+          {isLoading && !reading && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[...Array(4)].map((_, i) => (
                 <div
@@ -160,9 +143,9 @@ function HoroscopeSection() {
             </div>
           )}
 
-          {error && (
+          {errorMessage && (
             <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 text-sm text-rose-300 text-center">
-              {error}
+              {errorMessage}
             </div>
           )}
 
@@ -217,7 +200,7 @@ function HoroscopeSection() {
             </div>
           )}
 
-          {loading && reading && (
+          {isValidating && reading && (
             <p className="text-xs text-violet-500 mt-3 text-center">
               Ανανέωση ωροσκοπίου...
             </p>
@@ -276,11 +259,10 @@ const FEATURES = [
 ];
 
 export default function Home() {
-  const [isAuthed, setIsAuthed] = useState(false);
-
-  useEffect(() => {
-    getUser().then((user) => setIsAuthed(!!user));
-  }, []);
+  const { data: user } = useSWR(["home-user"], () => getUser(), {
+    revalidateOnFocus: false,
+  });
+  const isAuthed = !!user;
 
   return (
     <div className="min-h-screen flex flex-col">

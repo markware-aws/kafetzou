@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { ArrowLeft, Clock, Sparkles, Heart, Briefcase, Star, AlertTriangle, Moon, ArrowUp } from "lucide-react";
+import { ArrowLeft, Clock, Sparkles, Heart, Briefcase, Star, AlertTriangle, Moon, ArrowUp, type LucideIcon } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { getPersonalizedAstrologyReading } from "@/lib/api";
 import { SIGN_BY_ID } from "@/lib/astrology";
+import { useAuthedSWR } from "@/lib/use-authed-swr";
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -20,7 +20,7 @@ function timeAgo(iso: string) {
 function Section({
   icon: Icon, label, text, accent = false, warning = false,
 }: {
-  icon: any; label: string; text: string; accent?: boolean; warning?: boolean;
+  icon: LucideIcon; label: string; text: string; accent?: boolean; warning?: boolean;
 }) {
   return (
     <div className={`rounded-2xl border p-4 ${warning ? "border-rose-800/30 bg-rose-900/10" : accent ? "border-amber-500/20 bg-amber-500/5" : "border-violet-800/30 bg-surface"}`}>
@@ -37,19 +37,17 @@ function Section({
 
 export default function AstrologyReadingPage() {
   const router = useRouter();
-  const id = router.query.id as string | undefined;
-  const [item, setItem] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!router.isReady) return;
-    if (!id) { setError("Δεν βρέθηκε ID"); setLoading(false); return; }
-    getPersonalizedAstrologyReading(id)
-      .then(setItem)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [router.isReady, id]);
+  const id = router.isReady ? (router.query.id as string | undefined) : undefined;
+  const idMissing = router.isReady && !id;
+  const { data: item, error, isLoading } = useAuthedSWR(
+    id ? ["astrology-reading", id] : null,
+    ([, readingId]) => getPersonalizedAstrologyReading(String(readingId)),
+  );
+  const errorMessage = idMissing
+    ? "Δεν βρέθηκε ID"
+    : error instanceof Error
+      ? error.message
+      : "";
 
   return (
     <AuthGuard>
@@ -61,7 +59,7 @@ export default function AstrologyReadingPage() {
             Πίσω στις αναγνώσεις
           </Link>
 
-          {loading && (
+          {isLoading && !idMissing && (
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full shimmer" />
@@ -77,11 +75,11 @@ export default function AstrologyReadingPage() {
             </div>
           )}
 
-          {error && (
-            <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-5 text-sm text-rose-300">{error}</div>
+          {errorMessage && (
+            <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-5 text-sm text-rose-300">{errorMessage}</div>
           )}
 
-          {!loading && !error && item && (
+          {!isLoading && !errorMessage && item && (
             <div className="flex flex-col gap-5 animate-fade-in">
               {(() => {
                 const sign = SIGN_BY_ID[item.sign];
@@ -107,7 +105,7 @@ export default function AstrologyReadingPage() {
               })()}
 
               <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-violet-500/5 p-4">
-                <p className="text-sm text-amber-200 italic leading-relaxed">"{item.reading_result?.summary}"</p>
+                <p className="text-sm text-amber-200 italic leading-relaxed">&ldquo;{item.reading_result?.summary}&rdquo;</p>
               </div>
 
               <Section icon={Sparkles} label="Γενικό Μήνυμα" text={item.reading_result?.general} accent />

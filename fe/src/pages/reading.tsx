@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { ArrowLeft, Clock, Coffee } from "lucide-react";
@@ -6,6 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { ReadingCard } from "@/components/reading-card";
 import { getReading } from "@/lib/api";
+import { useAuthedSWR } from "@/lib/use-authed-swr";
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -19,19 +19,17 @@ function timeAgo(iso: string) {
 
 export default function ReadingPage() {
   const router = useRouter();
-  const id = router.query.id as string | undefined;
-  const [item, setItem] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!router.isReady) return;
-    if (!id) { setError("Δεν βρέθηκε αναγνωστικό ID"); setLoading(false); return; }
-    getReading(id)
-      .then(setItem)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [router.isReady, id]);
+  const id = router.isReady ? (router.query.id as string | undefined) : undefined;
+  const idMissing = router.isReady && !id;
+  const { data: item, error, isLoading } = useAuthedSWR(
+    id ? ["reading", id] : null,
+    ([, readingId]) => getReading(String(readingId)),
+  );
+  const errorMessage = idMissing
+    ? "Δεν βρέθηκε αναγνωστικό ID"
+    : error instanceof Error
+      ? error.message
+      : "";
 
   return (
     <AuthGuard>
@@ -46,7 +44,7 @@ export default function ReadingPage() {
             Πίσω στις αναγνώσεις
           </Link>
 
-          {loading && (
+          {isLoading && !idMissing && (
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full shimmer" />
@@ -66,13 +64,13 @@ export default function ReadingPage() {
             </div>
           )}
 
-          {error && (
+          {errorMessage && (
             <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-5 text-sm text-rose-300">
-              {error}
+              {errorMessage}
             </div>
           )}
 
-          {!loading && !error && item && (
+          {!isLoading && !errorMessage && item && (
             <>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">

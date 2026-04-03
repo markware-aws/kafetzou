@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { Coffee, Sparkles, Clock, ChevronRight, Upload, Eye, Star, Globe, Moon } from "lucide-react";
+import { Coffee, Sparkles, Clock, ChevronRight, Upload, Eye, Star, Globe, Moon, type LucideIcon } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { getReadings, getTarotReadings, getPersonalizedAstrologyHistory, getDreamReadings } from "@/lib/api";
 import { getCardDisplayName } from "@/lib/tarot";
 import { SIGN_BY_ID } from "@/lib/astrology";
+import { useAuthedSWR } from "@/lib/use-authed-swr";
 
 interface Reading {
   reading_id: string;
@@ -55,26 +56,31 @@ const NEW_READING_HREF: Record<Tab, string> = {
 
 export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>("coffee");
-  const [readings, setReadings] = useState<Reading[]>([]);
-  const [tarotReadings, setTarotReadings] = useState<TarotItem[]>([]);
-  const [astrologyReadings, setAstrologyReadings] = useState<AstrologyItem[]>([]);
-  const [dreamReadings, setDreamReadings] = useState<DreamItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { data, error, isLoading } = useAuthedSWR(
+    ["dashboard-data"],
+    async () => {
+      const [coffee, tarot, astrology, dreams] = await Promise.all([
+        getReadings(),
+        getTarotReadings(),
+        getPersonalizedAstrologyHistory(),
+        getDreamReadings(),
+      ]);
+      return {
+        coffee: coffee as Reading[],
+        tarot: tarot as TarotItem[],
+        astrology: astrology as AstrologyItem[],
+        dreams: dreams as DreamItem[],
+      };
+    },
+  );
 
-  useEffect(() => {
-    Promise.all([getReadings(), getTarotReadings(), getPersonalizedAstrologyHistory(), getDreamReadings()])
-      .then(([coffee, tarot, astrology, dreams]) => {
-        setReadings(coffee);
-        setTarotReadings(tarot);
-        setAstrologyReadings(astrology);
-        setDreamReadings(dreams);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  const readings = data?.coffee ?? [];
+  const tarotReadings = data?.tarot ?? [];
+  const astrologyReadings = data?.astrology ?? [];
+  const dreamReadings = data?.dreams ?? [];
+  const errorMessage = error instanceof Error ? error.message : "";
 
-  const tabs: { id: Tab; label: string; icon: any }[] = [
+  const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
     { id: "coffee", label: "Καφές", icon: Coffee },
     { id: "tarot", label: "Ταρό", icon: Star },
     { id: "astrology", label: "Αστρολογία", icon: Globe },
@@ -116,7 +122,7 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {loading && (
+          {isLoading && (
             <div className="flex flex-col gap-3">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5 flex flex-col gap-3">
@@ -134,11 +140,11 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {error && (
-            <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 text-sm text-rose-300">{error}</div>
+          {errorMessage && (
+            <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 text-sm text-rose-300">{errorMessage}</div>
           )}
 
-          {!loading && tab === "coffee" && (
+          {!isLoading && tab === "coffee" && (
             readings.length === 0 ? (
               <EmptyState icon={Coffee} label="Δεν υπάρχουν αναγνώσεις ακόμα" sub="Ανέβασε την πρώτη φωτογραφία για να ξεκινήσεις" href="/upload" btnLabel="Έναρξη ανάγνωσης" />
             ) : (
@@ -185,7 +191,7 @@ export default function DashboardPage() {
             )
           )}
 
-          {!loading && tab === "tarot" && (
+          {!isLoading && tab === "tarot" && (
             tarotReadings.length === 0 ? (
               <EmptyState icon={Star} label="Δεν υπάρχουν αναγνώσεις ταρό ακόμα" sub="Τράβηξε τις πρώτες σου κάρτες" href="/tarot" btnLabel="Έναρξη ανάγνωσης ταρό" />
             ) : (
@@ -227,7 +233,7 @@ export default function DashboardPage() {
             )
           )}
 
-          {!loading && tab === "astrology" && (
+          {!isLoading && tab === "astrology" && (
             astrologyReadings.length === 0 ? (
               <EmptyState icon={Globe} label="Δεν υπάρχουν εξατομικευμένες αναγνώσεις ακόμα" sub="Δοκίμασε την εξατομικευμένη αστρολογική ανάγνωση" href="/astrology" btnLabel="Πήγαινε στην Αστρολογία" />
             ) : (
@@ -265,7 +271,7 @@ export default function DashboardPage() {
             )
           )}
 
-          {!loading && tab === "dreams" && (
+          {!isLoading && tab === "dreams" && (
             dreamReadings.length === 0 ? (
               <EmptyState icon={Moon} label="Δεν υπάρχουν ερμηνείες ονείρων ακόμα" sub="Περίγραψε ένα όνειρό σου και αποκάλυψε το μήνυμά του" href="/dream" btnLabel="Ερμήνευσε Όνειρο" />
             ) : (
@@ -282,7 +288,7 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2 mb-2">
                           <Moon className="w-3.5 h-3.5 text-violet-400 shrink-0" />
                           <p className="text-sm text-violet-100 line-clamp-1 font-medium italic">
-                            "{r.reading_result?.summary ?? "Ερμηνεία ονείρου"}"
+                            &ldquo;{r.reading_result?.summary ?? "Ερμηνεία ονείρου"}&rdquo;
                           </p>
                         </div>
                         <p className="text-xs text-violet-400 line-clamp-2 mb-2">{r.dream_text}</p>
@@ -317,7 +323,7 @@ export default function DashboardPage() {
 }
 
 function EmptyState({ icon: Icon, label, sub, href, btnLabel }: {
-  icon: any; label: string; sub: string; href: string; btnLabel: string;
+  icon: LucideIcon; label: string; sub: string; href: string; btnLabel: string;
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">

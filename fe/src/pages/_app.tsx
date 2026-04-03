@@ -1,6 +1,7 @@
 import type { AppProps } from "next/app";
 import { Geist } from "next/font/google";
 import { Hub } from "aws-amplify/utils";
+import { SWRConfig } from "swr";
 import { configureAmplify } from "@/lib/amplify-config";
 import { Footer } from "@/components/footer";
 import "../app/globals.css";
@@ -20,9 +21,18 @@ if (typeof window !== "undefined") {
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <div className={`${geist.variable} antialiased`}>
-      <Component {...pageProps} />
-      <Footer />
-    </div>
+    <SWRConfig
+      value={{
+        revalidateOnFocus: false,
+        revalidateOnReconnect: true,
+        keepPreviousData: true,
+        errorRetryCount: 1,
+      }}
+    >
+      <div className={`${geist.variable} antialiased`}>
+        <Component {...pageProps} />
+        <Footer />
+      </div>
+    </SWRConfig>
   );
 }

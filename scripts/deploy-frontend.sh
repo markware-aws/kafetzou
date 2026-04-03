@@ -24,7 +24,8 @@ aws s3 sync out/ "s3://${S3_BUCKET}" \
   --cache-control "public, max-age=31536000, immutable" \
   --exclude "*.html" \
   --exclude "*.json" \
-  --exclude "horoscopes/*"
+  --exclude "horoscopes/*" \
+  --exclude "iris/*"
 
 # HTML + JSON pages — short cache (not content-hashed, can change on deploy)
 aws s3 sync out/ "s3://${S3_BUCKET}" \
@@ -34,7 +35,8 @@ aws s3 sync out/ "s3://${S3_BUCKET}" \
   --exclude "*" \
   --include "*.html" \
   --include "*.json" \
-  --exclude "horoscopes/*"
+  --exclude "horoscopes/*" \
+  --exclude "iris/*"
 
 echo "▶ Invalidating CloudFront cache..."
 aws cloudfront create-invalidation \
