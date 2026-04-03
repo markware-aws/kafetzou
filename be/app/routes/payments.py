@@ -87,7 +87,7 @@ async def create_checkout_session(
         )
 
     try:
-        session = stripe.checkout.Session.create(
+        session_params: dict = dict(
             mode="payment",
             line_items=[
                 {
@@ -108,6 +108,9 @@ async def create_checkout_session(
             cancel_url=f"{settings.frontend_url}/buy-credits",
             locale="el",
         )
+        if settings.stripe_payment_method_configuration:
+            session_params["payment_method_configuration"] = settings.stripe_payment_method_configuration
+        session = stripe.checkout.Session.create(**session_params)
     except stripe.StripeError as exc:
         logger.error("Stripe error creating checkout session: %s", exc)
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc))
