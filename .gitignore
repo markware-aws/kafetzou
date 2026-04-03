@@ -89,3 +89,7 @@ next-env.d.ts
 
 # aws
 .aws/
+
+# claude
+.claude/settings.local.json
+.claude/

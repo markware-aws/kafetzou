@@ -1,5 +1,7 @@
 import logging
+from datetime import datetime, timezone
 
+import resend
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
@@ -87,7 +89,7 @@ async def create_checkout_session(
         )
 
     try:
-        session_params: dict = dict(
+        session = stripe.checkout.Session.create(
             mode="payment",
             line_items=[
                 {
@@ -108,9 +110,6 @@ async def create_checkout_session(
             cancel_url=f"{settings.frontend_url}/buy-credits",
             locale="el",
         )
-        if settings.stripe_payment_method_configuration:
-            session_params["payment_method_configuration"] = settings.stripe_payment_method_configuration
-        session = stripe.checkout.Session.create(**session_params)
     except stripe.StripeError as exc:
         logger.error("Stripe error creating checkout session: %s", exc)
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc))
@@ -160,4 +159,98 @@ async def stripe_webhook(request: Request) -> dict:
         except Exception as exc:
             logger.error("Failed to grant credits to %s: %s", user_id, exc)
 
+    return {"ok": True}
+
+
+# ── IRIS manual payment ───────────────────────────────────────────────────────
+
+@router.post("/iris/request")
+async def iris_payment_request(
+    body: CheckoutRequest,
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    """Send IRIS payment instructions to the user and notify admin."""
+    bundle = BUNDLES.get(body.bundle_id)
+    if not bundle:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid bundle")
+
+    if not settings.resend_api_key:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Email service not configured")
+
+    user_id = current_user.get("sub", "")
+    user_email = current_user.get("email", "")
+    if not user_email:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No email in token")
+
+    amount = bundle["price_cents"] / 100
+    credits = bundle["credits"]
+    label = bundle["label"]
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    reference = f"FT-{user_id[:8].upper()}"
+
+    qr_html = (
+        f'<img src="{settings.iris_qr_code_url}" alt="IRIS QR Code" '
+        f'style="width:200px;height:200px;display:block;margin:16px auto;" />'
+        if settings.iris_qr_code_url
+        else "<p><em>(QR code θα αποστέλλεται σύντομα)</em></p>"
+    )
+
+    user_html = f"""
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0c0a1a;color:#e2e8f0;padding:32px;border-radius:16px;">
+      <h2 style="color:#f59e0b;margin-top:0;">Fortune Teller ✨</h2>
+      <p>Ευχαριστούμε για την επιλογή σου! Επέλεξες:</p>
+      <div style="background:#1e1b4b;border-radius:12px;padding:16px;margin:16px 0;">
+        <strong style="color:#f59e0b;">{label}</strong> — {credits} credits<br/>
+        <span style="font-size:24px;font-weight:bold;color:#ffffff;">€{amount:.2f}</span>
+      </div>
+      <p>Για να ολοκληρώσεις την αγορά σου, πλήρωσε ακριβώς <strong style="color:#f59e0b;">€{amount:.2f}</strong> μέσω IRIS:</p>
+      <ol style="color:#c4b5fd;line-height:1.8;">
+        <li>Άνοιξε την εφαρμογή της τράπεζάς σου</li>
+        <li>Επίλεξε πληρωμή μέσω IRIS / Scan QR</li>
+        <li>Σκάναρε τον παρακάτω κωδικό QR</li>
+        <li>Στο πεδίο <em>αιτιολογία / σχόλιο</em> γράψε: <strong style="color:#f59e0b;">{reference}</strong></li>
+      </ol>
+      {qr_html}
+      <div style="background:#1e1b4b;border-radius:12px;padding:12px 16px;margin:16px 0;border-left:4px solid #f59e0b;">
+        ⏱ Τα credits σου ({credits}) θα εμφανιστούν στον λογαριασμό σου εντός <strong>48 ωρών</strong> από την επιβεβαίωση της πληρωμής.
+      </div>
+      <p style="color:#6b7280;font-size:13px;">Αν χρειαστείς βοήθεια, επικοινώνησε μαζί μας απαντώντας σε αυτό το email.</p>
+      <p style="color:#6b7280;font-size:12px;margin-top:24px;">Fortune Teller · fortuneteller.gr</p>
+    </div>
+    """
+
+    admin_html = f"""
+    <div style="font-family:sans-serif;max-width:520px;">
+      <h3>Νέο αίτημα IRIS πληρωμής</h3>
+      <table style="border-collapse:collapse;width:100%;">
+        <tr><td style="padding:6px;color:#666;">Χρήστης</td><td style="padding:6px;"><strong>{user_email}</strong></td></tr>
+        <tr><td style="padding:6px;color:#666;">User ID</td><td style="padding:6px;font-family:monospace;">{user_id}</td></tr>
+        <tr><td style="padding:6px;color:#666;">Πακέτο</td><td style="padding:6px;">{label} — {credits} credits</td></tr>
+        <tr><td style="padding:6px;color:#666;">Ποσό</td><td style="padding:6px;"><strong>€{amount:.2f}</strong></td></tr>
+        <tr><td style="padding:6px;color:#666;">Αναφορά</td><td style="padding:6px;font-family:monospace;">{reference}</td></tr>
+        <tr><td style="padding:6px;color:#666;">Ώρα</td><td style="padding:6px;">{now}</td></tr>
+      </table>
+      <p>Μόλις επιβεβαιώσεις την πληρωμή, πρόσθεσε <strong>{credits} credits</strong> στον χρήστη.</p>
+    </div>
+    """
+
+    try:
+        resend.api_key = settings.resend_api_key
+        resend.Emails.send({
+            "from": settings.email_from,
+            "to": [user_email],
+            "subject": f"Fortune Teller — Οδηγίες πληρωμής IRIS ({label})",
+            "html": user_html,
+        })
+        resend.Emails.send({
+            "from": settings.email_from,
+            "to": [settings.admin_email],
+            "subject": f"[Fortune Teller] Νέο IRIS αίτημα — {user_email} — €{amount:.2f}",
+            "html": admin_html,
+        })
+    except Exception as exc:
+        logger.error("Resend failed: %s", exc)
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to send email")
+
+    logger.info("IRIS request sent for user=%s bundle=%s amount=%.2f", user_id, body.bundle_id, amount)
     return {"ok": True}

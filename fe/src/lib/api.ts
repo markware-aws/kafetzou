@@ -228,6 +228,18 @@ export async function createCheckoutSession(bundleId: string): Promise<{ url: st
   return res.json();
 }
 
+export async function requestIrisPayment(bundleId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/payments/iris/request`, {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify({ bundle_id: bundleId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? "Failed to send IRIS request");
+  }
+}
+
 // ── Dreams ────────────────────────────────────────────────────────────────────
 
 export interface DreamReading {
