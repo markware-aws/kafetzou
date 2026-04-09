@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, Clock, Sparkles, Heart, Briefcase, Star, AlertTriangle, Moon, ArrowUp, type LucideIcon } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
+import { Seo } from "@/components/seo";
 import { getPersonalizedAstrologyReading } from "@/lib/api";
 import { SIGN_BY_ID } from "@/lib/astrology";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
@@ -51,6 +52,7 @@ export default function AstrologyReadingPage() {
 
   return (
     <AuthGuard>
+      <Seo title="Αποτέλεσμα Αστρολογικής Ανάγνωσης" noindex />
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-10">

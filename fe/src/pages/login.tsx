@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import { Seo } from "@/components/seo";
 import { Check, Coffee, Eye, EyeOff, Sparkles, X } from "lucide-react";
 import { login, register, confirmRegistration, forgotPassword, confirmForgotPassword, getUser, loginWithGoogle, resendRegistrationCode } from "@/lib/auth";
 
@@ -159,6 +160,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
+      <Seo
+        title="Σύνδεση / Εγγραφή"
+        description="Συνδέσου ή δημιούργησε λογαριασμό στο Fortune Teller και ξεκίνα με 5 δωρεάν credits."
+      />
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full bg-violet-900/20 blur-3xl" />
         <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full bg-amber-900/15 blur-3xl" />

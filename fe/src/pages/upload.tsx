@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
+import { Seo } from "@/components/seo";
 import {
   Upload,
   X,
@@ -136,6 +137,7 @@ export default function UploadPage() {
 
   return (
     <AuthGuard>
+      <Seo title="Ανάγνωση Καφέ" noindex />
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => setCreditDialogOpen(false)}

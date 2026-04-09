@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Shield } from "lucide-react";
+import { Seo } from "@/components/seo";
 
 function Section({
   title,
@@ -24,6 +25,10 @@ function Section({
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen flex flex-col bg-bg">
+      <Seo
+        title="Πολιτική Απορρήτου"
+        description="Διαβάστε την πολιτική απορρήτου του Fortune Teller."
+      />
       <div className="max-w-2xl mx-auto w-full px-4 py-10">
         <Link
           href="/"

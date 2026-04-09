@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { ArrowLeft, Clock, Coffee } from "lucide-react";
+import { Seo } from "@/components/seo";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { ReadingCard } from "@/components/reading-card";
@@ -33,6 +34,7 @@ export default function ReadingPage() {
 
   return (
     <AuthGuard>
+      <Seo title="Αποτέλεσμα Ανάγνωσης Καφέ" noindex />
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">

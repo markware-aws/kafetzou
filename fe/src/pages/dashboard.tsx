@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Link from "next/link";
+import { Seo } from "@/components/seo";
 import { Coffee, Sparkles, Clock, ChevronRight, Upload, Eye, Star, Globe, Moon, type LucideIcon } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
@@ -89,6 +90,7 @@ export default function DashboardPage() {
 
   return (
     <AuthGuard>
+      <Seo title="Ιστορικό Αναγνώσεων" noindex />
       <div className="min-h-screen flex flex-col">
         <Navbar />
 

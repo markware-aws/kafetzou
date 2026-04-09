@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, ScrollText } from "lucide-react";
+import { Seo } from "@/components/seo";
 
 function Section({
   title,
@@ -24,6 +25,10 @@ function Section({
 export default function TermsPage() {
   return (
     <div className="min-h-screen flex flex-col bg-bg">
+      <Seo
+        title="Όροι Χρήσης"
+        description="Διαβάστε τους όρους χρήσης της υπηρεσίας Fortune Teller."
+      />
       <div className="max-w-2xl mx-auto w-full px-4 py-10">
         <Link
           href="/"

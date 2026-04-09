@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Seo } from "@/components/seo";
 import {
   Coins,
   Star,
@@ -134,6 +135,7 @@ export default function BuyCreditsPage() {
 
   return (
     <AuthGuard>
+      <Seo title="Αγορά Credits" noindex />
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-12">

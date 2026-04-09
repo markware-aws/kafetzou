@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CheckCircle, Coins, ArrowRight } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
+import { Seo } from "@/components/seo";
 import { notifyCreditsChanged } from "@/lib/user";
 
 export default function PaymentSuccessPage() {
@@ -12,6 +13,7 @@ export default function PaymentSuccessPage() {
 
   return (
     <AuthGuard>
+      <Seo title="Επιτυχής Πληρωμή" noindex />
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center">

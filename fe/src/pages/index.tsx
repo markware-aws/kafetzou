@@ -23,6 +23,7 @@ import {
 } from "@/lib/astrology";
 import { Navbar } from "@/components/navbar";
 import { DailyCardSection } from "@/components/daily-card";
+import { Seo } from "@/components/seo";
 
 type Period = "daily" | "weekly" | "monthly";
 const PERIOD_LABELS: Record<Period, string> = {
@@ -266,6 +267,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        isHome
+        title="Fortune Teller — Ανάγνωση Καφέ, Ταρό & Αστρολογία με AI"
+        description="Το ψηφιακό σου μαντείο. Ανέβασε φωτογραφία φλιτζανιού για ανάγνωση καφέ, τράβηξε κάρτες ταρό ή δες το ωροσκόπιό σου — με τεχνητή νοημοσύνη."
+      />
       {isAuthed ? (
         <Navbar />
       ) : (

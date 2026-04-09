@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { ArrowLeft, Mail } from "lucide-react";
+import { Seo } from "@/components/seo";
 
 export default function ContactPage() {
   return (
     <div className="min-h-screen flex flex-col bg-bg">
+      <Seo
+        title="Επικοινωνία"
+        description="Επικοινωνήστε με την ομάδα του Fortune Teller για τεχνική υποστήριξη ή οποιαδήποτε απορία."
+      />
       <div className="max-w-2xl mx-auto w-full px-4 py-10">
         <Link
           href="/"

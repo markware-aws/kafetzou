@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Allow: /login
+Allow: /contact
 Allow: /privacy
 Allow: /terms
 Disallow: /upload
@@ -16,4 +17,4 @@ Disallow: /profile
 Disallow: /buy-credits
 Disallow: /payment
 
-Sitemap: https://kafetzou.com/sitemap.xml
+Sitemap: https://fortuneteller.gr/sitemap.xml

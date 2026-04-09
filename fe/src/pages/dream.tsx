@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Seo } from "@/components/seo";
 import {
   Moon,
   Sparkles,
@@ -82,6 +83,7 @@ export default function DreamPage() {
 
   return (
     <AuthGuard>
+      <Seo title="Ερμηνεία Ονείρων" noindex />
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => setCreditDialogOpen(false)}

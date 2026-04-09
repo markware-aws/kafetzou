@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { Seo } from "@/components/seo";
 import useSWR from "swr";
 import {
   Sparkles,
@@ -497,6 +498,7 @@ export default function AstrologyPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo title="Αστρολογία" noindex />
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => setCreditDialogOpen(false)}

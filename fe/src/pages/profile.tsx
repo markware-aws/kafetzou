@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Seo } from "@/components/seo";
 import {
   User,
   Calendar,
@@ -266,6 +267,7 @@ export default function ProfilePage() {
 
   return (
     <AuthGuard>
+      <Seo title="Προφίλ" noindex />
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => {

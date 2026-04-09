@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Clock, Star, Sparkles, Lightbulb, type LucideIcon } from "lucide-react";
 import { Navbar } from "@/components/navbar";
+import { Seo } from "@/components/seo";
 import { AuthGuard } from "@/components/auth-guard";
 import { getTarotReading } from "@/lib/api";
 import { getCardDisplayName, getCardImagePath } from "@/lib/tarot";
@@ -46,6 +47,7 @@ export default function TarotReadingPage() {
 
   return (
     <AuthGuard>
+      <Seo title="Αποτέλεσμα Ανάγνωσης Ταρό" noindex />
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-10">

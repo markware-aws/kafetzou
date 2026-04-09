@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Sparkles, RefreshCw, Star, Coins } from "lucide-react";
+import { Seo } from "@/components/seo";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { createTarotReading, TarotReadingResponse } from "@/lib/api";
@@ -57,6 +58,7 @@ export default function TarotPage() {
 
   return (
     <AuthGuard>
+      <Seo title="Ανάγνωση Ταρό" noindex />
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => setCreditDialogOpen(false)}
