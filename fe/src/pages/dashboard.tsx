@@ -7,6 +7,7 @@ import { getReadings, getTarotReadings, getPersonalizedAstrologyHistory, getDrea
 import { getCardDisplayName } from "@/lib/tarot";
 import { SIGN_BY_ID } from "@/lib/astrology";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
+import { timeAgo } from "@/lib/time-ago";
 
 interface Reading {
   reading_id: string;
@@ -39,16 +40,6 @@ interface DreamItem {
 }
 
 type Tab = "coffee" | "tarot" | "astrology" | "dreams";
-
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "μόλις τώρα";
-  if (m < 60) return `πριν ${m}λ`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `πριν ${h}ω`;
-  return `πριν ${Math.floor(h / 24)} μέρες`;
-}
 
 const NEW_READING_HREF: Record<Tab, string> = {
   coffee: "/upload", tarot: "/tarot", astrology: "/astrology", dreams: "/dream",

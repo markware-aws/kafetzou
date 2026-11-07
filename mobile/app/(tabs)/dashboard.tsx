@@ -14,14 +14,22 @@ import { theme } from '@/lib/theme';
 
 type Tab = 'coffee' | 'tarot' | 'astrology' | 'dreams';
 
+// Same thresholds as fe/src/lib/time-ago.ts (covered by its tests); keep the two in sync.
 function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'μόλις τώρα';
-  if (m < 60) return `πριν ${m}λ`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `πριν ${h}ω`;
-  return `πριν ${Math.floor(h / 24)} μέρες`;
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (minutes < 1) return 'μόλις τώρα';
+  if (minutes < 60) return `πριν ${minutes}λ`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `πριν ${hours}ω`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return days === 1 ? 'πριν 1 μέρα' : `πριν ${days} μέρες`;
+  if (days < 365) {
+    // Capped so 360–364 days doesn't read "12 μήνες" just before "1 χρόνο".
+    const months = Math.min(11, Math.floor(days / 30));
+    return months === 1 ? 'πριν 1 μήνα' : `πριν ${months} μήνες`;
+  }
+  const years = Math.floor(days / 365);
+  return years === 1 ? 'πριν 1 χρόνο' : `πριν ${years} χρόνια`;
 }
 
 function useTabData(fetcher: () => Promise<any[]>) {

@@ -5,16 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { getDreamReading } from "@/lib/api";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
-
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "μόλις τώρα";
-  if (m < 60) return `πριν ${m}λ`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `πριν ${h}ω`;
-  return `πριν ${Math.floor(h / 24)} μέρες`;
-}
+import { timeAgo } from "@/lib/time-ago";
 
 function Section({ icon: Icon, label, text }: { icon: LucideIcon; label: string; text: string }) {
   return (
