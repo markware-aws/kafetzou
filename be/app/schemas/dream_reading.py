@@ -1,9 +1,18 @@
 from pydantic import BaseModel, Field
 
 
+# The descriptions are part of the JSON schema the model sees, so they steer the writing.
 class DreamReading(BaseModel):
-    interpretation: str = Field(description="Κύρια ερμηνεία του ονείρου — τι σημαίνει και τι αντανακλά στη ζωή σου")
-    symbols: list[str] = Field(description="Τα βασικά σύμβολα/θέματα που εντοπίστηκαν στο όνειρο (3-6 στοιχεία)")
-    emotions: str = Field(description="Τα συναισθήματα και η συναισθηματική ενέργεια που κρύβεται πίσω από το όνειρο")
-    advice: str = Field(description="Πρακτική συμβουλή — τι μπορεί να κάνει ο ονειρευόμενος με αυτό το μήνυμα")
-    summary: str = Field(description="Μια ποιητική, μυστηριώδης σύνοψη σε μία πρόταση")
+    interpretation: str = Field(
+        description="Η κύρια ερμηνεία: τι σημαίνουν τα βασικά σύμβολα του ονείρου και τι μπορεί να δείχνουν για όσα ζείτε τώρα",
+    )
+    symbols: list[str] = Field(
+        description="Τα βασικά σύμβολα ή θέματα του ονείρου, 3-6 σύντομες λέξεις ή φράσεις",
+    )
+    emotions: str = Field(
+        description="Τα συναισθήματα πίσω από το όνειρο και τι εκφράζουν για τη διάθεσή σας αυτή την περίοδο",
+    )
+    advice: str = Field(
+        description="Πρακτική συμβουλή: τι μπορείτε να κάνετε με αυτό το μήνυμα τις επόμενες μέρες",
+    )
+    summary: str = Field(description="Σύντομη ατάκα-τίτλος έως 12 λέξεις")

@@ -3,8 +3,7 @@ import re
 from datetime import date, datetime, timedelta, timezone
 
 from app.schemas.astrology import AstrologyReading
-from app.services import dynamodb_service, sky_service
-from app.services.openai_service import structured_chat
+from app.services import dynamodb_service, sky_service, writing_style
 
 logger = logging.getLogger(__name__)
 
@@ -86,30 +85,12 @@ def _previous_period_days(period: str, today: date) -> list[date]:
 
 # ── Style ────────────────────────────────────────────────────────────────────
 
-# (label shown to the model, regex). Checked after generation; one retry if any match.
-_BANNED_PHRASES: list[tuple[str, str]] = [
-    ("ενέργεια", r"εν[εέ]ργε[ιί]"),
-    ("σύμπαν", r"σ[υύ]μπαν"),
-    ("αγκαλιάστε", r"αγκαλι[αά]σ"),
-    ("εσωτερική δύναμη", r"εσωτερικ\w*\s+(σας\s+)?δ[υύ]ναμ"),
-    ("μη διστάσετε", r"μην?\s+διστ[αά]σ"),
-    ("αφεθείτε", r"αφεθε[ιί]"),
-    ("δονήσεις", r"δον[ήη]σ"),
-    ("μαγεία", r"μαγε[ιί]α|μαγευτικ|μαγικ"),
-    ("μυστήριο", r"μυστ[ηή]ρι"),
-    ("αναμφίβολα", r"αναμφ[ιί]βολ"),
+# Checked after generation, on top of the shared list; one retry if any match.
+_BANNED_PATTERNS = writing_style.COMMON_BANNED_PATTERNS + writing_style.compile_patterns([
     ("τα άστρα σας χαμογελούν", r"χαμογελ.{0,20}[αά]στρ|[αά]στρ.{0,20}χαμογελ"),
-    ("νέο κεφάλαιο", r"ν[εέ](ο|α)\s+κεφ[αά]λαι"),
-    ("διαίσθηση", r"διαισθ|διαίσθ"),
-    ("στρέφει την προσοχή", r"στρ[εέ]φ\w*\s+(την\s+)?προσοχ"),
     ("ακριβής ώρα", r"\b\d{1,2}:\d{2}\b"),
     ("το στοιχείο του ζωδίου", r"στοιχε[ιί]\w*\s+(της\s+|του\s+)?(φωτι|γης|αέρα|νερ)|π[υύ]ριν\w*\s+ζ[ωώ]δι"),
-    ("παύλα (—)", r"—|\s–\s"),
-    ("ερώτηση", r"[;?;]"),  # Greek uses ";" (or U+037E) as its question mark
-    ("emoji", r"[\U0001F300-\U0001FAFF☀-➿]"),
-]
-_BANNED_PATTERNS = [(label, re.compile(pattern, re.IGNORECASE)) for label, pattern in _BANNED_PHRASES]
-_MAX_EXCLAMATIONS = 1
+])
 
 # A personalized reading talks to one person and uses coarse timing ("μέσα Νοεμβρίου")
 _PERSONALIZED_BANNED_PATTERNS = [
@@ -120,14 +101,27 @@ _PERSONALIZED_BANNED_PATTERNS = [
     ),
 ]
 
-_STYLE_RULES = f"""Είστε έμπειρη Ελληνίδα αστρολόγος. Εδώ και 25 χρόνια γράφετε τη στήλη των ζωδίων σε μεγάλο ελληνικό lifestyle site και οι αναγνώστες σας σας διαβάζουν κάθε πρωί με τον καφέ τους.
+# The column speaks to everyone born in a decan; a personalized reading only to its reader.
+_COLUMN_DECAN_RULE = (
+    "- Αν τα δεδομένα έχουν γραμμές για δεκαήμερα, διαλέξτε ΕΝΑ και απευθυνθείτε μία φορά στους "
+    "γεννημένους του («Οι γεννημένοι στο τρίτο δεκαήμερο έχετε...»). Ποτέ περισσότερα από ένα "
+    "δεκαήμερο στην ίδια πρόβλεψη."
+)
+_PERSONAL_DECAN_RULE = (
+    "- Αν μια γραμμή δεκαημέρου αφορά το δεκαήμερο του αναγνώστη, πείτε το απευθείας και μία φορά "
+    "(«ο Ήλιός σας, στο τρίτο δεκαήμερο, ...»)."
+)
+
+
+def _style_rules(decan_rule: str) -> str:
+    return f"""Είστε έμπειρη Ελληνίδα αστρολόγος. Εδώ και 25 χρόνια γράφετε τη στήλη των ζωδίων σε μεγάλο ελληνικό lifestyle site και οι αναγνώστες σας σας διαβάζουν κάθε πρωί με τον καφέ τους.
 
 ΔΕΔΟΜΕΝΑ
 - Στηρίζεστε μόνο στις πλανητικές κινήσεις που σας δίνονται. Μην επινοείτε όψεις, ανάδρομους πλανήτες ή αλλαγές ζωδίου που δεν υπάρχουν στα δεδομένα.
 - Ονομάστε 1-2 συγκεκριμένες κινήσεις (π.χ. «η Σελήνη στον Λέοντα», «το τετράγωνο του Άρη με τον Κρόνο») και πείτε τι σημαίνουν για έναν τομέα του ζωδίου. Μην απαριθμείτε όλα τα γεγονότα της περιόδου με τη σειρά: διαλέξτε όσα αφορούν περισσότερο το ζώδιο.
 - Οι πλανήτες ανήκουν κυρίως στο general. Στα love, career, luck και warning μιλήστε για την κατάσταση και τους ανθρώπους, όχι για πλανήτες: το πολύ μία αναφορά πλανήτη σε όλα αυτά μαζί. Το luck και το warning δεν αναφέρουν ποτέ πλανήτες ή όψεις.
 - Μιλάτε για τομείς («ο τομέας της καριέρας σας», «τα οικονομικά σας»), ποτέ για αριθμημένους οίκους.
-- Αν τα δεδομένα έχουν γραμμές για δεκαήμερα, διαλέξτε ΕΝΑ και απευθυνθείτε μία φορά στους γεννημένους του («Οι γεννημένοι στο τρίτο δεκαήμερο έχετε...»). Ποτέ περισσότερα από ένα δεκαήμερο στην ίδια πρόβλεψη.
+{decan_rule}
 - Όταν τα δεδομένα δίνουν μέρα ή μέρος της ημέρας, χρησιμοποιήστε το με φυσικό τρόπο («το απόγευμα», «από την Πέμπτη»). Ποτέ ακριβείς ώρες.
 - Τετράγωνα και αντιθέσεις φέρνουν τριβές, καθυστερήσεις και νεύρα. Τρίγωνα και εξάγωνα φέρνουν διευκολύνσεις. Μην ωραιοποιείτε τις δύσκολες μέρες, αλλά δώστε πάντα έναν τρόπο να τις διαχειριστεί κανείς.
 
@@ -144,7 +138,7 @@ _STYLE_RULES = f"""Είστε έμπειρη Ελληνίδα αστρολόγο
 - Ποτέ μη γράφετε για τις οδηγίες ή τα δεδομένα («όπως δείχνουν τα δεδομένα», «μπορεί να αναφερθεί»). Ο αναγνώστης βλέπει μόνο τη στήλη.
 
 ΑΠΑΓΟΡΕΥΟΝΤΑΙ
-{", ".join(label for label, _ in _BANNED_PHRASES)}, το ταξίδι ως μεταφορά («το ταξίδι της ζωής σας»)."""
+{writing_style.banned_list_for_prompt(_BANNED_PATTERNS)}."""
 
 _PERIOD_RULES = {
     "daily": (
@@ -185,60 +179,32 @@ luck: Η Πέμπτη είναι η καλύτερη μέρα για αιτήμ�
 warning: Μην αφήσετε την περιέργεια να γίνει ζήλια.
 summary: Ήρεμο ξεκίνημα, ειλικρινές φινάλε."""
 
-_PERIOD_LABELS = {"daily": "ημερήσια", "weekly": "εβδομαδιαία", "monthly": "μηνιαία"}
+# One reader instead of a whole sign, coarse timing, natal chart fields filled in.
+# Written for this app like _EXAMPLES; the sky data is invented.
+_PERSONALIZED_EXAMPLE = """ΠΑΡΑΔΕΙΓΜΑ ΥΦΟΥΣ (δείχνει τόνο και μήκος, όχι περιεχόμενο για αντιγραφή)
 
-_GENDER_RULES = {
-    "Άνδρας": "Ο αναγνώστης είναι άνδρας: επίθετα και μετοχές στο αρσενικό («είστε έτοιμος»).",
-    "Γυναίκα": "Η αναγνώστρια είναι γυναίκα: επίθετα και μετοχές στο θηλυκό («είστε έτοιμη»).",
-}
-_NEUTRAL_GENDER_RULE = "Αποφύγετε επίθετα και μετοχές με γένος για τον αναγνώστη."
+Εξατομικευμένη, Σκορπιός, 34 ετών, καστανά μάτια
+Δεδομένα: Ήλιος Σκορπιός 12° (δεύτερο δεκαήμερο) · Σελήνη Καρκίνος 8° · Ωροσκόπος Παρθένος 20° · αρχές Νοεμβρίου: είσοδος Αφροδίτη → Τοξότης (τομέας: οικονομικά, έσοδα, αγορές) · μέσα Νοεμβρίου: Νέα Σελήνη (Σκορπιός, τομέας: εαυτός, εικόνα, πρωτοβουλίες) · τέλη Νοεμβρίου: Άρης τετράγωνο Κρόνος · Κρόνος (Ιχθύες 12°) σε τρίγωνο με το ζώδιο: αφορά κυρίως το δεύτερο δεκαήμερο
+general: Η Νέα Σελήνη στο ζώδιό σας, μέσα του μήνα, είναι η καλύτερη αφετηρία της χρονιάς για κάτι δικό σας. Ο Ήλιός σας, στο δεύτερο δεκαήμερο, έχει τη στήριξη του Κρόνου, άρα ό,τι στήσετε τώρα δεν θα γκρεμιστεί με την πρώτη δυσκολία. Σε αυτή τη φάση της ζωής σας οι γρήγορες λύσεις δεν σας ενδιαφέρουν πια, και αυτό είναι πλεονέκτημα. Προς τα τέλη του μήνα το τετράγωνο του Άρη με τον Κρόνο φέρνει καθυστερήσεις και λίγα νεύρα, οπότε κλείστε τα σημαντικά πριν από τότε. Ό,τι συμφωνήσετε, ζητήστε να γραφτεί.
+love: Δεν σας ταιριάζουν τα μισόλογα και αυτόν τον μήνα θα το πείτε καθαρά. Αν είστε σε σχέση, μια κουβέντα για τα κοινά σχέδια που αναβάλλετε βγαίνει καλύτερα απ' ό,τι περιμένετε. Αν όχι, μια γνωριμία μέσα από φίλους έχει συνέχεια, αρκεί να μη βγάλετε βιαστικά συμπεράσματα. Τα καστανά σας μάτια λένε πολλά πριν μιλήσετε, και κάποιος το έχει ήδη προσέξει. Δώστε χρόνο και αφήστε τον άλλον να κάνει το επόμενο βήμα.
+career: Από τις αρχές του μήνα η Αφροδίτη περνά στον τομέα των οικονομικών σας και φέρνει ένα έξτρα έσοδο ή μια μικρή αύξηση. Στη δουλειά σας εμπιστεύονται ένα κομμάτι που ως τώρα το είχε άλλος, και θα φανεί πόσο οργανωμένα δουλεύετε. Μην αναλάβετε όμως περισσότερα απ' όσα χωράει η εβδομάδα σας. Προς τα τέλη του μήνα ένας προϊστάμενος ζητά αλλαγές την τελευταία στιγμή, γι' αυτό κρατήστε περιθώριο. Τα χαρτιά και οι υπογραφές πάνε καλύτερα στο πρώτο μισό του μήνα.
+luck: Η καλύτερη περίοδος για αιτήματα και νέα ξεκινήματα είναι τα μέσα του μήνα. Ένα ποσό που περιμένετε καιρό μπαίνει επιτέλους στον λογαριασμό. Αξίζει να πείτε ναι σε μια πρόσκληση που αρχικά θα θέλατε να αρνηθείτε. Από εκεί έρχεται μια γνωριμία που θα σας φανεί χρήσιμη.
+warning: Μην υπογράψετε τίποτα βιαστικά στα τέλη του μήνα.
+summary: Γερά θεμέλια, καθαρές κουβέντες.
+moon_insight: Η Σελήνη σας στον Καρκίνο σάς κάνει να νιώθετε βαθιά, αλλά να το δείχνετε μόνο σε λίγους. Όταν πληγώνεστε, κλείνεστε πρώτα στο καβούκι σας και μιλάτε αργότερα. Χρειάζεστε ένα σπίτι που να σας ησυχάζει και ανθρώπους που θυμούνται τα μικρά πράγματα. Στις σχέσεις σας μετράει περισσότερο η σταθερή φροντίδα παρά οι μεγάλες κουβέντες.
+ascendant_insight: Με Ωροσκόπο στην Παρθένο, η πρώτη εντύπωση που αφήνετε είναι ενός ανθρώπου που ξέρει τι κάνει. Η ηρεμία και η τάξη σας κάνουν τους άλλους να σας εμπιστεύονται από την πρώτη συνάντηση. Πίσω από τη σοβαρή εικόνα υπάρχει χιούμορ, που το δείχνετε μόνο όταν νιώσετε άνετα."""
+
+_PERIOD_LABELS = {"daily": "ημερήσια", "weekly": "εβδομαδιαία", "monthly": "μηνιαία"}
 
 # The personalized reading covers "the coming weeks"
 _PERSONALIZED_SPAN_DAYS = 28
 
 
 def find_banned_phrases(
-    reading: AstrologyReading, extra_patterns: list[tuple[str, re.Pattern]] | None = None
+    reading: AstrologyReading, extra_patterns: list[writing_style.BannedPattern] | None = None
 ) -> list[str]:
-    """Labels of the AI-sounding phrases (or forbidden punctuation) found in a reading."""
-    text = " ".join(value for value in reading.model_dump().values() if isinstance(value, str))
-    patterns = _BANNED_PATTERNS + (extra_patterns or [])
-    found = [label for label, pattern in patterns if pattern.search(text)]
-    if text.count("!") > _MAX_EXCLAMATIONS:
-        found.append("πολλά θαυμαστικά")
-    return found
-
-
-async def _generate_with_guardrail(
-    system_prompt: str,
-    user_text: str,
-    extra_patterns: list[tuple[str, re.Pattern]] | None = None,
-) -> tuple[AstrologyReading, dict]:
-    """Generate once; if banned phrases slip through, regenerate once naming them."""
-    reading, usage = await structured_chat(
-        system_prompt=system_prompt,
-        user_content=[{"type": "text", "text": user_text}],
-        response_model=AstrologyReading,
-    )
-    banned = find_banned_phrases(reading, extra_patterns)
-    if not banned:
-        return reading, usage
-
-    logger.info("Horoscope contained %s, regenerating once", banned)
-    retry_text = (
-        f"{user_text}\n\nΗ προηγούμενη εκδοχή σας περιείχε: {', '.join(banned)}. "
-        "Ξαναγράψτε την πρόβλεψη χωρίς αυτά."
-    )
-    retry_reading, retry_usage = await structured_chat(
-        system_prompt=system_prompt,
-        user_content=[{"type": "text", "text": retry_text}],
-        response_model=AstrologyReading,
-    )
-    remaining = find_banned_phrases(retry_reading, extra_patterns)
-    if remaining:
-        logger.warning("Horoscope still contains %s after retry, keeping it", remaining)
-    combined_usage = {key: usage[key] + retry_usage[key] for key in usage}
-    return retry_reading, combined_usage
+    """Labels of the AI-sounding phrases (or forbidden punctuation) found in a horoscope."""
+    return writing_style.find_banned_phrases(reading, _BANNED_PATTERNS + (extra_patterns or []))
 
 
 def _load_previous_texts(sign: str, period: str, today: date) -> list[str]:
@@ -272,8 +238,13 @@ async def generate_horoscope(sign: str, period: str) -> tuple[AstrologyReading, 
         f"Γράψτε την {_PERIOD_LABELS[period]} πρόβλεψη. Ζώδιο: {SIGNS_DATA[sign]['el']}."
     )
 
-    system_prompt = f"{_STYLE_RULES}\n\n{_PERIOD_RULES[period]}\n\n{_EXAMPLES}"
-    return await _generate_with_guardrail(system_prompt, "\n\n".join(sections))
+    system_prompt = f"{_style_rules(_COLUMN_DECAN_RULE)}\n\n{_PERIOD_RULES[period]}\n\n{_EXAMPLES}"
+    return await writing_style.generate_with_guardrail(
+        system_prompt=system_prompt,
+        user_text="\n\n".join(sections),
+        response_model=AstrologyReading,
+        banned_patterns=_BANNED_PATTERNS,
+    )
 
 
 def _describe_natal_chart(chart: dict) -> tuple[str, str]:
@@ -295,7 +266,13 @@ def _describe_natal_chart(chart: dict) -> tuple[str, str]:
         instructions.append(
             "- ascendant_insight: 3-4 προτάσεις για τον Ωροσκόπο, την πρώτη εντύπωση και την έλξη που ασκείτε."
         )
+    else:
+        instructions.append("- Η ώρα γέννησης δεν είναι γνωστή: αφήστε κενό το ascendant_insight.")
     return "\n".join(lines), "\n".join(instructions)
+
+
+# The example shows both chart fields filled, so say explicitly when they must stay empty
+_NO_CHART_INSTRUCTIONS = "- Δεν υπάρχει γενέθλιος χάρτης: αφήστε κενά τα moon_insight και ascendant_insight."
 
 
 async def generate_personalized_reading(
@@ -317,20 +294,22 @@ async def generate_personalized_reading(
         personal_lines.append(f"- Ηλικία: {age} ετών")
     personal_lines.append(f"- Χρώμα ματιών: {eye_color}")
 
-    chart_text, chart_instructions = _describe_natal_chart(chart) if chart else ("", "")
+    chart_text, chart_instructions = (
+        _describe_natal_chart(chart) if chart else ("", _NO_CHART_INSTRUCTIONS)
+    )
 
-    system_prompt = f"""{_STYLE_RULES}
+    system_prompt = f"""{_style_rules(_PERSONAL_DECAN_RULE)}
 
 ΕΞΑΤΟΜΙΚΕΥΜΕΝΗ ΑΝΑΓΝΩΣΗ για τις επόμενες εβδομάδες, για έναν συγκεκριμένο άνθρωπο.
 - general, love, career, luck: 4-6 προτάσεις η καθεμία.
-- Μιλάτε σε έναν άνθρωπο, όχι σε όλο το ζώδιο: ποτέ «Οι γεννημένοι...» ή «Οι γεννημένες...». Αν μια γραμμή δεκαημέρου αφορά το δεκαήμερό του, πείτε το απευθείας («ο Ήλιος σας, στο τρίτο δεκαήμερο, ...»).
+- Μιλάτε σε έναν άνθρωπο, όχι σε όλο το ζώδιο: ποτέ «Οι γεννημένοι...» ή «Οι γεννημένες...».
 - Για τον χρόνο χρησιμοποιήστε «αρχές, μέσα, τέλη του μήνα» όπως στα δεδομένα, ποτέ ακριβείς ημερομηνίες.
 - Λάβετε υπόψη την ηλικία ως φάση ζωής, χωρίς να την αναφέρετε ως αριθμό.
 - Αν ταιριάζει, αναφέρετε μία φορά το χρώμα των ματιών μέσα σε φυσική φράση για το βλέμμα (π.χ. «τα πράσινα μάτια σας τραβούν την προσοχή»).
-- {_GENDER_RULES.get(sex, _NEUTRAL_GENDER_RULE)}
+- {writing_style.gender_rule(sex)}
 {chart_instructions}
 
-{_EXAMPLES}"""
+{_PERSONALIZED_EXAMPLE}"""
 
     sections = [
         "\n".join(personal_lines),
@@ -338,5 +317,9 @@ async def generate_personalized_reading(
         sky_service.describe_for_sign(sky, sign, coarse_dates=True),
         "Γράψτε την εξατομικευμένη ανάγνωση, απευθυνόμενοι μόνο σε αυτόν τον άνθρωπο.",
     ]
-    user_text = "\n\n".join(section for section in sections if section)
-    return await _generate_with_guardrail(system_prompt, user_text, _PERSONALIZED_BANNED_PATTERNS)
+    return await writing_style.generate_with_guardrail(
+        system_prompt=system_prompt,
+        user_text="\n\n".join(section for section in sections if section),
+        response_model=AstrologyReading,
+        banned_patterns=_BANNED_PATTERNS + _PERSONALIZED_BANNED_PATTERNS,
+    )

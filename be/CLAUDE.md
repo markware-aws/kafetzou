@@ -32,6 +32,7 @@ app/
 │   └── auth.py              # GET /auth/me (creates user on first login)
 ├── services/
 │   ├── openai_service.py    # structured_chat() — shared OpenAI helper
+│   ├── writing_style.py     # shared banned phrases, gender rule, check-and-regenerate-once guardrail (all reader-facing AI text goes through it)
 │   ├── vision_service.py    # Step 1: analyze_coffee_image()
 │   ├── fortune_service.py   # Step 2: generate_coffee_reading()
 │   ├── s3_service.py        # presigned upload/get URLs

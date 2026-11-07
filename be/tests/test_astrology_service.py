@@ -1,9 +1,10 @@
+import asyncio
 from datetime import date, datetime, timezone
 
 import pytest
 
 from app.schemas.astrology import AstrologyReading
-from app.services import astrology_service
+from app.services import astrology_service, writing_style
 
 
 def _reading(**overrides) -> AstrologyReading:
@@ -87,3 +88,74 @@ class TestFindBannedPhrases:
         reading = _reading(love="Μια αγκαλιά λύνει πολλά. Κρατήστε τα μυστικά σας.")
 
         assert astrology_service.find_banned_phrases(reading) == []
+
+
+@pytest.fixture
+def stub_sky(monkeypatch):
+    """Skip Swiss Ephemeris and DynamoDB; the tests only look at the prompt."""
+    monkeypatch.setattr(astrology_service.sky_service, "compute_sky", lambda *args: None)
+    monkeypatch.setattr(
+        astrology_service.sky_service,
+        "describe_for_sign",
+        lambda sky, sign, coarse_dates=False: "Δεδομένα ουρανού",
+    )
+    monkeypatch.setattr(
+        astrology_service.dynamodb_service, "get_astrology_reading", lambda *args: None
+    )
+
+
+_BORN_IN_PATTERN = dict(astrology_service._PERSONALIZED_BANNED_PATTERNS)[
+    "«Οι γεννημένοι/ες» (μιλήστε μόνο σε αυτόν τον άνθρωπο)"
+]
+
+
+class TestPrompts:
+    def test_should_address_one_decan_in_the_column(self, stub_sky, fake_chat):
+        chat = fake_chat(_reading())
+
+        asyncio.run(astrology_service.generate_horoscope("libra", "daily"))
+
+        assert _BORN_IN_PATTERN.search(chat.calls[0]["system_prompt"])
+
+    def test_should_never_show_the_born_in_phrasing_in_a_personalized_prompt(self, stub_sky, fake_chat):
+        chat = fake_chat(_reading())
+
+        asyncio.run(astrology_service.generate_personalized_reading(
+            "scorpio", "Γυναίκα", "1992-11-04", "καστανά"
+        ))
+
+        assert not _BORN_IN_PATTERN.search(chat.calls[0]["system_prompt"])
+
+    def test_should_ask_to_leave_chart_fields_empty_without_a_chart(self, stub_sky, fake_chat):
+        chat = fake_chat(_reading())
+
+        asyncio.run(astrology_service.generate_personalized_reading(
+            "scorpio", "Άλλο", "1992-11-04", "καστανά"
+        ))
+
+        assert "αφήστε κενά τα moon_insight και ascendant_insight" in chat.calls[0]["system_prompt"]
+
+    def test_should_regenerate_a_personalized_reading_that_quotes_an_exact_date(self, stub_sky, fake_chat):
+        chat = fake_chat(_reading(general="Στις 15 Νοεμβρίου έρχονται νέα."), _reading())
+
+        asyncio.run(astrology_service.generate_personalized_reading(
+            "scorpio", "Άνδρας", "1992-11-04", "μπλε"
+        ))
+
+        assert len(chat.calls) == 2
+        assert "ακριβείς ημερομηνίες" in chat.calls[1]["user_text"]
+
+
+class TestPromptExamples:
+    def test_column_examples_should_pass_the_column_check(self):
+        found = [label for label, pattern in astrology_service._BANNED_PATTERNS
+                 if pattern.search(astrology_service._EXAMPLES)]
+
+        assert found == []
+
+    def test_personalized_example_should_pass_the_personalized_check(self):
+        patterns = astrology_service._BANNED_PATTERNS + astrology_service._PERSONALIZED_BANNED_PATTERNS
+        example = astrology_service._PERSONALIZED_EXAMPLE
+
+        assert [label for label, pattern in patterns if pattern.search(example)] == []
+        assert example.count("!") <= writing_style.MAX_EXCLAMATIONS
