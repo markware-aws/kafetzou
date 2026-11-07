@@ -17,6 +17,7 @@ import { SIGNS, type SignData } from "@/lib/astrology";
 import { SiteHeader } from "@/components/site-header";
 import { DailyCardSection } from "@/components/daily-card";
 import { CautionNote } from "@/components/caution-note";
+import { SignupPromptDialog } from "@/components/signup-prompt-dialog";
 import { Seo } from "@/components/seo";
 
 type Period = "daily" | "weekly" | "monthly";
@@ -227,7 +228,15 @@ const FEATURES = [
   },
 ];
 
-const GUIDES = [
+interface Guide {
+  href: string;
+  title: string;
+  text: string;
+  /** Signed-out visitors get the sign-up prompt instead of the page. */
+  requiresAuth?: boolean;
+}
+
+const GUIDES: Guide[] = [
   {
     href: "/symvola-kafe/",
     title: "Σύμβολα στον καφέ",
@@ -257,6 +266,7 @@ const GUIDES = [
     href: "/zodia/oroskopos/",
     title: "Υπολογισμός ωροσκόπου",
     text: "Βρες τον ωροσκόπο σου από την ώρα γέννησης.",
+    requiresAuth: true,
   },
 ];
 
@@ -265,9 +275,11 @@ export default function Home() {
     revalidateOnFocus: false,
   });
   const isAuthed = !!user;
+  const [signupPromptOpen, setSignupPromptOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SignupPromptDialog open={signupPromptOpen} onClose={() => setSignupPromptOpen(false)} />
       {/* The coffee keywords belong to /anagnosi-kafe/; the homepage targets the brand mix. */}
       <Seo
         title="Ανάγνωση Καφέ, Ταρό & Ζώδια Online"
@@ -365,15 +377,20 @@ export default function Home() {
       <HoroscopeSection />
 
       <section className="max-w-5xl mx-auto w-full px-4 pb-20">
-        <h2 className="text-xl font-semibold text-violet-50">Δωρεάν οδηγοί</h2>
-        <p className="mt-1 mb-5 text-sm text-violet-300">
-          Χωρίς εγγραφή, για όσους θέλουν να μάθουν να διαβάζουν μόνοι τους.
-        </p>
+        <h2 className="mb-5 text-xl font-semibold text-violet-50">Οδηγοί</h2>
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {GUIDES.map((guide) => (
             <li key={guide.href}>
               <Link
                 href={guide.href}
+                onClick={(event) => {
+                  // Stays a real link for search engines; signed-out visitors get the sign-up
+                  // prompt. While the auth check is still loading (undefined) the link just
+                  // opens the page, which asks again on submit.
+                  if (!guide.requiresAuth || user !== null) return;
+                  event.preventDefault();
+                  setSignupPromptOpen(true);
+                }}
                 className="flex h-full items-center justify-between gap-3 rounded-lg border border-violet-800 bg-surface p-4 hover:border-violet-600 transition-colors"
               >
                 <span>

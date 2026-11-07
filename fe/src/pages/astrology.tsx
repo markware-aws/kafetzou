@@ -319,7 +319,7 @@ function PersonalizedForm({
               value={sign}
               onChange={(e) => setSign(e.target.value)}
               required
-              className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 focus:outline-none focus:border-amber-500"
+              className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-base text-violet-50 focus:outline-none focus:border-amber-500"
             >
               <option value="">— Επέλεξε ζώδιο —</option>
               {SIGNS.map((s) => (
@@ -349,7 +349,7 @@ function PersonalizedForm({
                 setDob(val);
                 if (val) setSign(getSignFromDob(val));
               }}
-              className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500 [color-scheme:dark]"
+              className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-base text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500 [color-scheme:dark]"
             />
           </div>
 

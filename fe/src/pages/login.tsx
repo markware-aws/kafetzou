@@ -7,7 +7,7 @@ import { Seo } from "@/components/seo";
 
 const LABEL_CLASS = "block text-sm font-medium text-violet-100 mb-1.5";
 const INPUT_CLASS =
-  "w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500 transition-colors";
+  "w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-base text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500 transition-colors";
 
 type Step = "login" | "register" | "confirm" | "forgot" | "reset";
 
@@ -44,6 +44,12 @@ export default function LoginPage() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [error, setError] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  // "Εγγραφή" links send ?mode=register so the visitor lands on the sign-up form.
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query.mode === "register") setStep("register");
+  }, [router.isReady, router.query.mode]);
 
   const passwordRules: PasswordRule[] = [
     { label: "Τουλάχιστον 8 χαρακτήρες", met: password.length >= 8 },

@@ -67,6 +67,24 @@ button, [role="button"] {
   cursor: pointer;
 }
 
+/* iOS Safari gives date and time inputs a fixed intrinsic width (they overflow narrow cards),
+   centres their value and collapses them to a shorter height while empty. In @layer base so
+   the Tailwind classes on each input still win. The min-height matches a text input:
+   16px text × 1.5 line height + py-2 + the 1px borders. */
+@layer base {
+  input[type="date"],
+  input[type="time"] {
+    appearance: none;
+    -webkit-appearance: none;
+    min-width: 0;
+    min-height: calc(1.5rem + 1rem + 2px);
+  }
+
+  input::-webkit-date-and-time-value {
+    text-align: left;
+  }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

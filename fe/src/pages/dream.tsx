@@ -109,7 +109,7 @@ export default function DreamPage() {
                   }
                   placeholder=""
                   rows={7}
-                  className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
+                  className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-base text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
                 />
                 <div className="flex items-center justify-between mt-1.5 text-xs">
                   <p className="text-violet-300">Τουλάχιστον 10 χαρακτήρες</p>

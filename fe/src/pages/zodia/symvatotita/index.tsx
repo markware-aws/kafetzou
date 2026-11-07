@@ -27,7 +27,7 @@ export const getStaticProps: GetStaticProps<CompatibilityHubProps> = async () =>
 });
 
 const selectClassName =
-  "w-full rounded-md border border-violet-700 bg-surface px-3 py-2 text-sm text-violet-50 focus:outline-none focus:border-amber-500";
+  "w-full rounded-md border border-violet-700 bg-surface px-3 py-2 text-base text-violet-50 focus:outline-none focus:border-amber-500";
 
 export default function CompatibilityHub({ signs, loveScores }: CompatibilityHubProps) {
   const router = useRouter();
@@ -108,8 +108,10 @@ export default function CompatibilityHub({ signs, loveScores }: CompatibilityHub
         <p className="mt-1 mb-4 text-sm text-violet-300">
           Βαθμός στον έρωτα, από 1 έως 10. Πάτησε έναν συνδυασμό για ολόκληρη την ανάλυση.
         </p>
-        {/* The table scrolls inside its own box so the page never scrolls sideways on phones. */}
-        <div className="overflow-x-auto rounded-lg border border-violet-800">
+        {/* The table scrolls inside its own box so the page never scrolls sideways on phones.
+            `relative` makes the box contain the absolutely positioned sr-only labels; without
+            it they stick out past the box and Safari zooms the whole page out to fit them. */}
+        <div className="relative overflow-x-auto rounded-lg border border-violet-800">
           <table className="w-full text-sm">
             <thead>
               <tr>

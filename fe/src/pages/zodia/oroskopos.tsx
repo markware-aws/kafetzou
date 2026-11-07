@@ -1,19 +1,25 @@
 import { useState } from "react";
 import type { GetStaticProps } from "next";
 import Link from "next/link";
+import useSWR from "swr";
 import { Seo } from "@/components/seo";
 import { ContentLayout, ContentSection, FeatureCta } from "@/components/content-layout";
+import { PlaceAutocomplete } from "@/components/place-autocomplete";
+import { SignupPromptDialog } from "@/components/signup-prompt-dialog";
+import { getUser } from "@/lib/auth";
 import {
   ascendantLongitude,
   longitudeToSign,
   sunLongitude,
   zonedTimeToUtc,
 } from "@/lib/birth-chart";
-import { BIRTH_PLACES, BIRTH_PLACE_GROUPS } from "@/lib/birth-places";
+import type { PlaceOption } from "@/lib/place-search";
 import { zodiacSignPath } from "@/lib/zodiac";
 import { getZodiacSigns } from "@/lib/content-data";
 
 const EARLIEST_BIRTH_YEAR = 1900;
+/** Birth times are read as Greek clock time, whatever place is picked. */
+const BIRTH_TIME_ZONE = "Europe/Athens";
 
 interface SignInfo {
   slug: string;
@@ -44,8 +50,9 @@ export const getStaticProps: GetStaticProps<CalculatorProps> = async () => ({
   },
 });
 
+const labelClassName = "block mb-1 text-xs text-violet-300";
 const inputClassName =
-  "mt-1 w-full rounded-md border border-violet-700 bg-surface px-3 py-2 text-sm text-violet-50 focus:outline-none focus:border-amber-500 [color-scheme:dark]";
+  "w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-base text-violet-50 focus:outline-none focus:border-amber-500 [color-scheme:dark]";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -54,17 +61,33 @@ function todayIso(): string {
 export default function AscendantCalculator({ signs }: CalculatorProps) {
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
-  const [placeId, setPlaceId] = useState(BIRTH_PLACES[0].id);
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [place, setPlace] = useState<PlaceOption | null>(null);
   const [result, setResult] = useState<ChartResult | null>(null);
   const [error, setError] = useState("");
+  const [signupPromptOpen, setSignupPromptOpen] = useState(false);
+  // Same SWR key as the site header, so the auth check is shared.
+  const { data: user } = useSWR(["home-user"], () => getUser(), {
+    revalidateOnFocus: false,
+  });
+  const isSignedOut = user === null;
 
-  function calculate(event: React.FormEvent) {
+  async function calculate(event: React.FormEvent) {
     event.preventDefault();
+    // The calculator is for members. It runs in the browser, so this is a prompt, not a lock.
+    if (!(await getUser())) {
+      setSignupPromptOpen(true);
+      return;
+    }
     const [year, month, day] = birthDate.split("-").map(Number);
     const [hour, minute] = birthTime.split(":").map(Number);
-    const place = BIRTH_PLACES.find((candidate) => candidate.id === placeId);
-    if (!year || !month || !day || Number.isNaN(hour) || Number.isNaN(minute) || !place) {
+    if (!year || !month || !day || Number.isNaN(hour) || Number.isNaN(minute)) {
       setError("Συμπλήρωσε ημερομηνία, ώρα και τόπο γέννησης.");
+      setResult(null);
+      return;
+    }
+    if (!place) {
+      setError("Διάλεξε τον τόπο γέννησης από τη λίστα.");
       setResult(null);
       return;
     }
@@ -73,7 +96,7 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
       setResult(null);
       return;
     }
-    const utc = zonedTimeToUtc(year, month, day, hour, minute, place.timeZone);
+    const utc = zonedTimeToUtc(year, month, day, hour, minute, BIRTH_TIME_ZONE);
     const ascendant = longitudeToSign(ascendantLongitude(utc, place.latitude, place.longitude));
     setError("");
     setResult({
@@ -109,13 +132,18 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
         γέννησης.
       </p>
 
+      <SignupPromptDialog open={signupPromptOpen} onClose={() => setSignupPromptOpen(false)} />
+
       <form
         onSubmit={calculate}
-        className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-lg border border-violet-800 bg-surface p-4"
+        className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-lg border border-violet-800 bg-surface p-4"
       >
-        <label className="text-xs text-violet-300">
-          Ημερομηνία γέννησης
+        <div>
+          <label htmlFor="ascendant-date" className={labelClassName}>
+            Ημερομηνία γέννησης
+          </label>
           <input
+            id="ascendant-date"
             type="date"
             required
             min={`${EARLIEST_BIRTH_YEAR}-01-01`}
@@ -123,45 +151,49 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
             onChange={(event) => setBirthDate(event.target.value)}
             className={inputClassName}
           />
-        </label>
-        <label className="text-xs text-violet-300">
-          Ώρα γέννησης
+        </div>
+        <div>
+          <label htmlFor="ascendant-time" className={labelClassName}>
+            Ώρα γέννησης
+          </label>
           <input
+            id="ascendant-time"
             type="time"
             required
             value={birthTime}
             onChange={(event) => setBirthTime(event.target.value)}
             className={inputClassName}
           />
-        </label>
-        <label className="text-xs text-violet-300">
-          Τόπος γέννησης
-          <select
-            value={placeId}
-            onChange={(event) => setPlaceId(event.target.value)}
-            className={inputClassName}
-          >
-            {BIRTH_PLACE_GROUPS.map((group) => (
-              <optgroup key={group} label={group}>
-                {BIRTH_PLACES.filter((place) => place.group === group).map((place) => (
-                  <option key={place.id} value={place.id}>
-                    {place.name}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-        <div className="sm:col-span-3 flex flex-wrap items-center gap-3">
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="ascendant-place" className={labelClassName}>
+            Τόπος γέννησης
+          </label>
+          <PlaceAutocomplete
+            id="ascendant-place"
+            value={placeQuery}
+            onChange={(value) => {
+              setPlaceQuery(value);
+              setPlace(null);
+            }}
+            onSelect={setPlace}
+          />
+        </div>
+        {error && (
+          <p role="alert" className="sm:col-span-2 text-sm text-rose-300">
+            {error}
+          </p>
+        )}
+        <div className="sm:col-span-2 flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-2">
           <button
             type="submit"
-            className="bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-md px-5 py-2 text-sm transition-colors"
+            className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-md px-5 py-2 text-sm transition-colors"
           >
             Υπολόγισε
           </button>
-          {error && (
-            <p role="alert" className="text-sm text-rose-300">
-              {error}
+          {isSignedOut && (
+            <p className="text-xs text-violet-300 text-center sm:text-left">
+              Χρειάζεται δωρεάν λογαριασμό.
             </p>
           )}
         </div>
@@ -213,14 +245,19 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
           αφήνεις πριν σε γνωρίσουν. Γι’ αυτό δύο άνθρωποι του ίδιου ζωδίου μπορεί να μοιάζουν
           τόσο διαφορετικοί.
         </p>
+        {/* "Ωροσκόπος" sits on its own line so every card has the same two-line height. */}
         <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {signs.map((sign) => (
             <li key={sign.slug}>
               <Link
                 href={`${zodiacSignPath(sign.slug)}#oroskopos`}
-                className="block rounded-md border border-violet-800 bg-surface px-3 py-2 text-sm text-violet-200 hover:border-violet-600 hover:text-violet-50 transition-colors"
+                className="flex h-full flex-col rounded-md border border-violet-800 bg-surface px-3 py-2 text-violet-200 hover:border-violet-600 hover:text-violet-50 transition-colors"
               >
-                <span aria-hidden>{sign.symbol} </span>Ωροσκόπος {sign.name}
+                <span className="text-xs text-violet-300">Ωροσκόπος</span>{" "}
+                <span className="text-sm">
+                  <span aria-hidden>{sign.symbol} </span>
+                  {sign.name}
+                </span>
               </Link>
             </li>
           ))}

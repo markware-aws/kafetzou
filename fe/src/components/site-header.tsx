@@ -44,7 +44,7 @@ export function SiteHeader() {
             Σύνδεση
           </Link>
           <Link
-            href="/login"
+            href="/login?mode=register"
             className="text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white rounded-md px-3 py-1.5 transition-colors"
           >
             Εγγραφή

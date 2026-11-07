@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
-  MapPin,
   AlertCircle,
   CheckCircle2,
   Plus,
@@ -8,6 +7,7 @@ import {
 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
+import { PlaceAutocomplete } from "@/components/place-autocomplete";
 import {
   getBirthProfile,
   saveBirthProfile,
@@ -19,142 +19,6 @@ import { useAuthedSWR } from "@/lib/use-authed-swr";
 
 const SEX_OPTIONS = ["Άνδρας", "Γυναίκα", "Άλλο"];
 const EYE_COLORS = ["Μαύρα", "Καφέ", "Καφέ σκούρο", "Πράσινα", "Μπλε", "Γκρι"];
-
-interface PhotonFeature {
-  properties: {
-    name?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    type?: string;
-  };
-}
-
-function formatPlace(f: PhotonFeature): string {
-  const p = f.properties;
-  const parts = [p.name];
-  if (p.state && p.state !== p.name) parts.push(p.state);
-  if (p.country) parts.push(p.country);
-  return parts.filter(Boolean).join(", ");
-}
-
-function PlaceAutocomplete({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const [query, setQuery] = useState(value);
-  const [results, setResults] = useState<PhotonFeature[]>([]);
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Sync external value (e.g. on profile load)
-  useEffect(() => {
-    setQuery(value);
-  }, [value]);
-
-  // Close on outside click
-  useEffect(() => {
-    function onMouseDown(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
-  }, []);
-
-  const search = useCallback((q: string) => {
-    if (q.length < 2) {
-      setResults([]);
-      setOpen(false);
-      return;
-    }
-    setLoading(true);
-    const params = new URLSearchParams({
-      q,
-      limit: "5",
-    });
-    ["place:city", "place:town", "place:village", "place:hamlet"].forEach(
-      (tag) => params.append("osm_tag", tag),
-    );
-    fetch(`https://photon.komoot.io/api/?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setResults(data.features ?? []);
-        setOpen(true);
-      })
-      .catch(() => setResults([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const q = e.target.value;
-    setQuery(q);
-    onChange(q);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(q), 300);
-  }
-
-  function handleSelect(f: PhotonFeature) {
-    const label = formatPlace(f);
-    setQuery(label);
-    onChange(label);
-    setOpen(false);
-    setResults([]);
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Escape") setOpen(false);
-  }
-
-  return (
-    <div ref={containerRef} className="relative">
-      <div className="relative">
-        <input
-          type="text"
-          value={query}
-          onChange={handleInput}
-          onKeyDown={handleKeyDown}
-          onFocus={() => results.length > 0 && setOpen(true)}
-          required
-          placeholder="π.χ. Αθήνα, Ελλάδα"
-          className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 pr-9 text-sm text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500"
-        />
-        {loading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-300 animate-spin" />
-        )}
-      </div>
-
-      {open && results.length > 0 && (
-        <ul className="absolute z-50 w-full mt-1 rounded-md border border-violet-700 bg-surface shadow-md overflow-hidden">
-          {results.map((f, i) => {
-            const label = formatPlace(f);
-            return (
-              <li key={i}>
-                <button
-                  type="button"
-                  onMouseDown={() => handleSelect(f)}
-                  className="w-full text-left px-3 py-2 text-sm text-violet-100 hover:bg-violet-900/60 flex items-center gap-2 transition-colors"
-                >
-                  <MapPin className="w-4 h-4 text-violet-300 shrink-0" />
-                  {label}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 function ChartCard({
   label,
@@ -356,7 +220,7 @@ export default function ProfilePage() {
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
                     required
-                    className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 focus:outline-none focus:border-amber-500 [color-scheme:dark]"
+                    className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-base text-violet-50 focus:outline-none focus:border-amber-500 [color-scheme:dark]"
                   />
                 </div>
 
@@ -387,7 +251,7 @@ export default function ProfilePage() {
                       type="time"
                       value={birthTime}
                       onChange={(e) => setBirthTime(e.target.value)}
-                      className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 focus:outline-none focus:border-amber-500 [color-scheme:dark]"
+                      className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-base text-violet-50 focus:outline-none focus:border-amber-500 [color-scheme:dark]"
                     />
                   ) : (
                     <div className="flex items-start gap-2 rounded-md border border-violet-700 bg-bg p-3">

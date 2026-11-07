@@ -64,6 +64,8 @@ src/
 │   ├── dream-search-box.tsx # Search input + autocomplete (ARIA combobox)
 │   ├── dream-entry-card.tsx # One dictionary entry: meaning, scenarios, related
 │   ├── cookie-banner.tsx   # Accept/reject bar for Google Analytics; reopened from the footer
+│   ├── place-autocomplete.tsx # Birth place search (Photon), used by profile + Ascendant calculator
+│   ├── signup-prompt-dialog.tsx # "Δημιούργησε λογαριασμό" modal for the Ascendant calculator
 │   └── credits-dialog.tsx  # Insufficient credits modal
 └── lib/
     ├── amplify-config.ts   # Amplify.configure() with Cognito settings
@@ -80,7 +82,7 @@ src/
     ├── zodiac.ts           # Zodiac guide types, sign slugs, compatibility URLs (no data)
     ├── content-data.ts     # Build-time loaders for all guide content — getStatic* ONLY
     ├── birth-chart.ts      # Local time → UTC, Sun longitude, Ascendant (Meeus)
-    └── birth-places.ts     # Cities with coordinates + IANA time zones for the calculator
+    └── place-search.ts     # Photon search URL + result → { label, latitude, longitude }
 
 src/content/*.json                 # Guide content: coffee symbols, tarot cards, zodiac signs, pairs
 scripts/generate-sitemap.mjs       # Runs after next build: writes out/sitemap.xml, fails on SEO errors
@@ -136,6 +138,14 @@ Public, indexable pages that target Greek search terms and link into the app fea
 - **Sitemap is generated** by `scripts/generate-sitemap.mjs` after `next build`: every exported page that is not `noindex` is listed. The script fails the build if an indexable page has no canonical, a canonical that is not its own URL, or a title/description shared with another page.
 - **Horoscope text** on `/zodia/<sign>/` is fetched in the browser from the prewarmed CDN JSON (`docs/horoscope-cdn-architecture.md`), so the static HTML carries only the evergreen sign content.
 - **The Ascendant calculator** runs entirely in the browser (`lib/birth-chart.ts`); `birth-chart.test.ts` checks it against JPL ephemeris values. The app's personalized readings still use Swiss Ephemeris on the backend.
+  - It needs an account: the page stays public and indexable, but «Υπολόγισε» opens `SignupPromptDialog` for signed-out visitors, and so does the homepage guide card. It is a prompt, not a lock.
+  - The birth place comes from `PlaceAutocomplete` (coordinates only). Birth times are always read as Greek time (`Europe/Athens`), and the page doesn't mention time zones.
+- **`/login?mode=register`** opens the sign-up form; combine with `returnTo`.
+
+## Mobile (iOS Safari) rules
+- **Form controls use `text-base` (16px).** Below 16px, iOS zooms in on focus and the page stays zoomed.
+- **`sr-only` inside an `overflow-x-auto` box needs `relative` on the box.** Otherwise the absolutely positioned labels escape the scroll box, the page gets wider than the screen and Safari zooms out (it looked like the page used half the screen).
+- Date and time inputs get their iOS fixes (width, height, alignment) from `globals.css`.
 
 ## Query Params Pattern
 ```tsx
