@@ -13,10 +13,16 @@ Notes:
 """
 
 import logging
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import httpx
 
 logger = logging.getLogger(__name__)
+
+# Birth times are entered as Greek clock time, whatever the birth place (the web Ascendant
+# calculator does the same). The IANA zone applies Greece's historical summer-time rules.
+BIRTH_TIME_ZONE = ZoneInfo("Europe/Athens")
 
 try:
     import swisseph as swe
@@ -58,6 +64,15 @@ def longitude_to_sign(longitude: float) -> tuple[str, float]:
     return ZODIAC_SIGNS[sign_index], round(longitude % 30, 1)
 
 
+def birth_time_to_utc(date_of_birth: str, time_of_birth: str) -> datetime:
+    """Greek wall-clock birth time ("YYYY-MM-DD", "HH:MM") → UTC, which Swiss Ephemeris expects.
+
+    The UTC date can be the day before: 01:30 in Athens is 22:30 or 23:30 UTC.
+    """
+    local = datetime.strptime(f"{date_of_birth} {time_of_birth}", "%Y-%m-%d %H:%M")
+    return local.replace(tzinfo=BIRTH_TIME_ZONE).astimezone(timezone.utc)
+
+
 async def geocode_place(place: str) -> tuple[float, float] | None:
     """Returns (lat, lon) for a city/place string, or None on failure.
 
@@ -81,7 +96,7 @@ async def geocode_place(place: str) -> tuple[float, float] | None:
 
 def calculate_chart(
     date_of_birth: str,   # "YYYY-MM-DD"
-    time_of_birth: str,   # "HH:MM" — pass "12:00" when unknown
+    time_of_birth: str,   # "HH:MM" Greek time — pass "12:00" when unknown
     lat: float,
     lon: float,
     time_known: bool = True,
@@ -99,11 +114,10 @@ def calculate_chart(
     if not _SWE_AVAILABLE:
         raise RuntimeError("pyswisseph is not installed — add it to requirements.txt")
 
-    from datetime import datetime
-    dt = datetime.strptime(f"{date_of_birth} {time_of_birth}", "%Y-%m-%d %H:%M")
+    utc = birth_time_to_utc(date_of_birth, time_of_birth)
 
     # Julian Day (UT)
-    jd = swe.julday(dt.year, dt.month, dt.day, dt.hour + dt.minute / 60.0)
+    jd = swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute / 60.0)
 
     # Sun
     sun_xx, _ = swe.calc_ut(jd, swe.SUN, swe.FLG_SWIEPH)
