@@ -1,18 +1,20 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { AlertCircle, ArrowRight, BookOpen, Coins, Moon, RefreshCw } from "lucide-react";
+import { AlertCircle, ArrowRight, BookOpen, ChevronRight, Coins, Moon, RefreshCw } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { DreamTabs } from "@/components/dream-tabs";
 import { DreamSearchBox } from "@/components/dream-search-box";
 import { DreamEntryCard } from "@/components/dream-entry-card";
 import {
-  DreamEntry,
+  DreamEntryData,
+  DreamEntryRef,
   DreamSearchIndex,
   MATCH_RANK,
   keepExactMatches,
-  loadDreamDictionary,
+  loadDreamEntry,
+  loadDreamSearchIndex,
 } from "@/lib/dream-dictionary";
 
 const SUGGESTION_LIMIT = 8;
@@ -24,12 +26,32 @@ type LoadState =
   | { status: "error" }
   | { status: "ready"; index: DreamSearchIndex };
 
+/** The last entry fetched; while it does not match the entry to show, that one is loading. */
+type EntryState = { id: string; data: DreamEntryData } | { id: string; failed: true };
+
 function LoadingSkeleton() {
   return (
     <div className="flex flex-col gap-3" aria-hidden>
       <div className="h-5 w-40 rounded-lg shimmer" />
       <div className="h-32 rounded-2xl shimmer" />
-      <div className="h-32 rounded-2xl shimmer" />
+    </div>
+  );
+}
+
+function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 flex items-start gap-3">
+      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+      <div className="flex-1">
+        <p className="text-sm text-rose-300">{message}</p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-2 inline-flex items-center gap-1.5 text-xs text-rose-200 hover:text-white"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Δοκίμασε ξανά
+        </button>
+      </div>
     </div>
   );
 }
@@ -38,6 +60,10 @@ export default function DreamDictionaryPage() {
   const router = useRouter();
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
   const [query, setQuery] = useState("");
+  // The entry picked from a list, for queries that match several entries equally well
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  const [entryState, setEntryState] = useState<EntryState | null>(null);
+  const [entryAttempt, setEntryAttempt] = useState(0);
   const [visibleCount, setVisibleCount] = useState(RESULTS_PAGE_SIZE);
   const [restoredFromUrl, setRestoredFromUrl] = useState(false);
   const deferredQuery = useDeferredValue(query);
@@ -50,18 +76,18 @@ export default function DreamDictionaryPage() {
     if (typeof router.query.q === "string") setQuery(router.query.q);
   }
 
-  function requestDictionary() {
-    loadDreamDictionary()
+  function requestIndex() {
+    loadDreamSearchIndex()
       .then((loaded) => setLoad({ status: "ready", index: loaded }))
       .catch(() => setLoad({ status: "error" }));
   }
 
-  function retryDictionary() {
+  function retryIndex() {
     setLoad({ status: "loading" });
-    requestDictionary();
+    requestIndex();
   }
 
-  useEffect(requestDictionary, []);
+  useEffect(requestIndex, []);
 
   // Mirror the search into the URL without adding history entries.
   useEffect(() => {
@@ -89,13 +115,49 @@ export default function DreamDictionaryPage() {
   );
   const results = useMemo(() => keepExactMatches(matches), [matches]);
 
+  // One clear match is shown right away; several are listed by name to pick from.
+  const shownId =
+    results.length === 1
+      ? results[0].entry.id
+      : results.some((match) => match.entry.id === pickedId)
+        ? pickedId
+        : null;
+
+  useEffect(() => {
+    if (!shownId) return;
+    let cancelled = false;
+    loadDreamEntry(shownId)
+      .then((data) => {
+        if (!cancelled) setEntryState({ id: shownId, data });
+      })
+      .catch(() => {
+        if (!cancelled) setEntryState({ id: shownId, failed: true });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [shownId, entryAttempt]);
+
+  const shownEntry = entryState?.id === shownId ? entryState : null;
+
+  function retryEntry() {
+    setEntryState(null);
+    setEntryAttempt((attempt) => attempt + 1);
+  }
+
   function changeQuery(next: string) {
     setQuery(next);
+    setPickedId(null);
     setVisibleCount(RESULTS_PAGE_SIZE);
   }
 
-  function showEntry(entry: DreamEntry) {
+  function pickEntry(entry: DreamEntryRef) {
     changeQuery(entry.term);
+    setPickedId(entry.id);
+  }
+
+  function showRelated(entry: DreamEntryRef) {
+    pickEntry(entry);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -125,7 +187,7 @@ export default function DreamDictionaryPage() {
               value={query}
               suggestions={suggestions}
               onChange={changeQuery}
-              onSelect={(entry) => changeQuery(entry.term)}
+              onSelect={pickEntry}
             />
           </div>
 
@@ -133,19 +195,7 @@ export default function DreamDictionaryPage() {
             {load.status === "loading" && <LoadingSkeleton />}
 
             {load.status === "error" && (
-              <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 flex items-start gap-3">
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm text-rose-300">Δεν φορτώθηκε το λεξικό.</p>
-                  <button
-                    type="button"
-                    onClick={retryDictionary}
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-rose-200 hover:text-white"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" /> Δοκίμασε ξανά
-                  </button>
-                </div>
-              </div>
+              <LoadError message="Δεν φορτώθηκε το λεξικό." onRetry={retryIndex} />
             )}
 
             {index && hasQuery && results.length === 0 && (
@@ -159,19 +209,30 @@ export default function DreamDictionaryPage() {
               </div>
             )}
 
-            {index && hasQuery && results.length > 0 && (
+            {index && hasQuery && results.length > 1 && !shownId && (
               <>
                 <p role="status" className="text-xs text-violet-500">
-                  {results.length === 1 ? "1 αποτέλεσμα" : `${results.length} αποτελέσματα`}
+                  {results.length} σύμβολα ταιριάζουν, διάλεξε ένα
                 </p>
-                {visibleResults.map((match) => (
-                  <DreamEntryCard
-                    key={match.entry.id}
-                    entry={match.entry}
-                    related={index.getRelated(match.entry)}
-                    onSelectRelated={showEntry}
-                  />
-                ))}
+                <ul className="flex flex-col gap-2">
+                  {visibleResults.map(({ entry }) => (
+                    <li key={entry.id}>
+                      <button
+                        type="button"
+                        onClick={() => pickEntry(entry)}
+                        className="w-full flex items-center justify-between gap-3 rounded-xl border border-violet-800/30 bg-surface px-4 py-3 text-left hover:border-violet-600/50 transition-colors"
+                      >
+                        <span className="text-sm text-violet-100">{entry.term}</span>
+                        <span className="flex items-center gap-2 shrink-0">
+                          {entry.category && (
+                            <span className="text-[11px] text-violet-500">{entry.category}</span>
+                          )}
+                          <ChevronRight className="w-4 h-4 text-violet-500" />
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
                 {results.length > visibleCount && (
                   <button
                     type="button"
@@ -182,6 +243,20 @@ export default function DreamDictionaryPage() {
                   </button>
                 )}
               </>
+            )}
+
+            {shownId && !shownEntry && <LoadingSkeleton />}
+
+            {shownEntry && "failed" in shownEntry && (
+              <LoadError message="Δεν φορτώθηκε το σύμβολο." onRetry={retryEntry} />
+            )}
+
+            {shownEntry && "data" in shownEntry && (
+              <DreamEntryCard
+                entry={shownEntry.data.entry}
+                related={shownEntry.data.related}
+                onSelectRelated={showRelated}
+              />
             )}
 
             {index && (

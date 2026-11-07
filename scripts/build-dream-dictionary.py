@@ -1,4 +1,8 @@
-"""Build fe/public/data/dream-dictionary.json from the Markdown dream dictionary.
+"""Build fe/src/content/dream-dictionary.json from the Markdown dream dictionary.
+
+The output is build-time content only. The site never serves it whole: the frontend
+build derives a names-only search index and one small file per entry from it
+(fe/scripts/generate-dream-data.mjs).
 
 Input format: one entry per "## HEADWORD" heading (uppercase, unaccented), followed by
 one or more paragraphs. A paragraph "Δες επίσης: Α, Β." lists related headwords.
@@ -6,7 +10,7 @@ one or more paragraphs. A paragraph "Δες επίσης: Α, Β." lists related
 Usage:
     python scripts/build-dream-dictionary.py [input.md] [output.json]
 
-Defaults: docs/dictionary.md -> fe/public/data/dream-dictionary.json
+Defaults: docs/dictionary.md -> fe/src/content/dream-dictionary.json
 """
 
 import json
@@ -18,7 +22,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_INPUT = REPO_ROOT / "docs/dictionary.md"
-DEFAULT_OUTPUT = REPO_ROOT / "fe/public/data/dream-dictionary.json"
+DEFAULT_OUTPUT = REPO_ROOT / "fe/src/content/dream-dictionary.json"
 COMBINING_ACUTE = unicodedata.lookup("COMBINING ACUTE ACCENT")
 
 # Headwords whose display form cannot be derived from the text.

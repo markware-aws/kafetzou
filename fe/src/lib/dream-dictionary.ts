@@ -1,8 +1,9 @@
 /**
  * Dream dictionary (Λεξικό Ονείρων): a static, AI-free symbol lookup.
  *
- * The data lives in /public/data/dream-dictionary.json. It ships with the static export,
- * is revalidated by the CDN on every deploy, and the mobile app can fetch the same URL.
+ * The full dictionary (src/content/dream-dictionary.json) is build-time content only. The
+ * browser gets two derived files (scripts/generate-dream-data.mjs): a search index with
+ * names and keywords, and one file per entry that is loaded when the entry is shown.
  * Search runs entirely in the browser.
  */
 
@@ -40,6 +41,34 @@ export interface DreamDictionary {
   entries: DreamEntry[];
 }
 
+/** An entry as the live search sees it: names and keywords, never its sentences. */
+export interface DreamIndexEntry {
+  id: string;
+  term: string;
+  aliases?: string[];
+  category?: string;
+  /** Unique words of the meaning and the scenario conditions, for the "mentioned in" fallback. */
+  keywords?: string;
+}
+
+/** /data/dream-index.json */
+export interface DreamIndex {
+  version: 1;
+  source?: string;
+  entries: DreamIndexEntry[];
+}
+
+export interface DreamEntryRef {
+  id: string;
+  term: string;
+}
+
+/** /data/dream/<id>.json: one entry, with the names of the entries worth reading next. */
+export interface DreamEntryData {
+  entry: DreamEntry;
+  related: DreamEntryRef[];
+}
+
 /** Lower is better. Results are sorted by rank first. */
 export const MATCH_RANK = {
   EXACT: 0,
@@ -53,13 +82,14 @@ export const MATCH_RANK = {
 export type MatchRank = (typeof MATCH_RANK)[keyof typeof MATCH_RANK];
 
 export interface DreamMatch {
-  entry: DreamEntry;
+  entry: DreamIndexEntry;
   /** The term or alias that matched, as written in the data. */
   matchedName: string;
   rank: MatchRank;
 }
 
-const DICTIONARY_URL = "/data/dream-dictionary.json";
+const INDEX_URL = "/data/dream-index.json";
+const ENTRY_URL_PREFIX = "/data/dream/";
 const MIN_CONTAINS_QUERY_LENGTH = 2;
 const MIN_TEXT_QUERY_LENGTH = 3;
 /** Fallback results when no headword matches: enough to help, few enough not to flood. */
@@ -195,10 +225,10 @@ interface IndexedName {
 }
 
 interface IndexedEntry {
-  entry: DreamEntry;
+  entry: DreamIndexEntry;
   /** Term first, then aliases. */
   names: IndexedName[];
-  /** Introduction plus scenario conditions, for the "mentioned in" fallback. */
+  /** The entry's keywords, for the "mentioned in" fallback. */
   text: string;
 }
 
@@ -221,14 +251,11 @@ function indexName(display: string): IndexedName {
   };
 }
 
-function indexEntry(entry: DreamEntry): IndexedEntry {
-  // Only what the dreamer sees ("Αν ψάρια πηδούν από το τηγάνι"), not the predictions
-  // ("θα μάθεις…"): searching "τηγάνι" should find dreams with a frying pan in them.
-  const conditions = (entry.scenarios ?? []).map((s) => s.context).join(" ");
+function indexEntry(entry: DreamIndexEntry): IndexedEntry {
   return {
     entry,
     names: [entry.term, ...(entry.aliases ?? [])].map(indexName),
-    text: normalizeText(`${entry.meaning ?? ""} ${conditions}`),
+    text: normalizeText(entry.keywords ?? ""),
   };
 }
 
@@ -303,21 +330,12 @@ const collator = new Intl.Collator("el", { sensitivity: "base" });
 export class DreamSearchIndex {
   readonly source?: string;
   private readonly items: IndexedEntry[];
-  private readonly byId: Map<string, DreamEntry>;
 
-  constructor(dictionary: DreamDictionary) {
-    this.source = dictionary.source;
+  constructor(index: DreamIndex) {
+    this.source = index.source;
     // Alphabetical order is the tie-breaker for equally ranked search results.
-    const sorted = [...dictionary.entries].sort((a, b) => collator.compare(a.term, b.term));
+    const sorted = [...index.entries].sort((a, b) => collator.compare(a.term, b.term));
     this.items = sorted.map(indexEntry);
-    this.byId = new Map(sorted.map((entry) => [entry.id, entry]));
-  }
-
-  /** Resolves `related` ids, skipping any that do not exist in the data. */
-  getRelated(entry: DreamEntry): DreamEntry[] {
-    return (entry.related ?? [])
-      .map((id) => this.byId.get(id))
-      .filter((related): related is DreamEntry => related !== undefined);
   }
 
   /**
@@ -369,19 +387,34 @@ export function keepExactMatches(matches: DreamMatch[]): DreamMatch[] {
   return exact.length > 0 ? exact : matches;
 }
 
-let dictionaryRequest: Promise<DreamSearchIndex> | null = null;
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Dream dictionary request failed: ${url} ${res.status}`);
+  return (await res.json()) as T;
+}
 
-/** Fetches and indexes the dictionary once per page load. A failed fetch can be retried. */
-export function loadDreamDictionary(): Promise<DreamSearchIndex> {
-  dictionaryRequest ??= fetch(DICTIONARY_URL)
-    .then((res) => {
-      if (!res.ok) throw new Error(`Dream dictionary request failed: ${res.status}`);
-      return res.json() as Promise<DreamDictionary>;
-    })
-    .then((dictionary) => new DreamSearchIndex(dictionary))
+let indexRequest: Promise<DreamSearchIndex> | null = null;
+
+/** Fetches and indexes the search index once per page load. A failed fetch can be retried. */
+export function loadDreamSearchIndex(): Promise<DreamSearchIndex> {
+  indexRequest ??= fetchJson<DreamIndex>(INDEX_URL)
+    .then((index) => new DreamSearchIndex(index))
     .catch((error: unknown) => {
-      dictionaryRequest = null;
+      indexRequest = null;
       throw error;
     });
-  return dictionaryRequest;
+  return indexRequest;
+}
+
+const entryRequests = new Map<string, Promise<DreamEntryData>>();
+
+/** Fetches one entry's full text, once per page load. A failed fetch can be retried. */
+export function loadDreamEntry(id: string): Promise<DreamEntryData> {
+  let request = entryRequests.get(id);
+  if (!request) {
+    request = fetchJson<DreamEntryData>(`${ENTRY_URL_PREFIX}${encodeURIComponent(id)}.json`);
+    request.catch(() => entryRequests.delete(id));
+    entryRequests.set(id, request);
+  }
+  return request;
 }

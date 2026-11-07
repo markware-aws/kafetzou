@@ -1,37 +1,21 @@
 import Link from "next/link";
-import { DreamEntry } from "@/lib/dream-dictionary";
+import type { DreamEntry, DreamEntryRef } from "@/lib/dream-dictionary";
 
 interface DreamEntryCardProps {
   entry: DreamEntry;
-  related: DreamEntry[];
-  /** Exact match for the current search. */
-  highlighted?: boolean;
+  related: DreamEntryRef[];
   /** Live search: related entries are buttons that run a new search. */
-  onSelectRelated?: (entry: DreamEntry) => void;
+  onSelectRelated?: (entry: DreamEntryRef) => void;
   /** Static guide pages: related entries are links to these URLs instead. */
-  relatedHref?: (entry: DreamEntry) => string;
-  /** Element id, so letter pages can link to a single entry. */
-  anchorId?: string;
+  relatedHref?: (entry: DreamEntryRef) => string;
 }
 
 const RELATED_CLASS_NAME =
   "text-xs px-3 py-1 rounded-full border border-violet-700/40 bg-violet-900/20 text-violet-300 hover:text-amber-200 hover:border-amber-500/40 transition-colors";
 
-export function DreamEntryCard({
-  entry,
-  related,
-  highlighted = false,
-  onSelectRelated,
-  relatedHref,
-  anchorId,
-}: DreamEntryCardProps) {
+export function DreamEntryCard({ entry, related, onSelectRelated, relatedHref }: DreamEntryCardProps) {
   return (
-    <article
-      id={anchorId}
-      className={`scroll-mt-20 rounded-2xl border p-5 ${
-        highlighted ? "border-amber-500/30 bg-amber-500/5" : "border-violet-800/30 bg-surface"
-      }`}
-    >
+    <article className="rounded-2xl border border-violet-800/30 bg-surface p-5">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-2">
         <h2 className="text-lg font-semibold text-violet-50">{entry.term}</h2>
         {entry.category && (

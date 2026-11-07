@@ -25,6 +25,9 @@
 /out/
 fe/.next/
 fe/out/
+# generated from fe/src/content/dream-dictionary.json by fe/scripts/generate-dream-data.mjs
+fe/public/data/dream-index.json
+fe/public/data/dream/
 
 # expo / react native
 mobile/.expo/

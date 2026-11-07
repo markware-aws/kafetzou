@@ -37,7 +37,7 @@
  *   /terms/               → /terms/index.html
  *   /contact/             → /contact/index.html
  *   Guide pages follow the same rule, e.g. /zodia/krios/ → /zodia/krios/index.html
- *   and /oneirokritis/alfavito/alfa/ → /oneirokritis/alfavito/alfa/index.html
+ *   and /oneirokritis/fidi/ → /oneirokritis/fidi/index.html
  *
  * Deploy steps:
  *   1. CloudFront → Functions → Create function (or open kafetzou-routing)

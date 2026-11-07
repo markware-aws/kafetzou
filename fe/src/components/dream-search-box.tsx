@@ -1,12 +1,14 @@
 import { useId, useState } from "react";
 import { Search, X } from "lucide-react";
-import { DreamEntry, DreamMatch, splitHighlight } from "@/lib/dream-dictionary";
+import { DreamIndexEntry, DreamMatch, splitHighlight } from "@/lib/dream-dictionary";
 
 interface DreamSearchBoxProps {
   value: string;
   suggestions: DreamMatch[];
   onChange: (value: string) => void;
-  onSelect: (entry: DreamEntry) => void;
+  onSelect: (entry: DreamIndexEntry) => void;
+  /** Enter with no suggestion highlighted; by default it only closes the list. */
+  onSubmit?: () => void;
 }
 
 function HighlightedText({ text, query }: { text: string; query: string }) {
@@ -23,7 +25,13 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
 }
 
 /** Search input with an accessible autocomplete list (ARIA combobox pattern). */
-export function DreamSearchBox({ value, suggestions, onChange, onSelect }: DreamSearchBoxProps) {
+export function DreamSearchBox({
+  value,
+  suggestions,
+  onChange,
+  onSelect,
+  onSubmit,
+}: DreamSearchBoxProps) {
   const listId = useId();
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -38,7 +46,7 @@ export function DreamSearchBox({ value, suggestions, onChange, onSelect }: Dream
     setActiveIndex(-1);
   }
 
-  function select(entry: DreamEntry) {
+  function select(entry: DreamIndexEntry) {
     onSelect(entry);
     setOpen(false);
     setActiveIndex(-1);
@@ -53,8 +61,12 @@ export function DreamSearchBox({ value, suggestions, onChange, onSelect }: Dream
       setActiveIndex((active + step + suggestions.length) % suggestions.length);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (showList && active >= 0) select(suggestions[active].entry);
-      else setOpen(false); // the results below already match what was typed
+      if (showList && active >= 0) {
+        select(suggestions[active].entry);
+      } else {
+        setOpen(false);
+        onSubmit?.();
+      }
     } else if (e.key === "Escape") {
       if (showList) setOpen(false);
       else handleChange("");

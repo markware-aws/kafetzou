@@ -10,7 +10,9 @@ import {
 } from "@/components/content-layout";
 import { DreamSearchBox } from "@/components/dream-search-box";
 import {
-  loadDreamDictionary,
+  keepExactMatches,
+  loadDreamSearchIndex,
+  type DreamIndexEntry,
   type DreamSearchIndex,
 } from "@/lib/dream-dictionary";
 import { dreamEntryPath } from "@/lib/dream-pages";
@@ -74,11 +76,21 @@ export default function DreamDictionaryHub({ total, popular }: DreamHubProps) {
 
   function changeQuery(next: string) {
     setQuery(next);
-    // The full dictionary is large, so it loads on the first keystroke, not with the page.
+    // Most visitors browse the popular symbols, so the index loads on the first keystroke.
     if (!index)
-      loadDreamDictionary()
+      loadDreamSearchIndex()
         .then(setIndex)
         .catch(() => {});
+  }
+
+  function openEntry(entry: DreamIndexEntry) {
+    router.push(dreamEntryPath(entry));
+  }
+
+  // Enter goes straight to the symbol the visitor typed, or the best match for it.
+  function openBestMatch() {
+    const best = keepExactMatches(suggestions)[0];
+    if (best) openEntry(best.entry);
   }
 
   return (
@@ -88,7 +100,7 @@ export default function DreamDictionaryHub({ total, popular }: DreamHubProps) {
     >
       <Seo
         title="Ονειροκρίτης: Τι Σημαίνουν τα Όνειρα"
-        description={`Ονειροκρίτης με ${total} σύμβολα από το Α έως το Ω. Ψάξε τι είδες στον ύπνο σου, από φίδι και δόντια ως γάμο και νεκρούς, και μάθε τι σημαίνει.`}
+        description={`Ονειροκρίτης με ${total} σύμβολα. Ψάξε τι είδες στον ύπνο σου, από φίδι και δόντια ως γάμο και νεκρούς, και μάθε τι σημαίνει.`}
         path="/oneirokritis/"
       />
 
@@ -108,7 +120,8 @@ export default function DreamDictionaryHub({ total, popular }: DreamHubProps) {
             value={query}
             suggestions={suggestions}
             onChange={changeQuery}
-            onSelect={(entry) => router.push(dreamEntryPath(entry))}
+            onSelect={openEntry}
+            onSubmit={openBestMatch}
           />
         </div>
       </div>

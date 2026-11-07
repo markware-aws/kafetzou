@@ -2,35 +2,23 @@ import type { GetStaticPaths, GetStaticProps } from "next";
 import { Seo } from "@/components/seo";
 import { ContentLayout, FeatureCta } from "@/components/content-layout";
 import { DreamEntryCard } from "@/components/dream-entry-card";
-import type { DreamEntry } from "@/lib/dream-dictionary";
-import {
-  LETTER_PAGES_FOLDER,
-  dreamEntryExcerpt,
-  dreamEntryLetter,
-  dreamEntryPath,
-  dreamLetterPath,
-  dreamLetterSlug,
-  hasStandalonePage,
-} from "@/lib/dream-pages";
+import type { DreamEntry, DreamEntryRef } from "@/lib/dream-dictionary";
+import { dreamEntryExcerpt, dreamEntryPath, isIndexableDreamEntry } from "@/lib/dream-pages";
 import { getDreamDictionary } from "@/lib/content-data";
 
 const DESCRIPTION_LENGTH = 155;
 
 interface DreamEntryPageProps {
   entry: DreamEntry;
-  related: DreamEntry[];
-  relatedHrefs: Record<string, string>;
-  letter: { letter: string; path: string };
+  related: DreamEntryRef[];
+  indexable: boolean;
   description: string;
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const { entries } = getDreamDictionary();
-  if (entries.some((entry) => entry.id === LETTER_PAGES_FOLDER)) {
-    throw new Error(`A dream entry id collides with the letter folder "${LETTER_PAGES_FOLDER}"`);
-  }
   return {
-    paths: entries.filter(hasStandalonePage).map((entry) => ({ params: { slug: entry.id } })),
+    paths: entries.map((entry) => ({ params: { slug: entry.id } })),
     fallback: false,
   };
 };
@@ -41,22 +29,17 @@ export const getStaticProps: GetStaticProps<DreamEntryPageProps> = async ({ para
   const entry = byId.get(String(params?.slug));
   if (!entry) throw new Error(`Unknown dream entry: ${params?.slug}`);
 
-  const relatedHrefs: Record<string, string> = {};
   const related = (entry.related ?? []).flatMap((id) => {
     const relatedEntry = byId.get(id);
-    if (!relatedEntry) return [];
-    relatedHrefs[id] = dreamEntryPath(relatedEntry);
-    return [{ id, term: relatedEntry.term }];
+    return relatedEntry ? [{ id, term: relatedEntry.term }] : [];
   });
-  const letter = dreamEntryLetter(entry);
   const prefix = `${entry.term} στο όνειρο: `;
 
   return {
     props: {
       entry,
       related,
-      relatedHrefs,
-      letter: { letter, path: dreamLetterPath(dreamLetterSlug(letter)) },
+      indexable: isIndexableDreamEntry(entry),
       description: prefix + dreamEntryExcerpt(entry, DESCRIPTION_LENGTH - prefix.length),
     },
   };
@@ -65,32 +48,32 @@ export const getStaticProps: GetStaticProps<DreamEntryPageProps> = async ({ para
 export default function DreamEntryPage({
   entry,
   related,
-  relatedHrefs,
-  letter,
+  indexable,
   description,
 }: DreamEntryPageProps) {
   const path = dreamEntryPath(entry);
+  const title = `${entry.term} στο Όνειρο: Τι Σημαίνει`;
 
   return (
     <ContentLayout
       breadcrumbs={[
         { label: "Ονειροκρίτης", path: "/oneirokritis/" },
-        { label: letter.letter, path: letter.path },
         { label: entry.term, path },
       ]}
     >
-      <Seo title={`${entry.term} στο Όνειρο: Τι Σημαίνει`} description={description} path={path} />
+      {/* Short entries still get a page for visitors who search them, but stay out of the index */}
+      {indexable ? (
+        <Seo title={title} description={description} path={path} />
+      ) : (
+        <Seo title={title} noindex />
+      )}
 
       <h1 className="text-3xl sm:text-4xl font-semibold text-violet-50 tracking-tight">
         {entry.term} στο όνειρο: τι σημαίνει
       </h1>
 
       <div className="mt-6">
-        <DreamEntryCard
-          entry={entry}
-          related={related}
-          relatedHref={(relatedEntry) => relatedHrefs[relatedEntry.id]}
-        />
+        <DreamEntryCard entry={entry} related={related} relatedHref={dreamEntryPath} />
       </div>
 
       <FeatureCta feature="dream" />

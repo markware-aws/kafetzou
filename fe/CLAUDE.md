@@ -44,7 +44,7 @@ src/
 │   │   # ── Public SEO guides (static, indexable; see "SEO guide pages" below) ──
 │   ├── anagnosi-kafe.tsx   # Coffee reading landing page
 │   ├── symvola-kafe/       # index (hub) + [slug] — coffee-cup symbols
-│   ├── oneirokritis/       # index (hub + search) + [slug] (long entries) + alfavito/[letter]
+│   ├── oneirokritis/       # index (hub + search) + [slug] (one page per entry)
 │   ├── taro/               # index (78 cards) + [slug] (card) + nai-i-oxi (yes/no tool)
 │   └── zodia/              # index + [slug] (sign) + oroskopos (Ascendant calculator)
 │       └── symvatotita/    # index (matrix + picker) + [slug] (pair, e.g. krios-leon)
@@ -75,8 +75,8 @@ src/
     ├── consent.ts          # Cookie consent storage + Google Tag Manager loader (GTM-WNPN58GZ)
     ├── astrology.ts        # Sign data, element colors, DOB→sign mapping
     ├── tarot.ts            # Card image paths, display name mapping
-    ├── dream-dictionary.ts # Dictionary types, loader, accent/greeklish-insensitive search
-    ├── dream-pages.ts      # Dream guide URL rules: standalone threshold, letter pages, excerpts
+    ├── dream-dictionary.ts # Dictionary types, index/entry loaders, accent/greeklish-insensitive search
+    ├── dream-pages.ts      # Dream guide rules: entry URLs, indexing threshold, excerpts
     ├── coffee-symbols.ts   # Coffee symbol types + helpers (no data)
     ├── tarot-cards.ts      # Tarot guide types + helpers (no data)
     ├── zodiac.ts           # Zodiac guide types, sign slugs, compatibility URLs (no data)
@@ -88,9 +88,11 @@ src/content/*.json                 # Guide content: coffee symbols, tarot cards,
 scripts/generate-sitemap.mjs       # Runs after next build: writes out/sitemap.xml, fails on SEO errors
 public/og-image.png                # 1200×630 share image used by <Seo>
 
-public/data/dream-dictionary.json  # Dream dictionary data (format: types in lib/dream-dictionary.ts)
+src/content/dream-dictionary.json  # Full dream dictionary, build-time only (types in lib/dream-dictionary.ts)
                                    # Generated from docs/dictionary.md — edit that file,
                                    # then run: python scripts/build-dream-dictionary.py
+scripts/generate-dream-data.mjs    # Runs before dev/build: writes the gitignored public/data/dream-index.json
+                                   # (names + keywords for search) and public/data/dream/<id>.json (one entry each)
 ```
 
 ## Important Constraints
@@ -125,16 +127,17 @@ public/data/dream-dictionary.json  # Dream dictionary data (format: types in lib
 | `/terms` | Terms of service |
 | `/anagnosi-kafe/` | Coffee reading landing page (public guide) |
 | `/symvola-kafe/`, `/symvola-kafe/<symbol>/` | Coffee-cup symbols |
-| `/oneirokritis/`, `/oneirokritis/<id>/`, `/oneirokritis/alfavito/<letter>/` | Public dream dictionary |
+| `/oneirokritis/`, `/oneirokritis/<id>/` | Public dream dictionary |
 | `/taro/`, `/taro/<card>/`, `/taro/nai-i-oxi/` | Tarot cards + yes/no tool |
 | `/zodia/`, `/zodia/<sign>/`, `/zodia/oroskopos/` | Zodiac signs + Ascendant calculator |
 | `/zodia/symvatotita/`, `/zodia/symvatotita/<a>-<b>/` | Zodiac compatibility |
 
 ## SEO guide pages
 Public, indexable pages that target Greek search terms and link into the app features.
-- **Content** lives in `src/content/*.json` (types in the matching `lib/*.ts`); the dream dictionary reuses `public/data/dream-dictionary.json`. Slugs are Greeklish and are URLs: never rename a published slug.
+- **Content** lives in `src/content/*.json` (types in the matching `lib/*.ts`); the dream dictionary is `src/content/dream-dictionary.json`. Slugs are Greeklish and are URLs: never rename a published slug.
 - **Import `lib/content-data.ts` only from `getStaticProps`/`getStaticPaths`.** Next.js strips those imports from the client bundle; importing it in a component ships every JSON file to the browser. Pass components just the slice they render.
-- **Dream entries** get a page of their own only with ≥ 300 characters of text (`MIN_STANDALONE_TEXT_LENGTH` in `lib/dream-pages.ts`); shorter ones appear in full on their letter page and are linked by anchor. This keeps thin one-sentence pages out of the index. The letter folder is `alfavito`, not `gramma` (an entry id).
+- **Dream entries** each get a page of their own, so a search always lands on that one term. Only entries with ≥ 300 characters of text are indexed (`MIN_INDEXABLE_TEXT_LENGTH` in `lib/dream-pages.ts`); shorter ones are `noindex` until their text grows, which keeps thin pages out of Google. There is no A–Ω browsing: people look up a word, not a letter.
+- **The full dream dictionary is never served whole.** Search downloads only `dream-index.json` (names, aliases, a sorted bag of keywords); an entry's text is on its page and in `data/dream/<id>.json`.
 - **Sitemap is generated** by `scripts/generate-sitemap.mjs` after `next build`: every exported page that is not `noindex` is listed. The script fails the build if an indexable page has no canonical, a canonical that is not its own URL, or a title/description shared with another page.
 - **Horoscope text** on `/zodia/<sign>/` is fetched in the browser from the prewarmed CDN JSON (`docs/horoscope-cdn-architecture.md`), so the static HTML carries only the evergreen sign content.
 - **The Ascendant calculator** runs entirely in the browser (`lib/birth-chart.ts`); `birth-chart.test.ts` checks it against JPL ephemeris values. The app's personalized readings still use Swiss Ephemeris on the backend.

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { buildDreamData } from "../../scripts/generate-dream-data.mjs";
 import {
   DreamDictionary,
   DreamSearchIndex,
@@ -26,7 +27,8 @@ const FIXTURE: DreamDictionary = {
   ],
 };
 
-const index = new DreamSearchIndex(FIXTURE);
+// Built the way the site builds it, so the search runs on the same keywords it gets in production
+const index = new DreamSearchIndex(buildDreamData(FIXTURE).index);
 const topTerm = (query: string) => index.search(query)[0]?.entry.term;
 
 describe("DreamSearchIndex.search", () => {
@@ -81,11 +83,20 @@ describe("keepExactMatches", () => {
   });
 });
 
-describe("DreamSearchIndex.getRelated", () => {
-  it("should skip related ids that do not exist", () => {
-    const nero = index.search("νερό")[0].entry;
+describe("buildDreamData", () => {
+  const { index: searchIndex, entries } = buildDreamData(FIXTURE);
+  const neroIndexEntry = searchIndex.entries.find((entry) => entry.id === "nero");
 
-    expect(index.getRelated(nero).map((e) => e.term)).toEqual(["Θάλασσα"]);
+  it("should give the search names and keywords but none of the sentences", () => {
+    expect(neroIndexEntry).toEqual({ id: "nero", term: "Νερό", keywords: "νερό πίνεις" });
+    expect(JSON.stringify(searchIndex)).not.toContain("ξεκουραστείς");
+  });
+
+  it("should keep the full entry in its own file with the names of related entries", () => {
+    const nero = entries.find((data) => data.entry.id === "nero");
+
+    expect(nero?.entry).toEqual(FIXTURE.entries.find((entry) => entry.id === "nero"));
+    expect(nero?.related).toEqual([{ id: "thalassa", term: "Θάλασσα" }]);
   });
 });
 
@@ -98,7 +109,7 @@ describe("splitHighlight", () => {
 
 describe("dream-dictionary.json", () => {
   const dictionary: DreamDictionary = JSON.parse(
-    readFileSync(new URL("../../public/data/dream-dictionary.json", import.meta.url), "utf8"),
+    readFileSync(new URL("../content/dream-dictionary.json", import.meta.url), "utf8"),
   );
 
   it("should have unique ids, content in every entry and valid related links", () => {
