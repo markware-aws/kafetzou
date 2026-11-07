@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useSWR from "swr";
-import { AlertTriangle, Briefcase, Heart, Sparkles, Star, type LucideIcon } from "lucide-react";
+import { Briefcase, Heart, Sparkles, Star, type LucideIcon } from "lucide-react";
+import { CautionNote } from "@/components/caution-note";
 import { getHoroscope } from "@/lib/api";
 
 type Period = "daily" | "weekly" | "monthly";
@@ -84,12 +85,7 @@ export function SignHoroscope({ signId, signName }: { signId: string; signName: 
             <ReadingPart icon={Briefcase} label="Καριέρα" text={reading.career} />
             <ReadingPart icon={Star} label="Τύχη" text={reading.luck} />
           </div>
-          {reading.warning && (
-            <div className="rounded-md border border-rose-800/60 bg-rose-950/40 p-4 flex gap-3">
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-              <p className="text-sm text-rose-100 leading-relaxed">{reading.warning}</p>
-            </div>
-          )}
+          {reading.warning && <CautionNote text={reading.warning} />}
         </div>
       )}
     </section>

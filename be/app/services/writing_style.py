@@ -20,6 +20,9 @@ T = TypeVar("T", bound=BaseModel)
 # (label shown to the model, compiled regex)
 BannedPattern = tuple[str, re.Pattern]
 
+# (field name, label shown to the model, compiled regex): checked against that one field only
+FieldPattern = tuple[str, str, re.Pattern]
+
 
 def compile_patterns(phrases: list[tuple[str, str]]) -> list[BannedPattern]:
     return [(label, re.compile(pattern, re.IGNORECASE)) for label, pattern in phrases]
@@ -68,10 +71,19 @@ def banned_list_for_prompt(patterns: list[BannedPattern]) -> str:
     return ", ".join([label for label, _ in patterns] + [_UNCHECKED_BANNED_NOTE])
 
 
-def find_banned_phrases(reading: BaseModel, patterns: list[BannedPattern]) -> list[str]:
+def find_banned_phrases(
+    reading: BaseModel,
+    patterns: list[BannedPattern],
+    field_patterns: list[FieldPattern] | None = None,
+) -> list[str]:
     """Labels of the banned phrases (or punctuation) found in the reading's text fields."""
-    text = " ".join(value for value in reading.model_dump().values() if isinstance(value, str))
+    values = reading.model_dump()
+    text = " ".join(value for value in values.values() if isinstance(value, str))
     found = [label for label, pattern in patterns if pattern.search(text)]
+    for field, label, pattern in field_patterns or []:
+        value = values.get(field)
+        if isinstance(value, str) and pattern.search(value):
+            found.append(label)
     if text.count("!") > MAX_EXCLAMATIONS:
         found.append("πολλά θαυμαστικά")
     return found
@@ -83,6 +95,7 @@ async def generate_with_guardrail(
     user_text: str,
     response_model: type[T],
     banned_patterns: list[BannedPattern],
+    field_patterns: list[FieldPattern] | None = None,
 ) -> tuple[T, dict]:
     """Generate once; if banned phrases slip through, regenerate once naming them."""
     reading, usage = await structured_chat(
@@ -90,7 +103,7 @@ async def generate_with_guardrail(
         user_content=[{"type": "text", "text": user_text}],
         response_model=response_model,
     )
-    banned = find_banned_phrases(reading, banned_patterns)
+    banned = find_banned_phrases(reading, banned_patterns, field_patterns)
     if not banned:
         return reading, usage
 
@@ -105,7 +118,7 @@ async def generate_with_guardrail(
         user_content=[{"type": "text", "text": retry_text}],
         response_model=response_model,
     )
-    remaining = find_banned_phrases(retry_reading, banned_patterns)
+    remaining = find_banned_phrases(retry_reading, banned_patterns, field_patterns)
     if remaining:
         logger.warning("%s still contains %s after retry, keeping it", name, remaining)
     combined_usage = {key: usage[key] + retry_usage[key] for key in usage}

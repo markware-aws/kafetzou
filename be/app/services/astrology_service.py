@@ -101,6 +101,16 @@ _PERSONALIZED_BANNED_PATTERNS = [
     ),
 ]
 
+# The warning stands on its own. Opening it with «Ωστόσο» turns it into the one piece of bad
+# news held back for the end of an otherwise all-good text.
+_WARNING_FIELD_PATTERNS: list[writing_style.FieldPattern] = [
+    (
+        "warning",
+        "«Ωστόσο», «Όμως» ή «Αλλά» στην αρχή του warning",
+        re.compile(r"^\W*(ωστ[οό]σο|[οό]μως|αλλ[αά]|παρ[οό]λα|εντο[υύ]τοις)\b", re.IGNORECASE),
+    ),
+]
+
 # The column speaks to everyone born in a decan; a personalized reading only to its reader.
 _COLUMN_DECAN_RULE = (
     "- Αν τα δεδομένα έχουν γραμμές για δεκαήμερα, διαλέξτε ΕΝΑ και απευθυνθείτε μία φορά στους "
@@ -131,7 +141,8 @@ def _style_rules(decan_rule: str) -> str:
 - Καθημερινές καταστάσεις: ο προϊστάμενος, ένας συνάδελφος, ένας λογαριασμός, μια υπογραφή, μια κουβέντα με τον σύντροφο, η οικογένεια, μια πρόσκληση για έξοδο, ένα ραντεβού που αναβάλλεται.
 - Στα αισθηματικά μπορείτε να ξεχωρίσετε ελεύθερους και δεσμευμένους.
 - Οι συμβουλές είναι πρακτικές και ήπιες: «καλό είναι να», «αποφύγετε», «μην παρασυρθείτε», «δώστε χρόνο».
-- Η προειδοποίηση είναι κοφτή, σαν οδηγία: «Προσοχή σε βιαστικές υποσχέσεις.», «Μην κάνετε υπερβολές στα έξοδα.»
+- Κάθε πρόβλεψη έχει και καλά και δύσκολα. Τα general, love και career έχουν το καθένα, δίπλα στα καλά, τουλάχιστον μία επιφύλαξη ή πρακτική δυσκολία: μια καθυστέρηση, κάποιον που πιέζει, ένα έξοδο, μια κουβέντα που θέλει προσοχή. Τα δύσκολα μπαίνουν εκεί που αφορούν, όχι μαζεμένα στο τέλος.
+- Το warning είναι κάτι που καλό είναι να έχει υπόψη ο αναγνώστης: μία αυτοτελής, κοφτή οδηγία, όπως «Προσοχή σε βιαστικές υποσχέσεις.» ή «Μην κάνετε υπερβολές στα έξοδα.». Δεν ξεκινά με «Ωστόσο», «Όμως» ή «Αλλά» και δεν συνεχίζει τα προηγούμενα.
 - Επιτρέπονται μετρημένα «ενδεχομένως» και «πιθανόν», όχι σε κάθε πρόταση.
 - Το πολύ ένα θαυμαστικό. Χωρίς ερωτήσεις, emoji, λίστες και παύλες.
 - Μην ξεκινάτε με «Σήμερα» ή με το όνομα του ζωδίου. Κάθε πρόβλεψη έχει δικό της άνοιγμα.
@@ -204,7 +215,9 @@ def find_banned_phrases(
     reading: AstrologyReading, extra_patterns: list[writing_style.BannedPattern] | None = None
 ) -> list[str]:
     """Labels of the AI-sounding phrases (or forbidden punctuation) found in a horoscope."""
-    return writing_style.find_banned_phrases(reading, _BANNED_PATTERNS + (extra_patterns or []))
+    return writing_style.find_banned_phrases(
+        reading, _BANNED_PATTERNS + (extra_patterns or []), _WARNING_FIELD_PATTERNS
+    )
 
 
 def _load_previous_texts(sign: str, period: str, today: date) -> list[str]:
@@ -244,6 +257,7 @@ async def generate_horoscope(sign: str, period: str) -> tuple[AstrologyReading, 
         user_text="\n\n".join(sections),
         response_model=AstrologyReading,
         banned_patterns=_BANNED_PATTERNS,
+        field_patterns=_WARNING_FIELD_PATTERNS,
     )
 
 
@@ -322,4 +336,5 @@ async def generate_personalized_reading(
         user_text="\n\n".join(section for section in sections if section),
         response_model=AstrologyReading,
         banned_patterns=_BANNED_PATTERNS + _PERSONALIZED_BANNED_PATTERNS,
+        field_patterns=_WARNING_FIELD_PATTERNS,
     )

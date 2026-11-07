@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 from pydantic import BaseModel
 
@@ -41,6 +42,14 @@ class TestFindBannedPhrases:
         text = _Text(body="Καθαρό κείμενο.", tags=["τι;"])
 
         assert writing_style.find_banned_phrases(text, writing_style.COMMON_BANNED_PATTERNS) == []
+
+    def test_should_check_a_field_pattern_against_its_own_field_only(self):
+        starts_with_but = ("body", "«Αλλά» στην αρχή", re.compile(r"^Αλλά"))
+        clean = _Text(body="Καλά νέα.", tags=["Αλλά"])
+        flagged = _Text(body="Αλλά προσέξτε.")
+
+        assert writing_style.find_banned_phrases(clean, [], [starts_with_but]) == []
+        assert writing_style.find_banned_phrases(flagged, [], [starts_with_but]) == ["«Αλλά» στην αρχή"]
 
 
 class TestGenderRule:

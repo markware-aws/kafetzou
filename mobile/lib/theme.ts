@@ -8,6 +8,7 @@ export const theme = {
   amber: '#f59e0b',
   amberDark: '#d97706',
   amberGlow: 'rgba(245, 158, 11, 0.2)',
+  amberDim: 'rgba(245, 158, 11, 0.1)',
 
   violet: '#7c3aed',
   violetLight: '#a78bfa',

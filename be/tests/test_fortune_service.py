@@ -81,6 +81,15 @@ class TestGenerateCoffeeReading:
         assert "ποσοστά" in chat.calls[1]["user_text"]
         assert "%" not in reading.general_message
 
+    def test_should_ask_for_good_and_hard_news_together(self, fake_chat):
+        chat = fake_chat(_reading())
+
+        asyncio.run(fortune_service.generate_coffee_reading(_vision([_symbol("πουλί", 0.9)])))
+
+        prompt = chat.calls[0]["system_prompt"]
+        assert "τα καλά και τα δύσκολα μαζί" in prompt
+        assert "Κυρίως καλά νέα" not in prompt
+
 
 class TestPromptExample:
     def test_should_pass_its_own_banned_check(self):

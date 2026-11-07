@@ -6,7 +6,6 @@ import {
   Heart,
   Briefcase,
   Star,
-  AlertTriangle,
   ChevronLeft,
   RefreshCw,
   Calendar,
@@ -25,6 +24,7 @@ import { SIGNS, SIGN_BY_ID, getSignFromDob } from "@/lib/astrology";
 import { getIdToken } from "@/lib/auth";
 import { notifyCreditsChanged } from "@/lib/user";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
+import { CautionNote } from "@/components/caution-note";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
 import { Seo } from "@/components/seo";
 
@@ -97,24 +97,11 @@ function ReadingSection({
   icon: Icon,
   label,
   text,
-  warning = false,
 }: {
   icon: LucideIcon;
   label: string;
   text: string;
-  warning?: boolean;
 }) {
-  if (warning) {
-    return (
-      <div className="rounded-md border border-rose-800/60 bg-rose-950/40 p-4">
-        <h3 className="flex items-center gap-2 mb-1 text-sm font-medium text-rose-200">
-          <Icon className="w-4 h-4 text-rose-400 shrink-0" />
-          {label}
-        </h3>
-        <p className="text-sm text-rose-100 leading-relaxed">{text}</p>
-      </div>
-    );
-  }
   return (
     <div className="rounded-lg border border-violet-800 bg-surface p-4">
       <h3 className="flex items-center gap-2 mb-2 text-sm font-medium text-violet-50">
@@ -215,12 +202,7 @@ function HoroscopePanel({ signId }: { signId: string }) {
             />
             <ReadingSection icon={Star} label="Τύχη" text={reading.luck} />
           </div>
-          <ReadingSection
-            icon={AlertTriangle}
-            label="Προσοχή"
-            text={reading.warning}
-            warning
-          />
+          <CautionNote text={reading.warning} />
         </div>
       )}
       {isValidating && reading && (
@@ -463,12 +445,7 @@ function PersonalizedForm({
             />
             <ReadingSection icon={Star} label="Τύχη" text={result.luck} />
           </div>
-          <ReadingSection
-            icon={AlertTriangle}
-            label="Προσοχή"
-            text={result.warning}
-            warning
-          />
+          <CautionNote text={result.warning} />
           <button
             onClick={() => setResult(null)}
             className="self-start mt-1 flex items-center gap-2 rounded-md border border-violet-700 text-violet-100 hover:border-violet-600 hover:bg-violet-900/50 text-sm px-4 py-2 transition-colors"

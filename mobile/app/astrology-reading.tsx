@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Sparkles, Heart, Briefcase, Star, AlertTriangle } from 'lucide-react-native';
+import { Sparkles, Heart, Briefcase, Star, Eye } from 'lucide-react-native';
 import { getPersonalizedAstrologyReading } from '@/lib/api';
 import { SIGN_BY_ID } from '@/lib/astrology';
 import { theme } from '@/lib/theme';
@@ -9,10 +9,10 @@ import { theme } from '@/lib/theme';
 function Section({ icon: Icon, label, text, accent = false, warning = false }: {
   icon: any; label: string; text: string; accent?: boolean; warning?: boolean;
 }) {
-  const borderColor = warning ? 'rgba(244,63,94,0.3)' : accent ? 'rgba(245,158,11,0.2)' : theme.borderLight;
-  const bgColor = warning ? theme.roseDim : accent ? 'rgba(245,158,11,0.05)' : theme.surface;
-  const iconColor = warning ? theme.rose : accent ? theme.amber : theme.violetLight;
-  const labelColor = warning ? theme.rose : accent ? '#fde68a' : theme.violetLight;
+  const borderColor = warning ? theme.amberGlow : accent ? 'rgba(245,158,11,0.2)' : theme.borderLight;
+  const bgColor = warning ? theme.amberDim : accent ? 'rgba(245,158,11,0.05)' : theme.surface;
+  const iconColor = warning ? theme.amber : accent ? theme.amber : theme.violetLight;
+  const labelColor = warning ? theme.amber : accent ? '#fde68a' : theme.violetLight;
   return (
     <View style={[s.box, { borderColor, backgroundColor: bgColor }]}>
       <View style={s.boxHeader}>
@@ -68,7 +68,7 @@ export default function AstrologyReadingScreen() {
       <Section icon={Star} label="Τύχη" text={r?.luck} />
       {r?.moon_insight && <Section icon={Star} label="Σελήνη" text={r.moon_insight} />}
       {r?.ascendant_insight && <Section icon={Sparkles} label="Ωροσκόπος" text={r.ascendant_insight} />}
-      <Section icon={AlertTriangle} label="Προσοχή" text={r?.warning} warning />
+      <Section icon={Eye} label="Προσοχή" text={r?.warning} warning />
     </ScrollView>
   );
 }

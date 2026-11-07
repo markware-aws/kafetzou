@@ -1,29 +1,19 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { ArrowLeft, Clock, Sparkles, Heart, Briefcase, Star, AlertTriangle, Moon, ArrowUp, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Clock, Sparkles, Heart, Briefcase, Star, Moon, ArrowUp, type LucideIcon } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
+import { CautionNote } from "@/components/caution-note";
 import { getPersonalizedAstrologyReading } from "@/lib/api";
 import { SIGN_BY_ID } from "@/lib/astrology";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
 import { timeAgo } from "@/lib/time-ago";
 
 function Section({
-  icon: Icon, label, text, warning = false,
+  icon: Icon, label, text,
 }: {
-  icon: LucideIcon; label: string; text: string; warning?: boolean;
+  icon: LucideIcon; label: string; text: string;
 }) {
-  if (warning) {
-    return (
-      <div className="rounded-md border border-rose-800/60 bg-rose-950/40 p-4">
-        <h3 className="flex items-center gap-2 mb-1 text-sm font-medium text-rose-200">
-          <Icon className="w-4 h-4 text-rose-400 shrink-0" />
-          {label}
-        </h3>
-        <p className="text-sm text-rose-100 leading-relaxed">{text}</p>
-      </div>
-    );
-  }
   return (
     <div className="rounded-lg border border-violet-800 bg-surface p-4">
       <h3 className="flex items-center gap-2 mb-2 text-sm font-medium text-violet-50">
@@ -120,7 +110,7 @@ export default function AstrologyReadingPage() {
                 {item.reading_result?.ascendant_insight && (
                   <Section icon={ArrowUp} label="Ωροσκόπος — Εξωτερική εικόνα" text={item.reading_result.ascendant_insight} />
                 )}
-                <Section icon={AlertTriangle} label="Προσοχή" text={item.reading_result?.warning} warning />
+                <CautionNote text={item.reading_result?.warning} />
               </div>
             </div>
           )}

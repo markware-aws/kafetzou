@@ -9,7 +9,6 @@ import {
   ChevronRight,
   Heart,
   Briefcase,
-  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 import { getUser } from "@/lib/auth";
@@ -17,6 +16,7 @@ import { getHoroscope } from "@/lib/api";
 import { SIGNS, type SignData } from "@/lib/astrology";
 import { SiteHeader } from "@/components/site-header";
 import { DailyCardSection } from "@/components/daily-card";
+import { CautionNote } from "@/components/caution-note";
 import { Seo } from "@/components/seo";
 
 type Period = "daily" | "weekly" | "monthly";
@@ -173,14 +173,7 @@ function HoroscopeSection() {
                 <ReadingCard icon={Star} label="Τύχη" text={reading.luck} />
               </div>
 
-              {reading.warning && (
-                <div className="rounded-md border border-rose-800/60 bg-rose-950/40 p-4 flex gap-3">
-                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                  <p className="text-sm text-rose-100 leading-relaxed">
-                    {reading.warning}
-                  </p>
-                </div>
-              )}
+              {reading.warning && <CautionNote text={reading.warning} />}
             </div>
           )}
 

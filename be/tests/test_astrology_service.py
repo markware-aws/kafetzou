@@ -89,6 +89,28 @@ class TestFindBannedPhrases:
 
         assert astrology_service.find_banned_phrases(reading) == []
 
+    @pytest.mark.parametrize(
+        "warning",
+        [
+            "Ωστόσο, προσοχή στην υπερβολική κριτική.",
+            "Όμως μη βιάζεστε στις υπογραφές.",
+            "αλλά προσέξτε τα έξοδα.",
+            "Παρόλα αυτά, κρατήστε μικρό καλάθι.",
+        ],
+    )
+    def test_should_flag_a_warning_that_continues_the_text_before_it(self, warning):
+        found = astrology_service.find_banned_phrases(_reading(warning=warning))
+
+        assert "«Ωστόσο», «Όμως» ή «Αλλά» στην αρχή του warning" in found
+
+    def test_should_allow_however_inside_the_text_and_words_that_only_start_alike(self):
+        reading = _reading(
+            general="Η μέρα ξεκινά ήρεμα. Ωστόσο το απόγευμα ένας συνάδελφος πιέζει.",
+            warning="Αλλαγές της τελευταίας στιγμής θέλουν ψυχραιμία.",
+        )
+
+        assert astrology_service.find_banned_phrases(reading) == []
+
 
 @pytest.fixture
 def stub_sky(monkeypatch):
@@ -145,6 +167,24 @@ class TestPrompts:
         assert len(chat.calls) == 2
         assert "ακριβείς ημερομηνίες" in chat.calls[1]["user_text"]
 
+    def test_should_regenerate_a_horoscope_whose_warning_opens_with_however(self, stub_sky, fake_chat):
+        chat = fake_chat(_reading(warning="Ωστόσο, προσοχή στην κριτική."), _reading())
+
+        reading, _ = asyncio.run(astrology_service.generate_horoscope("virgo", "daily"))
+
+        assert len(chat.calls) == 2
+        assert "στην αρχή του warning" in chat.calls[1]["user_text"]
+        assert reading.warning == "Προσοχή σε βιαστικές υπογραφές."
+
+    def test_should_ask_for_difficulties_inside_each_main_section(self, stub_sky, fake_chat):
+        chat = fake_chat(_reading())
+
+        asyncio.run(astrology_service.generate_horoscope("virgo", "weekly"))
+
+        prompt = chat.calls[0]["system_prompt"]
+        assert "Τα general, love και career έχουν το καθένα" in prompt
+        assert "όχι μαζεμένα στο τέλος" in prompt
+
 
 class TestPromptExamples:
     def test_column_examples_should_pass_the_column_check(self):
@@ -159,3 +199,15 @@ class TestPromptExamples:
 
         assert [label for label, pattern in patterns if pattern.search(example)] == []
         assert example.count("!") <= writing_style.MAX_EXCLAMATIONS
+
+    def test_example_warnings_should_stand_on_their_own(self):
+        _, _, opener = astrology_service._WARNING_FIELD_PATTERNS[0]
+        examples = astrology_service._EXAMPLES + "\n" + astrology_service._PERSONALIZED_EXAMPLE
+        warnings = [
+            line.removeprefix("warning: ")
+            for line in examples.splitlines()
+            if line.startswith("warning: ")
+        ]
+
+        assert len(warnings) == 3
+        assert [warning for warning in warnings if opener.search(warning)] == []

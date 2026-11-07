@@ -13,7 +13,7 @@ import {
   Heart,
   Briefcase,
   Star,
-  AlertTriangle,
+  Eye,
   ChevronLeft,
   RefreshCw,
   User,
@@ -117,22 +117,22 @@ function ReadingSection({
   warning?: boolean;
 }) {
   const borderColor = warning
-    ? "rgba(244,63,94,0.3)"
+    ? theme.amberGlow
     : accent
       ? "rgba(245,158,11,0.2)"
       : theme.borderLight;
   const bgColor = warning
-    ? theme.roseDim
+    ? theme.amberDim
     : accent
       ? "rgba(245,158,11,0.05)"
       : theme.surface;
   const iconColor = warning
-    ? theme.rose
+    ? theme.amber
     : accent
       ? theme.amber
       : theme.violetLight;
   const labelColor = warning
-    ? theme.rose
+    ? theme.amber
     : accent
       ? "#fde68a"
       : theme.violetLight;
@@ -237,7 +237,7 @@ function HoroscopePanel({ signId }: { signId: string }) {
             <Text style={s.summaryText}>"{reading.summary}"</Text>
           </View>
           <ReadingSection
-            icon={AlertTriangle}
+            icon={Eye}
             label="Προσοχή"
             text={reading.warning}
             warning
@@ -454,7 +454,7 @@ function PersonalizedForm() {
           />
           <ReadingSection icon={Star} label="Τύχη" text={result.luck} />
           <ReadingSection
-            icon={AlertTriangle}
+            icon={Eye}
             label="Προσοχή"
             text={result.warning}
             warning
