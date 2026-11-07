@@ -98,3 +98,6 @@ next-env.d.ts
 /tarot/
 fe/public/tarot/
 mobile/assets/tarot/
+
+# internal docs (kept out of the repo)
+/docs/
