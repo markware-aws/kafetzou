@@ -39,11 +39,13 @@ class PersonalizedResponse(BaseModel):
 @router.post("/prewarm/{period}", status_code=200)
 async def prewarm_horoscopes(
     period: PeriodType,
+    force: bool = False,
     x_prewarm_secret: str = Header(default=""),
 ) -> dict:
     """
     Pre-generates and caches horoscopes for all 12 signs for the given period.
     Secured by X-Prewarm-Secret header — call this from EventBridge Scheduler.
+    `?force=true` regenerates even when a cached reading exists (e.g. after a prompt change).
     """
     # If no secret is configured (local dev), allow freely. In production set PREWARM_SECRET.
     if settings.prewarm_secret and x_prewarm_secret != settings.prewarm_secret:
@@ -54,7 +56,7 @@ async def prewarm_horoscopes(
 
     async def prewarm_sign(sign: str) -> None:
         try:
-            cached_item = dynamodb_service.get_astrology_reading(sign, period_key)
+            cached_item = None if force else dynamodb_service.get_astrology_reading(sign, period_key)
             if cached_item:
                 reading = cached_item["reading_result"]
                 cached.append(sign)

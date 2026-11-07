@@ -13,7 +13,7 @@ Users upload photos of their coffee cup → two-step AI pipeline → mystical fo
 ```
 
 ## Architecture
-- **Backend**: FastAPI + Mangum (AWS Lambda), OpenAI gpt-4o-mini (vision), S3 (images), DynamoDB (data), Cognito (auth)
+- **Backend**: FastAPI + Mangum (AWS Lambda), OpenAI gpt-6-luna (vision + text), S3 (images), DynamoDB (data), Cognito (auth)
 - **Frontend**: Next.js 16 App Router, static export (output: "export"), TailwindCSS v4, AWS Amplify v6
 - **Mobile**: Expo SDK 52, Expo Router v4, React Native 0.76, AWS Amplify v6
 

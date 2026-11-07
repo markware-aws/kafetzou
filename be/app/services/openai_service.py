@@ -26,17 +26,22 @@ async def structured_chat(
     system_prompt: str,
     user_content: list[dict],
     response_model: Type[T],
-    model: str = "gpt-4o-mini",
+    model: str | None = None,
 ) -> tuple[T, dict]:
     """
     Send a chat completion request and parse the response into a Pydantic model.
+
+    Args:
+        model: Overrides settings.openai_model for this call.
 
     Returns:
         (parsed_model, usage_dict) — usage contains prompt_tokens, completion_tokens, total_tokens
     """
     client = get_openai_client()
+    model = model or settings.openai_model
     start = time.monotonic()
 
+    # No temperature: gpt-6 models only accept it with reasoning_effort="none"
     response = await client.beta.chat.completions.parse(
         model=model,
         messages=[
@@ -44,6 +49,7 @@ async def structured_chat(
             {"role": "user", "content": user_content},
         ],
         response_format=response_model,
+        reasoning_effort=settings.openai_reasoning_effort,
     )
 
     elapsed = time.monotonic() - start

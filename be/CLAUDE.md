@@ -3,7 +3,7 @@
 ## Stack
 - **Python 3.12**, FastAPI, Uvicorn
 - **Mangum** adapter for AWS Lambda deployment
-- **OpenAI** gpt-4o-mini with structured output (Pydantic `response_format`)
+- **OpenAI** gpt-6-luna (configurable via `OPENAI_MODEL`) with structured output (Pydantic `response_format`)
 - **AWS**: S3 (images), DynamoDB (readings + users), Cognito (JWT auth)
 - **Docker** + Docker Compose for local dev
 
