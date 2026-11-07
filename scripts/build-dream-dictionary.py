@@ -6,7 +6,7 @@ one or more paragraphs. A paragraph "Δες επίσης: Α, Β." lists related
 Usage:
     python scripts/build-dream-dictionary.py [input.md] [output.json]
 
-Defaults: docs/dream-dictionary.md -> fe/public/data/dream-dictionary.json
+Defaults: docs/dictionary.md -> fe/public/data/dream-dictionary.json
 """
 
 import json
@@ -17,7 +17,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_INPUT = REPO_ROOT / "docs/dream-dictionary.md"
+DEFAULT_INPUT = REPO_ROOT / "docs/dictionary.md"
 DEFAULT_OUTPUT = REPO_ROOT / "fe/public/data/dream-dictionary.json"
 COMBINING_ACUTE = unicodedata.lookup("COMBINING ACUTE ACCENT")
 

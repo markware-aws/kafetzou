@@ -89,7 +89,7 @@ scripts/generate-sitemap.mjs       # Runs after next build: writes out/sitemap.x
 public/og-image.png                # 1200×630 share image used by <Seo>
 
 public/data/dream-dictionary.json  # Dream dictionary data (format: types in lib/dream-dictionary.ts)
-                                   # Generated from docs/dream-dictionary.md — edit that file,
+                                   # Generated from docs/dictionary.md — edit that file,
                                    # then run: python scripts/build-dream-dictionary.py
 ```
 
