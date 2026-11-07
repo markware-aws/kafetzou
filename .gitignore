@@ -93,3 +93,8 @@ next-env.d.ts
 # claude
 .claude/settings.local.json
 .claude/
+
+# tarot card images (kept out of the repo; builds use the local copies)
+/tarot/
+fe/public/tarot/
+mobile/assets/tarot/

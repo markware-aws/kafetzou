@@ -75,8 +75,9 @@ def save_reading(
     now = datetime.now(timezone.utc).isoformat()
 
     total_tokens = vision_tokens + fortune_tokens
-    # Rough cost estimate for gpt-4o-mini: $0.15 / 1M input + $0.60 / 1M output
-    cost = round(total_tokens * 0.00000015 + total_tokens * 0.0000006, 6)
+    # Rough upper-bound estimate for gpt-6-luna ($0.10 / 1M input, $0.50 / 1M output):
+    # only the total is known here, so every token is priced at the output rate.
+    cost = round(total_tokens * 0.0000005, 6)
 
     item = {
         "user_id": user_id,

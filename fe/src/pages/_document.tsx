@@ -1,14 +1,12 @@
 import { Html, Head, Main, NextScript } from "next/document";
+import { SITE_NAME, SITE_URL } from "@/components/seo";
 
-const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-  "https://fortuneteller.gr";
-
-const jsonLd = {
+/** Site-wide structured data: what the site is and who publishes it. */
+const STRUCTURED_DATA = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "Fortune Teller",
-  url: APP_URL,
+  name: SITE_NAME,
+  url: SITE_URL,
   description:
     "Το ψηφιακό σου μαντείο. Ανάγνωση καφέ, ταρό και αστρολογία με τεχνητή νοημοσύνη.",
   applicationCategory: "EntertainmentApplication",
@@ -22,26 +20,25 @@ const jsonLd = {
   },
   publisher: {
     "@type": "Organization",
-    name: "Fortune Teller",
-    url: APP_URL,
+    name: SITE_NAME,
+    url: SITE_URL,
   },
 };
 
+/** Browser UI colour on mobile; matches --color-nav in globals.css. */
+const THEME_COLOR = "#1c1c25";
+
 export default function Document() {
   return (
-    <Html lang="el">
+    <Html lang="el" data-scroll-behavior="smooth">
+      {/* charset and viewport are emitted by Next.js; adding them here would duplicate them. */}
       <Head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#0c0a1a" />
+        <meta name="theme-color" content={THEME_COLOR} />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
         />
       </Head>
       <body>

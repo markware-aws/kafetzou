@@ -195,19 +195,14 @@ async def _run_prewarm(period: str) -> dict:
 
     s3 = boto3.client("s3", region_name=settings.aws_region) if settings.frontend_s3_bucket else None
 
-    for sign in ALL_SIGNS:
-        if dynamodb_service.get_astrology_reading(sign, period_key):
+    async def prewarm_sign(sign: str) -> None:
+        cached_item = dynamodb_service.get_astrology_reading(sign, period_key)
+        if cached_item:
             results["cached"].append(sign)
             # Still write to S3 if the file is missing (e.g. first deploy)
             if s3:
-                _write_to_s3(
-                    s3,
-                    settings,
-                    period,
-                    sign,
-                    dynamodb_service.get_astrology_reading(sign, period_key)["reading_result"],
-                )
-            continue
+                _write_to_s3(s3, settings, period, sign, cached_item["reading_result"])
+            return
         try:
             reading, _ = await astrology_service.generate_horoscope(sign, period)
             dynamodb_service.save_astrology_reading(sign=sign, period_key=period_key, period=period, reading=reading)
@@ -218,6 +213,10 @@ async def _run_prewarm(period: str) -> dict:
         except Exception as exc:
             logger.error("Prewarm failed for %s / %s: %s", sign, period_key, exc)
             results["errors"].append({"sign": sign, "error": str(exc)})
+
+    # Concurrent: one generation takes 5-20s on gpt-6-luna, so 12 in sequence would
+    # overrun the 60s Lambda timeout
+    await asyncio.gather(*[prewarm_sign(sign) for sign in ALL_SIGNS])
 
     # Invalidate CloudFront so stale edge cache is cleared immediately
     if s3 and settings.cloudfront_distribution_id and results["generated"]:

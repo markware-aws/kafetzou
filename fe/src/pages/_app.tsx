@@ -1,12 +1,13 @@
 import type { AppProps } from "next/app";
-import { Geist } from "next/font/google";
+import { Commissioner } from "next/font/google";
 import { Hub } from "aws-amplify/utils";
 import { SWRConfig } from "swr";
 import { configureAmplify } from "@/lib/amplify-config";
 import { Footer } from "@/components/footer";
 import "../app/globals.css";
 
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+// The UI is Greek; Geist has no Greek glyphs, so it silently fell back to Arial.
+const commissioner = Commissioner({ subsets: ["greek", "latin"] });
 
 if (typeof window !== "undefined") {
   configureAmplify();
@@ -29,7 +30,13 @@ export default function App({ Component, pageProps }: AppProps) {
         errorRetryCount: 1,
       }}
     >
-      <div className={`${geist.variable} antialiased`}>
+      {/* On :root rather than a wrapper div so portaled dialogs get the font too. */}
+      <style jsx global>{`
+        :root {
+          --font-commissioner: ${commissioner.style.fontFamily};
+        }
+      `}</style>
+      <div className="font-sans antialiased">
         <Component {...pageProps} />
         <Footer />
       </div>

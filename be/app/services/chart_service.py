@@ -52,7 +52,7 @@ SIGNS_SYMBOL = {
 }
 
 
-def _longitude_to_sign(longitude: float) -> tuple[str, float]:
+def longitude_to_sign(longitude: float) -> tuple[str, float]:
     """Convert ecliptic longitude (0–360°) → (sign_id, degree_within_sign)."""
     sign_index = int(longitude / 30) % 12
     return ZODIAC_SIGNS[sign_index], round(longitude % 30, 1)
@@ -107,18 +107,18 @@ def calculate_chart(
 
     # Sun
     sun_xx, _ = swe.calc_ut(jd, swe.SUN, swe.FLG_SWIEPH)
-    sun_sign, sun_deg = _longitude_to_sign(sun_xx[0])
+    sun_sign, sun_deg = longitude_to_sign(sun_xx[0])
 
     # Moon
     moon_xx, _ = swe.calc_ut(jd, swe.MOON, swe.FLG_SWIEPH)
-    moon_sign, moon_deg = _longitude_to_sign(moon_xx[0])
+    moon_sign, moon_deg = longitude_to_sign(moon_xx[0])
 
     # Ascendant — only meaningful with known birth time
     ascendant_sign = None
     ascendant_deg = None
     if time_known:
         _cusps, ascmc = swe.houses(jd, lat, lon, b"P")  # Placidus house system
-        ascendant_sign, ascendant_deg = _longitude_to_sign(ascmc[0])
+        ascendant_sign, ascendant_deg = longitude_to_sign(ascmc[0])
 
     swe.close()
 

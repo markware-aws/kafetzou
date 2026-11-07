@@ -1,6 +1,6 @@
 # Backend — FastAPI
 
-Python 3.12 · FastAPI · AWS Lambda (Mangum) · OpenAI gpt-4o-mini
+Python 3.12 · FastAPI · AWS Lambda (Mangum) · OpenAI gpt-6-luna
 
 ---
 

@@ -201,6 +201,7 @@ Already created: `E103BRI0J3RZQA` / `d3rgdcl1kwyxcf.cloudfront.net`
 | `*` (default) | `kafetzou-frontend` | CachingOptimized | — |
 
 **CloudFront Function** attached to Default (`*`) behavior → Viewer request: `kafetzou-routing`
+(source: `fe/cloudfront.js`; it also does the apex → www and trailing-slash 301s)
 
 **Custom domains:** `fortuneteller.gr`, `www.fortuneteller.gr`
 **SSL:** ACM certificate from step 6
@@ -220,11 +221,28 @@ Already created: `E103BRI0J3RZQA` / `d3rgdcl1kwyxcf.cloudfront.net`
         "AWS:SourceArn": "arn:aws:cloudfront::141794582596:distribution/E103BRI0J3RZQA"
       }
     }
+  }, {
+    "Sid": "AllowCloudFrontListSoMissingKeysReturn404",
+    "Effect": "Allow",
+    "Principal": { "Service": "cloudfront.amazonaws.com" },
+    "Action": "s3:ListBucket",
+    "Resource": "arn:aws:s3:::kafetzou-frontend",
+    "Condition": {
+      "StringEquals": {
+        "AWS:SourceArn": "arn:aws:cloudfront::141794582596:distribution/E103BRI0J3RZQA"
+      }
+    }
   }]
 }
 ```
 
-**Error pages:** 403 → `/index.html` (200), 404 → `/index.html` (200)
+Without `s3:ListBucket`, S3 answers 403 (not 404) for a key that doesn't exist.
+
+**Error pages:** 404 → `/404.html` with response code **404**. No 403 mapping.
+Don't fall back to `/index.html` with 200: every page exists as `/route/index.html`
+(`trailingSlash: true`), and a 200 fallback serves the homepage at every unknown URL,
+which search engines treat as duplicate content (soft 404s). Error responses apply to
+`/api/*` too, so an API 404 arrives with the `/404.html` body but keeps its 404 status.
 
 ---
 
@@ -235,7 +253,9 @@ Already created: `E103BRI0J3RZQA` / `d3rgdcl1kwyxcf.cloudfront.net`
 | CNAME | `@` | `d3rgdcl1kwyxcf.cloudfront.net` | DNS only (grey) |
 | CNAME | `www` | `d3rgdcl1kwyxcf.cloudfront.net` | DNS only (grey) |
 
-Redirect rule: `fortuneteller.gr` → `https://www.fortuneteller.gr` (301, preserve path)
+Apex → www (301, path and query kept) is done by the `kafetzou-routing` CloudFront
+Function, not a Cloudflare redirect rule: those only run on proxied (orange-cloud)
+records, and both records here are DNS-only. `/api/*` on the apex is not redirected.
 
 ---
 

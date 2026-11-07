@@ -1,20 +1,16 @@
+# Rules match by prefix: never list a path that starts a public URL
+# ("Disallow: /dream" would also block /dream-dictionary/).
+# Login-gated feature pages (/tarot/, /dream/, /dream-dictionary/, /login/) are left
+# crawlable on purpose so search engines can see their noindex tag.
 User-agent: *
-Allow: /
-Allow: /login
-Allow: /contact
-Allow: /privacy
-Allow: /terms
 Disallow: /upload
 Disallow: /dashboard
 Disallow: /reading
-Disallow: /tarot
 Disallow: /tarot-reading
-Disallow: /astrology
 Disallow: /astrology-reading
-Disallow: /dream
 Disallow: /dream-reading
 Disallow: /profile
 Disallow: /buy-credits
 Disallow: /payment
 
-Sitemap: https://fortuneteller.gr/sitemap.xml
+Sitemap: https://www.fortuneteller.gr/sitemap.xml

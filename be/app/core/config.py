@@ -8,6 +8,9 @@ class Settings(BaseSettings):
 
     # OpenAI
     openai_api_key: str
+    openai_model: str = "gpt-6-luna"
+    # "low" keeps the two-call coffee pipeline well under API Gateway's 29s timeout
+    openai_reasoning_effort: str = "low"
 
     # AWS
     aws_region: str = "eu-central-1"

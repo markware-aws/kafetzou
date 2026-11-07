@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Sparkles, RefreshCw, Star, Coins } from "lucide-react";
-import { Seo } from "@/components/seo";
+import { RefreshCw, Star, Coins, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { createTarotReading, TarotReadingResponse } from "@/lib/api";
@@ -57,8 +56,7 @@ export default function TarotPage() {
   }
 
   return (
-    <AuthGuard>
-      <Seo title="Ανάγνωση Ταρό" noindex />
+    <AuthGuard title="Ταρό">
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => setCreditDialogOpen(false)}
@@ -68,63 +66,53 @@ export default function TarotPage() {
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
-          <div className="text-center mb-10">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-violet-900 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/20">
-              <Star className="w-7 h-7 text-amber-300" />
-            </div>
-            <h1 className="text-2xl font-bold text-violet-100 mb-1">Ανάγνωση Ταρό</h1>
-            <p className="text-sm text-violet-400">Άφησε τις κάρτες να αποκαλύψουν το μονοπάτι σου</p>
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-violet-50">Ανάγνωση ταρό</h1>
+            <p className="mt-1 text-sm text-violet-300">Άφησε τις κάρτες να αποκαλύψουν το μονοπάτι σου.</p>
           </div>
 
           {!result && (
             <>
-              <div className="flex items-center gap-3 mb-5">
-                <div className="h-px flex-1 bg-violet-900/40" />
-                <span className="text-xs text-violet-500 uppercase tracking-widest font-medium">Ανάγνωση</span>
-                <div className="h-px flex-1 bg-violet-900/40" />
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 mb-8">
+              <h2 className="mb-2 text-sm font-medium text-violet-100">Διάταξη</h2>
+              <div className="flex flex-col sm:flex-row gap-3 mb-6">
                 {(Object.entries(SPREAD_LABELS) as [Spread, string][]).map(([key, label]) => (
                   <button
                     key={key}
                     onClick={() => setSpread(key)}
-                    className={`flex-1 rounded-xl border px-5 py-4 text-sm font-medium text-left transition-all ${
+                    aria-pressed={spread === key}
+                    className={`flex-1 rounded-md border px-4 py-3 text-sm text-left transition-colors ${
                       spread === key
-                        ? "border-amber-500/60 bg-amber-500/10 text-amber-300"
-                        : "border-violet-800/40 bg-[#2e2a3a] text-violet-300 hover:border-violet-600/50"
+                        ? "border-amber-500 bg-violet-900/60 text-violet-50"
+                        : "border-violet-800 bg-surface text-violet-200 hover:border-violet-600 hover:text-violet-50"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Sparkles className={`w-4 h-4 ${spread === key ? "text-amber-400" : "text-violet-500"}`} />
-                      {label}
-                    </div>
+                    {label}
                   </button>
                 ))}
               </div>
 
-<div className="flex flex-col items-center gap-3">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <button
                   onClick={handleDraw}
                   disabled={loading}
-                  className="inline-flex items-center gap-3 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 disabled:opacity-50 text-white font-semibold rounded-2xl px-8 py-4 text-base transition-all shadow-xl shadow-violet-700/30"
+                  className="flex items-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
-                    <><RefreshCw className="w-5 h-5 animate-spin" /> Οι κάρτες μιλούν…</>
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Οι κάρτες μιλούν…</>
                   ) : (
-                    <><Star className="w-5 h-5 text-amber-300" /> Τράβηξε κάρτες</>
+                    <><Star className="w-4 h-4" /> Τράβηξε κάρτες</>
                   )}
                 </button>
                 {!loading && (
-                  <div className="flex items-center gap-1 text-xs text-amber-600">
-                    <Coins className="w-3 h-3" />
-                    <span>1 credit</span>
-                  </div>
+                  <span className="flex items-center gap-1.5 text-xs text-violet-300">
+                    <Coins className="w-3.5 h-3.5" />
+                    1 credit
+                  </span>
                 )}
               </div>
 
               {error && (
-                <div className="mt-6 rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 text-sm text-rose-300 text-center">{error}</div>
+                <div className="mt-6 rounded-md border border-rose-800/60 bg-rose-950/40 p-4 text-sm text-rose-200">{error}</div>
               )}
             </>
           )}
@@ -135,61 +123,56 @@ export default function TarotPage() {
                 {result.reading.cards.map((card, i) => (
                   <div key={card} className="flex flex-col gap-2" style={result.reading.cards.length === 1 ? { width: "180px" } : undefined}>
                     {result.reading.cards.length > 1 && (
-                      <span className="text-xs text-violet-400 font-medium text-center">{POSITION_LABELS[i]}</span>
+                      <span className="text-xs text-violet-300 text-center">{POSITION_LABELS[i]}</span>
                     )}
                     <div
                       onClick={() => revealCard(i)}
-                      className={`relative rounded-2xl overflow-hidden border transition-all duration-500 shadow-lg cursor-pointer ${
-                        revealed[i] ? "border-amber-500/40 shadow-amber-500/10" : "border-violet-700/40 hover:border-violet-600/60"
+                      className={`relative rounded-md overflow-hidden cursor-pointer transition-colors ${
+                        revealed[i] ? "" : "border border-violet-700 hover:border-violet-600"
                       }`}
                       style={{ paddingBottom: "150%" }}
                     >
                       {revealed[i] ? (
                         <img src={getCardImagePath(card)} alt={card} className="absolute inset-0 w-full h-full object-cover" />
                       ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-violet-900 to-[#24242E] flex flex-col items-center justify-center gap-3">
-                          <div className="w-10 h-10 rounded-full border-2 border-violet-600/50 flex items-center justify-center">
-                            <Star className="w-5 h-5 text-violet-500" />
-                          </div>
-                          <span className="text-xs text-violet-500">Άγγιξε για αποκάλυψη</span>
+                        <div className="absolute inset-0 bg-violet-950 flex flex-col items-center justify-center gap-2 px-2 text-center">
+                          <Star className="w-5 h-5 text-violet-300" />
+                          <span className="text-xs text-violet-300">Άγγιξε για αποκάλυψη</span>
                         </div>
                       )}
                     </div>
                     {revealed[i] && (
-                      <span className="text-xs text-amber-300 font-medium text-center block">{getCardDisplayName(card)}</span>
+                      <span className="text-xs font-medium text-violet-100 text-center block">{getCardDisplayName(card)}</span>
                     )}
                   </div>
                 ))}
               </div>
 
               {revealed.every(Boolean) && (
-                <div className="animate-fade-in flex flex-col gap-4">
-                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                      <h2 className="text-sm font-semibold text-amber-300">Η Ουσία</h2>
-                    </div>
+                <div className="animate-fade-in flex flex-col gap-3">
+                  <div className="rounded-lg border border-violet-800 bg-surface p-5">
+                    <h2 className="mb-2 text-sm font-medium text-violet-50">Η ουσία</h2>
                     <p className="text-sm text-violet-100 leading-relaxed">{result.reading.summary}</p>
                   </div>
-                  <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5">
-                    <h2 className="text-sm font-semibold text-violet-300 mb-3">Ερμηνεία</h2>
+                  <div className="rounded-lg border border-violet-800 bg-surface p-5">
+                    <h2 className="mb-2 text-sm font-medium text-violet-50">Ερμηνεία</h2>
                     <p className="text-sm text-violet-200 leading-relaxed whitespace-pre-line">{result.reading.interpretation}</p>
                   </div>
-                  <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5">
-                    <h2 className="text-sm font-semibold text-violet-300 mb-3">Συμβουλή</h2>
+                  <div className="rounded-lg border border-violet-800 bg-surface p-5">
+                    <h2 className="mb-2 text-sm font-medium text-violet-50">Συμβουλή</h2>
                     <p className="text-sm text-violet-200 leading-relaxed">{result.reading.advice}</p>
                   </div>
-                  <div className="text-center pt-2">
-                    <button onClick={reset} className="inline-flex items-center gap-2 border border-violet-700/40 hover:border-violet-600/60 text-violet-300 hover:text-violet-100 rounded-xl px-6 py-2.5 text-sm transition-all">
+                  <div className="pt-2">
+                    <button onClick={reset} className="inline-flex items-center gap-2 rounded-md border border-violet-700 text-violet-100 hover:border-violet-600 hover:bg-violet-900/50 text-sm px-4 py-2 transition-colors">
                       <RefreshCw className="w-4 h-4" />
-                      Νέα Ανάγνωση
+                      Νέα ανάγνωση
                     </button>
                   </div>
                 </div>
               )}
 
               {!revealed.every(Boolean) && (
-                <p className="text-center text-xs text-violet-500">Άγγιξε κάθε κάρτα για να αποκαλύψεις την ερμηνεία</p>
+                <p className="text-sm text-violet-300">Άγγιξε κάθε κάρτα για να αποκαλύψεις την ερμηνεία.</p>
               )}
             </div>
           )}
