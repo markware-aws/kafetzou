@@ -4,6 +4,7 @@ import { Hub } from "aws-amplify/utils";
 import { SWRConfig } from "swr";
 import { configureAmplify } from "@/lib/amplify-config";
 import { Footer } from "@/components/footer";
+import { CookieBanner } from "@/components/cookie-banner";
 import "../styles/globals.css";
 
 // The UI is Greek; Geist has no Greek glyphs, so it silently fell back to Arial.
@@ -39,6 +40,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <div className="font-sans antialiased">
         <Component {...pageProps} />
         <Footer />
+        <CookieBanner />
       </div>
     </SWRConfig>
   );

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { openCookieSettings } from "@/lib/consent";
 
 // Every page links to the free guides, so search engines can reach them from anywhere.
 const GUIDE_LINKS = [
@@ -29,9 +30,16 @@ export function Footer() {
       </nav>
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-violet-300">
         <span>© 2026 Fortune Teller · Για ψυχαγωγικούς σκοπούς μόνο</span>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <Link href="/privacy" className="hover:text-violet-50 transition-colors">Απόρρητο</Link>
           <Link href="/terms" className="hover:text-violet-50 transition-colors">Όροι Χρήσης</Link>
+          <button
+            type="button"
+            onClick={openCookieSettings}
+            className="hover:text-violet-50 transition-colors"
+          >
+            Ρυθμίσεις cookies
+          </button>
           <Link href="/contact" className="hover:text-violet-50 transition-colors">Επικοινωνία</Link>
         </div>
       </div>

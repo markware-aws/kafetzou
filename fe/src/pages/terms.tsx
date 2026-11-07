@@ -184,7 +184,23 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="10. Περιορισμός Ευθύνης">
+        <Section title="10. Προσωπικά Δεδομένα & Cookies">
+          <p>
+            Ο τρόπος με τον οποίο επεξεργαζόμαστε τα προσωπικά σας δεδομένα και
+            χρησιμοποιούμε cookies περιγράφεται στην{" "}
+            <Link
+              href="/privacy/"
+              className="text-amber-400 hover:text-amber-300 transition-colors"
+            >
+              Πολιτική Απορρήτου
+            </Link>
+            . Τα cookies στατιστικών (Google Analytics) χρησιμοποιούνται μόνο με τη
+            συγκατάθεσή σας, την οποία μπορείτε να αλλάξετε ανά πάσα στιγμή από τις
+            «Ρυθμίσεις cookies» στο κάτω μέρος κάθε σελίδας.
+          </p>
+        </Section>
+
+        <Section title="11. Περιορισμός Ευθύνης">
           <p>
             Στο μέγιστο βαθμό που επιτρέπεται από την ισχύουσα νομοθεσία, η
             Fortune Teller δεν φέρει ευθύνη για έμμεσες, τυχαίες ή αποθετικές
@@ -192,7 +208,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="11. Εφαρμοστέο Δίκαιο & Δικαιοδοσία">
+        <Section title="12. Εφαρμοστέο Δίκαιο & Δικαιοδοσία">
           <p>
             Οι παρόντες Όροι διέπονται από το{" "}
             <span className="text-violet-100">ελληνικό δίκαιο</span>. Αρμόδια
@@ -200,7 +216,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section title="12. Επικοινωνία">
+        <Section title="13. Επικοινωνία">
           <p>
             Για ερωτήσεις σχετικά με τους Όρους Χρήσης:{" "}
             <a

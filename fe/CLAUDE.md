@@ -63,12 +63,14 @@ src/
 │   ├── dream-tabs.tsx      # Tab switch between /dream and /dream-dictionary
 │   ├── dream-search-box.tsx # Search input + autocomplete (ARIA combobox)
 │   ├── dream-entry-card.tsx # One dictionary entry: meaning, scenarios, related
+│   ├── cookie-banner.tsx   # Accept/reject bar for Google Analytics; reopened from the footer
 │   └── credits-dialog.tsx  # Insufficient credits modal
 └── lib/
     ├── amplify-config.ts   # Amplify.configure() with Cognito settings
     ├── auth.ts             # login, logout, register, confirmRegistration, getIdToken
     ├── api.ts              # All backend API calls
     ├── user.ts             # notifyCreditsChanged() helper
+    ├── consent.ts          # Cookie consent storage + Google Tag Manager loader (GTM-WNPN58GZ)
     ├── astrology.ts        # Sign data, element colors, DOB→sign mapping
     ├── tarot.ts            # Card image paths, display name mapping
     ├── dream-dictionary.ts # Dictionary types, loader, accent/greeklish-insensitive search
@@ -183,6 +185,12 @@ Use Tailwind utility classes directly in JSX. Prefer inline styles only for dyna
 4. Add link in `navbar.tsx` if it should appear in nav (public guides: `site-header.tsx` / `footer.tsx`)
 5. Per-user pages: `?param=value` query params, never `[dynamic]` route segments
 6. Use `router.query` + `router.isReady` for reading query params
+
+## Analytics & Cookie Consent
+- **Google Tag Manager (GTM-WNPN58GZ) runs Google Analytics 4 only.** It is loaded by `lib/consent.ts` after the visitor clicks «Αποδοχή» in `cookie-banner.tsx`, never from `_document.tsx`: nothing reaches Google before consent. Advertising consent signals are always sent as denied.
+- The choice is kept in localStorage (`cookie-consent`). Rejecting after accepting deletes the `_ga*` cookies and reloads the page, since a loaded GTM container cannot be removed.
+- **Adding a tag in GTM** (Google Ads, Meta Pixel, anything that is not GA4): update the Cookies section of `pages/privacy.tsx`, the banner text and the consent defaults in `loadGoogleTagManager()`, then bump `CONSENT_VERSION` so every visitor is asked again.
+- Client-side page changes reach GA4 through its "page changes based on browser history events" setting (Enhanced measurement, on by default). Keep it on.
 
 ## Stripe
 Credit purchase flow implemented — `/buy-credits` → Stripe Checkout → `/payment/success`.
