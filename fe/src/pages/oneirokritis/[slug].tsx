@@ -1,7 +1,11 @@
 import type { GetStaticPaths, GetStaticProps } from "next";
 import { Seo } from "@/components/seo";
-import { ContentLayout, FeatureCta } from "@/components/content-layout";
-import { DreamEntryCard } from "@/components/dream-entry-card";
+import {
+  ContentLayout,
+  ContentSection,
+  FeatureCta,
+  RelatedLinks,
+} from "@/components/content-layout";
 import type { DreamEntry, DreamEntryRef } from "@/lib/dream-dictionary";
 import { dreamEntryExcerpt, dreamEntryPath, isIndexableDreamEntry } from "@/lib/dream-pages";
 import { getDreamDictionary } from "@/lib/content-data";
@@ -68,13 +72,36 @@ export default function DreamEntryPage({
         <Seo title={title} noindex />
       )}
 
-      <h1 className="text-3xl sm:text-4xl font-semibold text-violet-50 tracking-tight">
-        {entry.term} στο όνειρο: τι σημαίνει
-      </h1>
+      <header>
+        {entry.category && (
+          <p className="text-xs uppercase tracking-wide text-violet-300">{entry.category}</p>
+        )}
+        <h1 className="mt-1 text-3xl sm:text-4xl font-semibold text-violet-50 tracking-tight">
+          {entry.term} στο όνειρο: τι σημαίνει
+        </h1>
+      </header>
 
-      <div className="mt-6">
-        <DreamEntryCard entry={entry} related={related} relatedHref={dreamEntryPath} />
-      </div>
+      {entry.meaning && (
+        <p className="mt-6 text-[15px] text-violet-200 leading-relaxed">{entry.meaning}</p>
+      )}
+
+      {entry.scenarios && entry.scenarios.length > 0 && (
+        <ContentSection title="Ανάλογα με το όνειρο">
+          <ul className="flex flex-col gap-3">
+            {entry.scenarios.map((scenario, i) => (
+              <li key={i} className="border-l-2 border-violet-700 pl-3">
+                <span className="font-medium text-violet-50">{scenario.context}</span>,{" "}
+                {scenario.meaning}
+              </li>
+            ))}
+          </ul>
+        </ContentSection>
+      )}
+
+      <RelatedLinks
+        title="Δες επίσης"
+        links={related.map((item) => ({ href: dreamEntryPath(item), label: item.term }))}
+      />
 
       <FeatureCta feature="dream" />
     </ContentLayout>

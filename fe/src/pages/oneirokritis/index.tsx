@@ -94,71 +94,64 @@ export default function DreamDictionaryHub({ total, popular }: DreamHubProps) {
   }
 
   return (
-    <ContentLayout
-      wide
-      breadcrumbs={[{ label: "Ονειροκρίτης", path: "/oneirokritis/" }]}
-    >
+    <ContentLayout breadcrumbs={[{ label: "Ονειροκρίτης", path: "/oneirokritis/" }]}>
       <Seo
         title="Ονειροκρίτης: Τι Σημαίνουν τα Όνειρα"
         description={`Ονειροκρίτης με ${total} σύμβολα. Ψάξε τι είδες στον ύπνο σου, από φίδι και δόντια ως γάμο και νεκρούς, και μάθε τι σημαίνει.`}
         path="/oneirokritis/"
       />
 
-      <div className="max-w-3xl">
-        <h1 className="text-3xl sm:text-4xl font-semibold text-violet-50 tracking-tight">
-          Ονειροκρίτης
-        </h1>
-        <p className="mt-4 text-[15px] text-violet-200 leading-relaxed">
-          Τι σημαίνει όταν βλέπεις φίδι, όταν σου πέφτουν τα δόντια ή όταν
-          παντρεύεσαι στον ύπνο σου; Ο ονειροκρίτης συγκεντρώνει {total} σύμβολα
-          και τις παραδοσιακές τους ερμηνείες, μαζί με τα σενάρια που αλλάζουν
-          τη σημασία τους. Γράψε μια λέξη από το όνειρό σου.
-        </p>
+      <h1 className="text-3xl sm:text-4xl font-semibold text-violet-50 tracking-tight">
+        Ονειροκρίτης
+      </h1>
+      <p className="mt-4 text-[15px] text-violet-200 leading-relaxed">
+        Τι σημαίνει όταν βλέπεις φίδι, όταν σου πέφτουν τα δόντια ή όταν
+        παντρεύεσαι στον ύπνο σου; Ο ονειροκρίτης συγκεντρώνει {total} σύμβολα
+        και τις παραδοσιακές τους ερμηνείες, μαζί με τα σενάρια που αλλάζουν
+        τη σημασία τους. Γράψε μια λέξη από το όνειρό σου.
+      </p>
 
-        <div className="mt-6">
-          <DreamSearchBox
-            value={query}
-            suggestions={suggestions}
-            onChange={changeQuery}
-            onSelect={openEntry}
-            onSubmit={openBestMatch}
-          />
-        </div>
+      <div className="mt-6">
+        <DreamSearchBox
+          value={query}
+          suggestions={suggestions}
+          onChange={changeQuery}
+          onSelect={openEntry}
+          onSubmit={openBestMatch}
+        />
       </div>
 
-      <div className="max-w-3xl">
-        {popular.length > 0 && (
-          <ContentSection title="Τα πιο συχνά όνειρα">
-            <ul className="flex flex-wrap gap-2">
-              {popular.map((item) => (
-                <li key={item.id}>
-                  <Link
-                    href={item.href}
-                    className="inline-block text-sm px-3 py-1.5 rounded-md border border-violet-800 bg-surface text-violet-200 hover:text-violet-50 hover:border-violet-600 transition-colors"
-                  >
-                    {item.term}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </ContentSection>
-        )}
-
-        <ContentSection title="Πώς να διαβάσεις ένα όνειρο">
-          <p>
-            Ένα σύμβολο σπάνια λέει όλη την ιστορία μόνο του. Σημείωσε τι
-            ένιωθες μέσα στο όνειρο, ποιος άλλος ήταν εκεί και τι έκανες εσύ: το
-            ίδιο φίδι σημαίνει άλλο πράγμα όταν το σκοτώνεις και άλλο όταν σε
-            κυνηγά. Γι’ αυτό κάθε σύμβολο έχει τα δικά του σενάρια.
-          </p>
-          <p>
-            Ο ονειροκρίτης είναι λαϊκή παράδοση, διάβασέ τον για ψυχαγωγία και
-            προβληματισμό. Ένα όνειρο που σε ανησυχεί δεν είναι πρόβλεψη.
-          </p>
+      {popular.length > 0 && (
+        <ContentSection title="Τα πιο συχνά όνειρα">
+          <ul className="flex flex-wrap gap-2">
+            {popular.map((item) => (
+              <li key={item.id}>
+                <Link
+                  href={item.href}
+                  className="inline-block text-sm px-3 py-1.5 rounded-md border border-violet-800 bg-surface text-violet-200 hover:text-violet-50 hover:border-violet-600 transition-colors"
+                >
+                  {item.term}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </ContentSection>
+      )}
 
-        <FeatureCta feature="dream" />
-      </div>
+      <ContentSection title="Πώς να διαβάσεις ένα όνειρο">
+        <p>
+          Ένα σύμβολο σπάνια λέει όλη την ιστορία μόνο του. Σημείωσε τι
+          ένιωθες μέσα στο όνειρο, ποιος άλλος ήταν εκεί και τι έκανες εσύ: το
+          ίδιο φίδι σημαίνει άλλο πράγμα όταν το σκοτώνεις και άλλο όταν σε
+          κυνηγά. Γι’ αυτό κάθε σύμβολο έχει τα δικά του σενάρια.
+        </p>
+        <p>
+          Ο ονειροκρίτης είναι λαϊκή παράδοση, διάβασέ τον για ψυχαγωγία και
+          προβληματισμό. Ένα όνειρο που σε ανησυχεί δεν είναι πρόβλεψη.
+        </p>
+      </ContentSection>
+
+      <FeatureCta feature="dream" />
     </ContentLayout>
   );
 }
