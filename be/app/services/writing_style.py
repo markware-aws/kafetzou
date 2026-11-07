@@ -7,7 +7,9 @@ banned phrase slips through.
 """
 import logging
 import re
-from typing import TypeVar
+import unicodedata
+from functools import lru_cache
+from typing import Callable, TypeVar
 
 from pydantic import BaseModel
 
@@ -89,6 +91,74 @@ def find_banned_phrases(
     return found
 
 
+# A field line in a prompt's examples («love: ...»); header and «Δεδομένα:» lines are not prose
+_EXAMPLE_FIELD_LINE = re.compile(r"^[a-z_]+:\s*(.+)$")
+_SENTENCE_END = re.compile(r"[.!·;;]+\s*")
+
+# Five words in a row from an example is copying, not chance
+COPIED_PHRASE_WORDS = 5
+# A field that opens with the first three words of an example sentence reuses its template
+COPIED_OPENING_WORDS = 3
+
+
+def _plain(word: str) -> str:
+    """Lowercase without accents, so «Απόγευμα» and «απογευμα» compare equal."""
+    decomposed = unicodedata.normalize("NFD", word.casefold())
+    return "".join(char for char in decomposed if not unicodedata.combining(char))
+
+
+@lru_cache(maxsize=8)
+def _example_phrases(
+    examples: str, ignored_prefixes: tuple[str, ...]
+) -> tuple[dict[tuple[str, ...], str], dict[tuple[str, ...], str]]:
+    """(phrases, sentence openings) of the examples, keyed by plain words, valued as written."""
+    phrases: dict[tuple[str, ...], str] = {}
+    openings: dict[tuple[str, ...], str] = {}
+    for line in examples.splitlines():
+        match = _EXAMPLE_FIELD_LINE.match(line.strip())
+        if not match:
+            continue
+        for sentence in _SENTENCE_END.split(match.group(1)):
+            words = re.findall(r"\w+", sentence)
+            plain = [_plain(word) for word in words]
+            ignored = [word.startswith(ignored_prefixes) for word in plain]
+            # Capitalized words inside a sentence are planets, signs and days: they come from the data
+            from_data = [index > 0 and word[0].isupper() for index, word in enumerate(words)]
+            if len(words) >= COPIED_OPENING_WORDS and not any(ignored[:COPIED_OPENING_WORDS]):
+                openings[tuple(plain[:COPIED_OPENING_WORDS])] = " ".join(words[:COPIED_OPENING_WORDS])
+            for start in range(len(words) - COPIED_PHRASE_WORDS + 1):
+                end = start + COPIED_PHRASE_WORDS
+                if any(ignored[start:end]) or any(from_data[start:end]):
+                    continue
+                phrases[tuple(plain[start:end])] = " ".join(words[start:end])
+    return phrases, openings
+
+
+def find_example_copies(
+    reading: BaseModel, examples: str, ignored_prefixes: tuple[str, ...] = ()
+) -> list[str]:
+    """
+    Phrases and field openings the reading took word for word from the prompt's examples.
+
+    ignored_prefixes: plain (unaccented, lowercase) word starts the rules themselves dictate,
+    so sharing them with an example is not copying.
+    """
+    phrases, openings = _example_phrases(examples, ignored_prefixes)
+    found: list[str] = []
+    for value in reading.model_dump().values():
+        if not isinstance(value, str):
+            continue
+        plain = [_plain(word) for word in re.findall(r"\w+", value)]
+        opening = openings.get(tuple(plain[:COPIED_OPENING_WORDS]))
+        if opening:
+            found.append(f"άνοιγμα από τα παραδείγματα («{opening}»)")
+        for start in range(len(plain) - COPIED_PHRASE_WORDS + 1):
+            phrase = phrases.get(tuple(plain[start:start + COPIED_PHRASE_WORDS]))
+            if phrase:
+                found.append(f"φράση από τα παραδείγματα («{phrase}»)")
+    return list(dict.fromkeys(found))
+
+
 async def generate_with_guardrail(
     *,
     system_prompt: str,
@@ -96,14 +166,22 @@ async def generate_with_guardrail(
     response_model: type[T],
     banned_patterns: list[BannedPattern],
     field_patterns: list[FieldPattern] | None = None,
+    extra_checks: list[Callable[[BaseModel], list[str]]] | None = None,
 ) -> tuple[T, dict]:
     """Generate once; if banned phrases slip through, regenerate once naming them."""
+
+    def problems_in(candidate: BaseModel) -> list[str]:
+        found = find_banned_phrases(candidate, banned_patterns, field_patterns)
+        for check in extra_checks or []:
+            found += check(candidate)
+        return found
+
     reading, usage = await structured_chat(
         system_prompt=system_prompt,
         user_content=[{"type": "text", "text": user_text}],
         response_model=response_model,
     )
-    banned = find_banned_phrases(reading, banned_patterns, field_patterns)
+    banned = problems_in(reading)
     if not banned:
         return reading, usage
 
@@ -118,7 +196,7 @@ async def generate_with_guardrail(
         user_content=[{"type": "text", "text": retry_text}],
         response_model=response_model,
     )
-    remaining = find_banned_phrases(retry_reading, banned_patterns, field_patterns)
+    remaining = problems_in(retry_reading)
     if remaining:
         logger.warning("%s still contains %s after retry, keeping it", name, remaining)
     combined_usage = {key: usage[key] + retry_usage[key] for key in usage}

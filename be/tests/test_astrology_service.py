@@ -9,10 +9,10 @@ from app.services import astrology_service, writing_style
 
 def _reading(**overrides) -> AstrologyReading:
     fields = {
-        "general": "Η Σελήνη στον Λέοντα φέρνει κίνηση στα οικονομικά σας.",
-        "love": "Οι δεσμευμένοι καλό είναι να μιλήσετε ήρεμα.",
+        "general": "Τα οικονομικά σας κινούνται, με τη Σελήνη στον Λέοντα.",
+        "love": "Μια ήρεμη κουβέντα με τον σύντροφο λύνει μια παρεξήγηση.",
         "career": "Ένας συνάδελφος ζητά βοήθεια.",
-        "luck": "Το απόγευμα ευνοεί τις συμφωνίες.",
+        "luck": "Μια συμφωνία που περιμένετε κλείνει υπέρ σας.",
         "summary": "Υπομονή και καθαρές κουβέντες.",
         "warning": "Προσοχή σε βιαστικές υπογραφές.",
     }
@@ -111,6 +111,50 @@ class TestFindBannedPhrases:
 
         assert astrology_service.find_banned_phrases(reading) == []
 
+    @pytest.mark.parametrize(
+        "luck",
+        [
+            "Το απόγευμα ευνοεί μια συνάντηση.",
+            "Η Τετάρτη είναι η καλύτερη μέρα για αιτήματα.",
+            "Οι 4 και 10 Νοεμβρίου ευνοούν τις επαφές.",
+            "Η καλύτερη περίοδος για αιτήματα είναι τα μέσα του μήνα.",
+            "Στα μέσα του μήνα έρχεται ένα ποσό.",
+            "Αυτή την εβδομάδα κερδίζετε μια διαφορά.",
+            "Από την Πέμπτη ανοίγει μια πόρτα.",
+        ],
+    )
+    def test_should_flag_a_luck_that_opens_with_the_shared_timing(self, luck):
+        found = astrology_service.find_banned_phrases(_reading(luck=luck))
+
+        assert "χρόνος, μέρα ή ημερομηνία στην αρχή του luck" in found
+
+    def test_should_allow_a_luck_that_names_its_day_later(self):
+        reading = _reading(
+            luck="Μέσα από μια γνωριμία έρχεται μια πρόταση. Κάντε το αίτημα την Πέμπτη."
+        )
+
+        assert astrology_service.find_banned_phrases(reading) == []
+
+    @pytest.mark.parametrize(
+        "general",
+        [
+            "Η Σελήνη στον Ζυγό φέρνει στο προσκήνιο τις σχέσεις.",
+            "Ο Ήλιος και ο ανάδρομος Ερμής στον Σκορπιό σας ζητούν υπομονή.",
+            "Με τον Ήλιο στο ζώδιό σας έχετε τον πρώτο λόγο.",
+            "Η Νέα Σελήνη ανοίγει έναν καινούργιο κύκλο.",
+            "Ο ανάδρομος Ερμής φέρνει καθυστερήσεις.",
+        ],
+    )
+    def test_should_flag_a_general_that_opens_with_a_planet(self, general):
+        found = astrology_service.find_banned_phrases(_reading(general=general))
+
+        assert "πλανήτης στην αρχή του general" in found
+
+    def test_should_allow_planets_later_and_words_that_only_start_alike(self):
+        reading = _reading(general="Η διάθεσή σας ανεβαίνει, καθώς η Σελήνη περνά στον Ζυγό.")
+
+        assert astrology_service.find_banned_phrases(reading) == []
+
 
 @pytest.fixture
 def stub_sky(monkeypatch):
@@ -176,14 +220,35 @@ class TestPrompts:
         assert "στην αρχή του warning" in chat.calls[1]["user_text"]
         assert reading.warning == "Προσοχή σε βιαστικές υπογραφές."
 
-    def test_should_ask_for_difficulties_inside_each_main_section(self, stub_sky, fake_chat):
+    def test_should_regenerate_a_horoscope_that_copies_an_example(self, stub_sky, fake_chat):
+        copied = "Ένα χρηματικό θέμα που κρέμεται καιρό βρίσκει λύση μέσα από μια απλή συζήτηση."
+        chat = fake_chat(_reading(luck=copied), _reading())
+
+        reading, _ = asyncio.run(astrology_service.generate_horoscope("leo", "daily"))
+
+        assert len(chat.calls) == 2
+        assert "από τα παραδείγματα" in chat.calls[1]["user_text"]
+        assert reading.luck != copied
+
+    def test_should_regenerate_a_personalized_reading_that_copies_its_example(self, stub_sky, fake_chat):
+        copied = "Δεν σας ταιριάζουν τα μισόλογα και αυτόν τον μήνα θα το πείτε καθαρά."
+        chat = fake_chat(_reading(love=copied), _reading())
+
+        asyncio.run(astrology_service.generate_personalized_reading(
+            "scorpio", "Γυναίκα", "1992-11-04", "καστανά"
+        ))
+
+        assert len(chat.calls) == 2
+        assert "από τα παραδείγματα" in chat.calls[1]["user_text"]
+
+    def test_should_ask_for_hard_news_inside_the_text_and_no_copying(self, stub_sky, fake_chat):
         chat = fake_chat(_reading())
 
         asyncio.run(astrology_service.generate_horoscope("virgo", "weekly"))
 
         prompt = chat.calls[0]["system_prompt"]
-        assert "Τα general, love και career έχουν το καθένα" in prompt
-        assert "όχι μαζεμένα στο τέλος" in prompt
+        assert "σε ένα ή δύο από τα general, love και career" in prompt
+        assert "Δεν αντιγράφετε από αυτά" in prompt
 
 
 class TestPromptExamples:
@@ -200,14 +265,16 @@ class TestPromptExamples:
         assert [label for label, pattern in patterns if pattern.search(example)] == []
         assert example.count("!") <= writing_style.MAX_EXCLAMATIONS
 
-    def test_example_warnings_should_stand_on_their_own(self):
-        _, _, opener = astrology_service._WARNING_FIELD_PATTERNS[0]
+    def test_examples_should_follow_the_field_rules_they_illustrate(self):
         examples = astrology_service._EXAMPLES + "\n" + astrology_service._PERSONALIZED_EXAMPLE
-        warnings = [
-            line.removeprefix("warning: ")
-            for line in examples.splitlines()
-            if line.startswith("warning: ")
-        ]
+        checked = 0
+        broken = []
+        for field, label, pattern in astrology_service._FIELD_PATTERNS:
+            for line in examples.splitlines():
+                if line.startswith(f"{field}: "):
+                    checked += 1
+                    if pattern.search(line.removeprefix(f"{field}: ")):
+                        broken.append((label, line))
 
-        assert len(warnings) == 3
-        assert [warning for warning in warnings if opener.search(warning)] == []
+        assert checked == 9  # warning, luck and general in each of the three examples
+        assert broken == []

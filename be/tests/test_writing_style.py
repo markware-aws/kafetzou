@@ -52,6 +52,44 @@ class TestFindBannedPhrases:
         assert writing_style.find_banned_phrases(flagged, [], [starts_with_but]) == ["«Αλλά» στην αρχή"]
 
 
+_EXAMPLES = """ΠΑΡΑΔΕΙΓΜΑ
+Δεδομένα: Σελήνη στον Λέοντα, τομέας: οικονομικά, έσοδα, αγορές και συμφωνίες
+body: Ένα χρηματικό θέμα που κρέμεται καιρό βρίσκει λύση. Με τη Σελήνη στον Λέοντα τα πράγματα κινούνται γρήγορα. Οι γεννημένοι στο τρίτο δεκαήμερο έχετε τον λόγο."""
+
+
+class TestFindExampleCopies:
+    def test_should_pass_text_written_from_scratch(self):
+        text = _Text(body="Μια εκκρεμότητα με την τράπεζα κλείνει χωρίς φασαρία.")
+
+        assert writing_style.find_example_copies(text, _EXAMPLES) == []
+
+    def test_should_flag_five_words_in_a_row_whatever_the_accents_or_case(self):
+        text = _Text(body="Σήμερα ενα ΧΡΗΜΑΤΙΚΟ θεμα που κρεμεται εδώ και καιρό ξεκαθαρίζει.")
+
+        found = writing_style.find_example_copies(text, _EXAMPLES)
+
+        assert "φράση από τα παραδείγματα («Ένα χρηματικό θέμα που κρέμεται»)" in found
+
+    def test_should_flag_a_field_that_opens_like_an_example_sentence(self):
+        text = _Text(body="Ένα χρηματικό θέμα ξεκαθαρίζει.")
+
+        found = writing_style.find_example_copies(text, _EXAMPLES)
+
+        assert found == ["άνοιγμα από τα παραδείγματα («Ένα χρηματικό θέμα»)"]
+
+    def test_should_not_count_phrases_built_on_names_from_the_data(self):
+        text = _Text(body="Η διάθεση ανεβαίνει με τη Σελήνη στον Λέοντα τα απογεύματα.")
+
+        assert writing_style.find_example_copies(text, _EXAMPLES) == []
+
+    def test_should_skip_data_lines_and_wording_the_rules_dictate(self):
+        text = _Text(body="Ήρεμη μέρα. Τα έσοδα αγορές και συμφωνίες σας περιμένουν. Οι γεννημένοι στο τρίτο δεκαήμερο έχετε στήριξη.")
+
+        found = writing_style.find_example_copies(text, _EXAMPLES, ignored_prefixes=("γεννημεν",))
+
+        assert found == []
+
+
 class TestGenderRule:
     def test_should_ask_for_masculine_forms_for_a_man(self):
         assert "αρσενικό" in writing_style.gender_rule("Άνδρας")
@@ -101,6 +139,21 @@ class TestGenerateWithGuardrail:
         assert "ερώτηση" in chat.calls[1]["user_text"]
         assert chat.calls[1]["user_text"].startswith("Γράψτε.")
         assert usage["total_tokens"] == 30
+
+    def test_should_regenerate_once_when_an_extra_check_finds_something(self, fake_chat):
+        chat = fake_chat(_Text(body="Πρώτο κείμενο."), _Text(body="Δεύτερο κείμενο."))
+        first_only = lambda text: ["αντιγραφή"] if text.body.startswith("Πρώτο") else []
+
+        reading, _ = asyncio.run(writing_style.generate_with_guardrail(
+            system_prompt="σύστημα",
+            user_text="Γράψτε.",
+            response_model=_Text,
+            banned_patterns=[],
+            extra_checks=[first_only],
+        ))
+
+        assert reading.body == "Δεύτερο κείμενο."
+        assert "αντιγραφή" in chat.calls[1]["user_text"]
 
     def test_should_keep_the_retry_even_if_it_is_still_banned(self, fake_chat):
         chat = fake_chat(_Text(body="Τι;"), _Text(body="Πάλι τι;"))
