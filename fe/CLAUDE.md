@@ -38,6 +38,7 @@ src/
 │   ├── buy-credits.tsx     # Credit bundle purchase via Stripe
 │   ├── privacy.tsx         # Privacy policy
 │   ├── terms.tsx           # Terms of service
+│   ├── 404.tsx             # Not-found page; CloudFront serves out/404.html for missing URLs
 │   ├── payment/
 │   │   └── success.tsx     # Post-checkout landing page
 │   │   # ── Public SEO guides (static, indexable; see "SEO guide pages" below) ──
@@ -47,7 +48,7 @@ src/
 │   ├── taro/               # index (78 cards) + [slug] (card) + nai-i-oxi (yes/no tool)
 │   └── zodia/              # index + [slug] (sign) + oroskopos (Ascendant calculator)
 │       └── symvatotita/    # index (matrix + picker) + [slug] (pair, e.g. krios-leon)
-├── app/
+├── styles/
 │   └── globals.css         # TailwindCSS v4 + custom animations + theme vars (imported by _app.tsx)
 ├── components/
 │   ├── auth-guard.tsx       # Wraps protected pages, redirects if not authed
@@ -94,6 +95,7 @@ public/data/dream-dictionary.json  # Dream dictionary data (format: types in lib
 - **Query params**: use `useRouter` from `next/router` (NOT `next/navigation`). Guard with `router.isReady` before reading `router.query` in `useEffect`.
 - **No `useSearchParams`** — use `router.query` instead (no Suspense wrapper needed)
 - **TailwindCSS v4** — do NOT add a `tailwind.config.js`. Extend theme in `globals.css` using `@theme`
+- **No `src/app/` folder** — its mere existence makes Next.js enable the App Router, whose built-in 404 then overwrites `pages/404.tsx` in the export. Styles live in `src/styles/`, the favicon in `public/`
 - **`next/image`** — requires `images: { unoptimized: true }` in `next.config.ts` for static export
 - **`trailingSlash: true`** — pages export as `/route/index.html`, the layout the CloudFront function (`cloudfront.js`) serves. `usePathname()` can return `/tarot/` or `/tarot`, so strip the slash before comparing paths
 

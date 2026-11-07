@@ -4,7 +4,7 @@ import { Hub } from "aws-amplify/utils";
 import { SWRConfig } from "swr";
 import { configureAmplify } from "@/lib/amplify-config";
 import { Footer } from "@/components/footer";
-import "../app/globals.css";
+import "../styles/globals.css";
 
 // The UI is Greek; Geist has no Greek glyphs, so it silently fell back to Arial.
 const commissioner = Commissioner({ subsets: ["greek", "latin"] });
