@@ -69,7 +69,10 @@ function HoroscopeSection() {
   const errorMessage = error instanceof Error ? error.message : "";
 
   return (
-    <section id="horoscope" className="max-w-5xl mx-auto w-full px-4 pb-20 scroll-mt-20">
+    <section
+      id="horoscope"
+      className="max-w-5xl mx-auto w-full px-4 pb-20 scroll-mt-20"
+    >
       <h2 className="text-xl font-semibold text-violet-50">Ωροσκόπιο</h2>
       <p className="mt-1 mb-5 text-sm text-violet-300">
         Διάλεξε ένα ζώδιο για να δεις το ωροσκόπιό σου.
@@ -98,7 +101,10 @@ function HoroscopeSection() {
 
       {selectedSign && (
         <div className="animate-fade-in">
-          <div role="tablist" className="flex gap-6 border-b border-violet-800 mb-5">
+          <div
+            role="tablist"
+            className="flex gap-6 border-b border-violet-800 mb-5"
+          >
             {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(
               ([key, label]) => (
                 <button
@@ -145,7 +151,9 @@ function HoroscopeSection() {
           {reading && (
             <div className="flex flex-col gap-3 animate-fade-in">
               <div className="flex items-start gap-3 mb-1">
-                <span className="text-3xl leading-none text-violet-50">{selectedSign.symbol}</span>
+                <span className="text-3xl leading-none text-violet-50">
+                  {selectedSign.symbol}
+                </span>
                 <div>
                   <p className="text-base font-semibold text-violet-50">
                     {selectedSign.nameGr}
@@ -244,7 +252,7 @@ const GUIDES: Guide[] = [
   },
   {
     href: "/oneirokritis/",
-    title: "Ονειροκρίτης Α–Ω",
+    title: "Ονειροκρίτης",
     text: "Τι σημαίνει αυτό που είδες στον ύπνο σου.",
   },
   {
@@ -279,7 +287,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <SignupPromptDialog open={signupPromptOpen} onClose={() => setSignupPromptOpen(false)} />
+      <SignupPromptDialog
+        open={signupPromptOpen}
+        onClose={() => setSignupPromptOpen(false)}
+      />
       {/* The coffee keywords belong to /anagnosi-kafe/; the homepage targets the brand mix. */}
       <Seo
         title="Ανάγνωση Καφέ, Ταρό & Ζώδια Online"
@@ -394,8 +405,12 @@ export default function Home() {
                 className="flex h-full items-center justify-between gap-3 rounded-lg border border-violet-800 bg-surface p-4 hover:border-violet-600 transition-colors"
               >
                 <span>
-                  <span className="block text-sm font-medium text-violet-50">{guide.title}</span>
-                  <span className="block mt-0.5 text-sm text-violet-200">{guide.text}</span>
+                  <span className="block text-sm font-medium text-violet-50">
+                    {guide.title}
+                  </span>
+                  <span className="block mt-0.5 text-sm text-violet-200">
+                    {guide.text}
+                  </span>
                 </span>
                 <ChevronRight className="w-4 h-4 text-violet-300 shrink-0" />
               </Link>
