@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Coffee, LogOut, Menu, X, Coins } from "lucide-react";
 import { logout } from "@/lib/auth";
 import { getMe } from "@/lib/api";
+import { useAuthedSWR } from "@/lib/use-authed-swr";
 
 const navLinks = [
   { href: "/upload", label: "Καφές" },
@@ -35,20 +36,18 @@ export function Navbar() {
   const pathname = withoutTrailingSlash(usePathname());
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [credits, setCredits] = useState<number | null>(null);
+  // The SWR cache outlives page navigations (and is shared with the profile page), so the
+  // balance renders straight away after the first load and refreshes in the background.
+  const { data: me, mutate: refreshMe } = useAuthedSWR(["me"], () => getMe());
+  const credits = me ? Number(me.credits ?? 0) : null;
 
   useEffect(() => {
-    getMe()
-      .then((u) => setCredits(Number(u.credits ?? 0)))
-      .catch(() => {});
     const handler = () => {
-      getMe()
-        .then((u) => setCredits(Number(u.credits ?? 0)))
-        .catch(() => {});
+      refreshMe();
     };
     window.addEventListener("credits-changed", handler);
     return () => window.removeEventListener("credits-changed", handler);
-  }, []);
+  }, [refreshMe]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -77,17 +76,19 @@ export function Navbar() {
             </Link>
           ))}
 
+          {/* Both states share one box size (fits up to 3 digits) to keep the links from shifting
+              on the first load, before the balance is cached. */}
           {credits !== null ? (
             <Link
               href="/buy-credits"
               title="Αγορά credits"
-              className="ml-3 flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-violet-700 text-sm text-violet-100 hover:border-violet-600 hover:text-violet-50 transition-colors"
+              className="ml-3 h-7.5 min-w-18 flex items-center justify-center gap-1.5 px-2.5 rounded-md border border-violet-700 text-sm tabular-nums text-violet-100 hover:border-violet-600 hover:text-violet-50 transition-colors"
             >
               <Coins className="w-3.5 h-3.5 text-amber-400" />
               {credits}
             </Link>
           ) : (
-            <div className="ml-3 h-7 w-12 rounded-md shimmer" />
+            <div className="ml-3 h-7.5 w-18 rounded-md shimmer" />
           )}
 
           <button
