@@ -16,6 +16,8 @@ stripe.api_key = settings.stripe_secret_key
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
+PAYMENTS_DISABLED_MESSAGE = "Οι πληρωμές είναι προσωρινά απενεργοποιημένες"
+
 # ── Credit bundles ────────────────────────────────────────────────────────────
 
 BUNDLES: dict[str, dict] = {
@@ -76,6 +78,13 @@ async def create_checkout_session(
     current_user: dict = Depends(get_current_user),
 ) -> dict:
     """Create a Stripe Checkout Session and return its URL."""
+    # Clearing STRIPE_SECRET_KEY is the off switch for card payments
+    if not settings.stripe_secret_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=PAYMENTS_DISABLED_MESSAGE,
+        )
+
     bundle = BUNDLES.get(body.bundle_id)
     if not bundle:
         raise HTTPException(
@@ -170,6 +179,13 @@ async def iris_payment_request(
     current_user: dict = Depends(get_current_user),
 ) -> dict:
     """Send IRIS payment instructions to the user and notify admin."""
+    # Clearing IRIS_QR_CODE_URL is the off switch for IRIS payments
+    if not settings.iris_qr_code_url:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=PAYMENTS_DISABLED_MESSAGE,
+        )
+
     bundle = BUNDLES.get(body.bundle_id)
     if not bundle:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid bundle")
@@ -191,8 +207,6 @@ async def iris_payment_request(
     qr_html = (
         f'<img src="{settings.iris_qr_code_url}" alt="IRIS QR Code" '
         f'style="width:200px;height:200px;display:block;margin:16px auto;" />'
-        if settings.iris_qr_code_url
-        else "<p><em>(QR code θα αποστέλλεται σύντομα)</em></p>"
     )
 
     user_html = f"""
