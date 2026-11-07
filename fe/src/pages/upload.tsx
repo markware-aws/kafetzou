@@ -4,7 +4,7 @@ import {
   Upload,
   X,
   Coffee,
-  Sparkles,
+  Loader2,
   ImagePlus,
   AlertCircle,
   CheckCircle2,
@@ -135,7 +135,7 @@ export default function UploadPage() {
   const results = slots.filter((s) => s.status === "done" && s.result);
 
   return (
-    <AuthGuard>
+    <AuthGuard title="Ανάγνωση Καφέ">
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => setCreditDialogOpen(false)}
@@ -146,27 +146,21 @@ export default function UploadPage() {
         <Navbar />
 
         <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
-          <div className="text-center mb-10">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Sparkles className="w-5 h-5 text-amber-400" />
-              <span className="text-amber-400 text-sm font-medium uppercase tracking-widest">
-                Λειτουργία Μαντείου
-              </span>
-            </div>
-            <h1 className="text-3xl font-bold text-violet-100 mb-2">
-              Διάβασε τον Καφέ σου
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-violet-50">
+              Διάβασε τον καφέ σου
             </h1>
-            <p className="text-violet-400 text-sm max-w-sm mx-auto">
+            <p className="mt-1 text-sm text-violet-300">
               Ανέβασε έως {MAX_IMAGES} φωτογραφίες του φλιτζανιού σου.
             </p>
           </div>
 
           {slots.length === 0 && (
             <div
-              className={`relative border-2 border-dashed rounded-2xl transition-all cursor-pointer mb-6 ${
+              className={`relative border border-dashed rounded-lg transition-colors cursor-pointer mb-6 ${
                 dragOver
-                  ? "border-amber-500 bg-amber-900/10"
-                  : "border-violet-800/50 hover:border-violet-600/70 bg-[#2e2a3a]/60 hover:bg-[#2e2a3a]"
+                  ? "border-amber-500 bg-violet-900/60"
+                  : "border-violet-700 hover:border-violet-600 bg-surface"
               }`}
               onClick={() => inputRef.current?.click()}
               onDragOver={(e) => {
@@ -177,22 +171,17 @@ export default function UploadPage() {
               onDrop={onDrop}
             >
               <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                <div
-                  className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-colors ${dragOver ? "bg-amber-500/20" : "bg-violet-900/40"}`}
-                >
-                  <ImagePlus
-                    className={`w-6 h-6 transition-colors ${dragOver ? "text-amber-400" : "text-violet-400"}`}
-                  />
-                </div>
-                <p className="text-violet-200 text-sm font-medium mb-1">
+                <ImagePlus
+                  className={`w-6 h-6 mb-3 transition-colors ${dragOver ? "text-amber-400" : "text-violet-300"}`}
+                />
+                <p className="text-violet-50 text-sm font-medium mb-1">
                   {dragOver
                     ? "Αφήστε τις φωτογραφίες εδώ"
                     : "Σύρετε τις φωτογραφίες του φλιτζανιού σας"}
                 </p>
-                <p className="text-violet-500 text-xs">
-                  ή κάντε κλικ — έως {MAX_IMAGES} φωτογραφίες
+                <p className="text-violet-300 text-xs">
+                  ή κάντε κλικ — έως {MAX_IMAGES} φωτογραφίες · JPG, PNG, WEBP
                 </p>
-                <p className="text-violet-600 text-xs mt-2">JPG, PNG, WEBP</p>
               </div>
               <input
                 ref={inputRef}
@@ -213,7 +202,7 @@ export default function UploadPage() {
                   className="animate-fade-in"
                   style={{ animationDelay: `${i * 60}ms` }}
                 >
-                  <div className="relative rounded-xl overflow-hidden border border-violet-800/40 bg-[#2e2a3a] aspect-square">
+                  <div className="relative rounded-md overflow-hidden border border-violet-800 bg-surface aspect-square">
                     <img
                       src={slot.preview}
                       alt={`Cup ${i + 1}`}
@@ -225,8 +214,8 @@ export default function UploadPage() {
                         {(slot.status === "uploading" ||
                           slot.status === "reading") && (
                           <>
-                            <div className="w-10 h-10 rounded-full border-2 border-amber-500/30 border-t-amber-500 spin-slow" />
-                            <p className="text-xs text-amber-300 text-center px-2">
+                            <Loader2 className="w-6 h-6 text-violet-50 animate-spin" />
+                            <p className="text-xs text-violet-50 text-center px-2">
                               {stepLabel(slot.status)}
                             </p>
                           </>
@@ -252,17 +241,16 @@ export default function UploadPage() {
                             e.stopPropagation();
                             removeSlot(slot.id);
                           }}
-                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/70 flex items-center justify-center text-violet-300 hover:text-rose-300 transition-colors"
+                          aria-label="Αφαίρεση φωτογραφίας"
+                          className="absolute top-2 right-2 w-6 h-6 rounded-md bg-black/70 flex items-center justify-center text-violet-100 hover:text-white transition-colors"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
                       )}
 
-                    <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-violet-900/80 flex items-center justify-center">
-                      <span className="text-xs text-violet-300 font-medium">
-                        {i + 1}
-                      </span>
-                    </div>
+                    <span className="absolute top-2 left-2 rounded bg-black/70 px-1.5 text-xs text-violet-100 tabular-nums">
+                      {i + 1}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -270,10 +258,10 @@ export default function UploadPage() {
               {slots.length < MAX_IMAGES && !processing && (
                 <button
                   onClick={() => addMoreRef.current?.click()}
-                  className="aspect-square rounded-xl border-2 border-dashed border-violet-800/40 hover:border-violet-600/60 bg-[#2e2a3a]/60 hover:bg-[#2e2a3a] flex flex-col items-center justify-center gap-2 transition-all"
+                  className="aspect-square rounded-md border border-dashed border-violet-700 hover:border-violet-600 bg-surface flex flex-col items-center justify-center gap-2 transition-colors"
                 >
-                  <ImagePlus className="w-6 h-6 text-violet-500" />
-                  <span className="text-xs text-violet-500">Προσθήκη</span>
+                  <ImagePlus className="w-5 h-5 text-violet-300" />
+                  <span className="text-xs text-violet-300">Προσθήκη</span>
                 </button>
               )}
               <input
@@ -288,67 +276,61 @@ export default function UploadPage() {
           )}
 
           {slots.length > 0 && !allDone && (
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <button
                 onClick={handleReadAll}
                 disabled={!canRead}
-                className="flex items-center gap-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold rounded-xl px-8 py-3.5 text-sm transition-all shadow-xl shadow-amber-500/20"
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-md px-5 py-2.5 text-sm transition-colors"
               >
                 <Coffee className="w-4 h-4" />
                 {processing
-                  ? "Ανάλυση"
+                  ? "Ανάλυση…"
                   : `Διάβασε τον καφέ σου${slots.length > 1 ? ` (${idleSlots.length})` : ""}`}
               </button>
               {!processing && (
-                <div className="flex items-center gap-1 text-xs text-amber-600">
-                  <Coins className="w-3 h-3" />
-                  <span>2 credits ανά ανάγνωση</span>
-                </div>
+                <span className="flex items-center gap-1.5 text-xs text-violet-300">
+                  <Coins className="w-3.5 h-3.5" />
+                  2 credits ανά ανάγνωση
+                </span>
               )}
               {!processing && (
                 <button
                   onClick={resetSlots}
-                  className="text-xs text-violet-600 hover:text-violet-400 transition-colors"
+                  className="ml-auto text-sm text-violet-300 hover:text-violet-50 transition-colors"
                 >
-                  Νέα Ανάγνωση
+                  Καθαρισμός
                 </button>
               )}
             </div>
           )}
 
           {allDone && (
-            <div className="flex flex-col items-center gap-3">
-              <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="flex items-center gap-2 text-emerald-400 text-sm">
                 <CheckCircle2 className="w-4 h-4" />
                 Όλες οι αναγνώσεις ολοκληρώθηκαν
-              </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={resetSlots}
-                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold rounded-xl px-5 py-2.5 text-sm transition-all shadow-lg shadow-amber-500/20"
-                >
-                  <Upload className="w-4 h-4" />
-                  Νέα Ανάγνωση
-                </button>
-                <button
-                  onClick={() => router.push("/dashboard")}
-                  className="text-xs text-violet-400 hover:text-amber-300 transition-colors"
-                >
-                  Δες όλες →
-                </button>
-              </div>
+              </span>
+              <button
+                onClick={resetSlots}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-md px-4 py-2 text-sm transition-colors"
+              >
+                <Upload className="w-4 h-4" />
+                Νέα ανάγνωση
+              </button>
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="text-sm text-violet-300 hover:text-violet-50 transition-colors"
+              >
+                Ιστορικό →
+              </button>
             </div>
           )}
 
           {results.length > 0 && (
-            <div className="mt-10 flex flex-col gap-6">
-              <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-violet-900/40" />
-                <span className="text-xs text-violet-500 uppercase tracking-widest font-medium">
-                  Η Καφετζού Μιλά
-                </span>
-                <div className="h-px flex-1 bg-violet-900/40" />
-              </div>
+            <div className="mt-10 flex flex-col gap-4">
+              <h2 className="text-lg font-semibold text-violet-50">
+                Η καφετζού μιλά
+              </h2>
               {results.map((slot, i) => (
                 <ReadingCard
                   key={slot.id}

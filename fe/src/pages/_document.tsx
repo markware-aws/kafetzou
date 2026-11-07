@@ -2,7 +2,7 @@ import { Html, Head, Main, NextScript } from "next/document";
 
 export default function Document() {
   return (
-    <Html lang="el">
+    <Html lang="el" data-scroll-behavior="smooth">
       <Head />
       <body>
         {/* Runs synchronously during HTML parsing — before Next.js router initialises.

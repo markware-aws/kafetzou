@@ -1,8 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
-import Link from "next/link";
-import { Check, Coffee, Eye, EyeOff, Sparkles, X } from "lucide-react";
+import { Check, Eye, EyeOff, Loader2, X } from "lucide-react";
 import { login, register, confirmRegistration, forgotPassword, confirmForgotPassword, getUser, loginWithGoogle, resendRegistrationCode } from "@/lib/auth";
+import { Brand } from "@/components/navbar";
+import { Seo } from "@/components/seo";
+
+const LABEL_CLASS = "block text-sm font-medium text-violet-100 mb-1.5";
+const INPUT_CLASS =
+  "w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500 transition-colors";
 
 type Step = "login" | "register" | "confirm" | "forgot" | "reset";
 
@@ -158,73 +163,64 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full bg-violet-900/20 blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full bg-amber-900/15 blur-3xl" />
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
+      <Seo title="Σύνδεση ή Εγγραφή" noindex />
 
-      <div className="w-full max-w-sm relative">
-        <div className="flex flex-col items-center mb-8">
-          <Link href="/" className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-2xl shadow-amber-500/30 mb-4 glow-pulse">
-            <Coffee className="w-8 h-8 text-black" />
-          </Link>
-          <h1 className="text-2xl font-bold text-amber-200 tracking-wide">Fortune Teller</h1>
-          <p className="text-violet-400 text-sm mt-1">Ανάγνωση Ελληνικού Καφέ</p>
+      <div className="w-full max-w-sm">
+        <div className="flex justify-center mb-6">
+          <Brand />
         </div>
 
-        <div className="rounded-2xl border border-violet-800/40 bg-[#2e2a3a] p-8 shadow-2xl">
+        <div className="rounded-lg border border-violet-800 bg-surface p-6">
           {step === "login" && (
             <>
-              <h2 className="text-lg font-semibold text-violet-100 mb-6">Καλώς ήρθες</h2>
+              <h1 className="text-xl font-semibold text-violet-50 mb-6">Καλώς ήρθες</h1>
               <form onSubmit={handleLogin} className="flex flex-col gap-4">
                 <Input label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
                 <div>
-                  <label className="block text-xs text-violet-400 mb-1.5 font-medium">Password</label>
+                  <label className={LABEL_CLASS}>Password</label>
                   <div className="relative">
                     <input
                       type={showPass ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="w-full bg-[#24242E] border border-violet-800/50 rounded-lg px-3 py-2.5 text-sm text-violet-100 placeholder-violet-600 focus:outline-none focus:border-amber-500/60 transition-colors pr-10"
+                      className={`${INPUT_CLASS} pr-10`}
                       placeholder="••••••••"
                     />
-                    <button type="button" onClick={() => setShowPass((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-500 hover:text-violet-300">
-                      {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                    <PasswordToggle shown={showPass} onToggle={() => setShowPass((s) => !s)} />
                   </div>
                 </div>
-                {error && <p className="text-rose-400 text-xs">{error}</p>}
+                {error && <FormError message={error} />}
                 <SubmitButton loading={loading} label="Σύνδεση" loadingLabel="Σύνδεση…" />
               </form>
               <div className="flex items-center gap-3 my-4">
-                <div className="flex-1 h-px bg-violet-800/40" />
-                <span className="text-xs text-violet-600">ή</span>
-                <div className="flex-1 h-px bg-violet-800/40" />
+                <div className="flex-1 h-px bg-violet-800" />
+                <span className="text-xs text-violet-300">ή</span>
+                <div className="flex-1 h-px bg-violet-800" />
               </div>
               <GoogleButton />
-              <p className="text-center text-xs text-violet-500 mt-5">
-                <button onClick={() => { setStep("forgot"); setError(""); }} className="text-violet-400 hover:text-amber-300 font-medium">
+              <div className="mt-6 flex flex-col items-center gap-2 text-sm text-violet-300">
+                <button onClick={() => { setStep("forgot"); setError(""); }} className="hover:text-violet-50 transition-colors">
                   Ξέχασες τον κωδικό;
                 </button>
-              </p>
-              <p className="text-center text-xs text-violet-500 mt-3">
-                Δεν έχεις λογαριασμό;{" "}
-                <button onClick={() => { setStep("register"); setError(""); }} className="text-amber-400 hover:text-amber-300 font-medium">
-                  Δημιούργησε έναν
-                </button>
-              </p>
+                <p>
+                  Δεν έχεις λογαριασμό;{" "}
+                  <button onClick={() => { setStep("register"); setError(""); }} className="font-medium text-amber-400 hover:text-amber-300 transition-colors">
+                    Δημιούργησε έναν
+                  </button>
+                </p>
+              </div>
             </>
           )}
 
           {step === "register" && (
             <>
-              <h2 className="text-lg font-semibold text-violet-100 mb-6">Δημιουργία λογαριασμού</h2>
+              <h1 className="text-xl font-semibold text-violet-50 mb-6">Δημιουργία λογαριασμού</h1>
               <form onSubmit={handleRegister} className="flex flex-col gap-4">
                 <Input label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
                 <div>
-                  <label className="block text-xs text-violet-400 mb-1.5 font-medium">Password</label>
+                  <label className={LABEL_CLASS}>Password</label>
                   <div className="relative">
                     <input
                       type={showPass ? "text" : "password"}
@@ -232,57 +228,55 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={8}
-                      className="w-full bg-[#24242E] border border-violet-800/50 rounded-lg px-3 py-2.5 text-sm text-violet-100 placeholder-violet-600 focus:outline-none focus:border-amber-500/60 transition-colors pr-10"
+                      className={`${INPUT_CLASS} pr-10`}
                       placeholder="Min 8 characters"
                     />
-                    <button type="button" onClick={() => setShowPass((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-500 hover:text-violet-300">
-                      {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                    <PasswordToggle shown={showPass} onToggle={() => setShowPass((s) => !s)} />
                   </div>
                   {password.length > 0 && (
                     <div className="mt-3 space-y-2">
-                      <div className="w-full h-1.5 rounded-full bg-violet-900/50 overflow-hidden">
+                      <div className="w-full h-1 rounded bg-violet-800 overflow-hidden">
                         <div
-                          className={`h-full transition-all ${
+                          className={`h-full transition-[width] ${
                             passwordScore < 50
                               ? "bg-rose-500"
                               : passwordScore < 80
-                                ? "bg-amber-500"
-                                : "bg-amber-400"
+                                ? "bg-violet-300"
+                                : "bg-emerald-500"
                           }`}
                           style={{ width: `${passwordScore}%` }}
                         />
                       </div>
-                      <div className="grid grid-cols-1 gap-1.5">
+                      <ul className="space-y-1">
                         {passwordRules.map((rule) => (
-                          <div key={rule.label} className="flex items-center gap-1.5 text-[11px]">
+                          <li key={rule.label} className="flex items-center gap-1.5 text-xs">
                             {rule.met ? (
-                              <Check className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                             ) : (
-                              <X className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+                              <X className="w-3.5 h-3.5 text-violet-300 shrink-0" />
                             )}
-                            <span className={rule.met ? "text-amber-300" : "text-violet-500"}>{rule.label}</span>
-                          </div>
+                            <span className={rule.met ? "text-violet-100" : "text-violet-300"}>{rule.label}</span>
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     </div>
                   )}
                 </div>
-                {error && <p className="text-rose-400 text-xs">{error}</p>}
-                <label className="flex items-start gap-2.5 cursor-pointer group">
+                {error && <FormError message={error} />}
+                <label className="flex items-start gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={agreedToTerms}
                     onChange={(e) => setAgreedToTerms(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 rounded border border-violet-700 bg-[#24242E] accent-amber-500 shrink-0 cursor-pointer"
+                    className="mt-0.5 w-4 h-4 rounded border border-violet-700 bg-bg accent-amber-500 shrink-0 cursor-pointer"
                   />
-                  <span className="text-[11px] text-violet-500 leading-relaxed group-hover:text-violet-400 transition-colors">
+                  <span className="text-sm text-violet-300 leading-relaxed">
                     Αποδέχομαι τους{" "}
-                    <a href="/terms" target="_blank" onClick={(e) => e.stopPropagation()} className="text-violet-400 hover:text-amber-400 underline underline-offset-2 transition-colors">
+                    <a href="/terms" target="_blank" onClick={(e) => e.stopPropagation()} className="text-amber-400 hover:text-amber-300 transition-colors">
                       Όρους Χρήσης
                     </a>{" "}
                     και την{" "}
-                    <a href="/privacy" target="_blank" onClick={(e) => e.stopPropagation()} className="text-violet-400 hover:text-amber-400 underline underline-offset-2 transition-colors">
+                    <a href="/privacy" target="_blank" onClick={(e) => e.stopPropagation()} className="text-amber-400 hover:text-amber-300 transition-colors">
                       Πολιτική Απορρήτου
                     </a>
                   </span>
@@ -290,14 +284,14 @@ export default function LoginPage() {
                 <SubmitButton loading={loading} label="Δημιουργία λογαριασμού" loadingLabel="Δημιουργία…" disabled={!agreedToTerms || !isPasswordStrongEnough} />
               </form>
               <div className="flex items-center gap-3 my-4">
-                <div className="flex-1 h-px bg-violet-800/40" />
-                <span className="text-xs text-violet-600">ή</span>
-                <div className="flex-1 h-px bg-violet-800/40" />
+                <div className="flex-1 h-px bg-violet-800" />
+                <span className="text-xs text-violet-300">ή</span>
+                <div className="flex-1 h-px bg-violet-800" />
               </div>
               <GoogleButton />
-              <p className="text-center text-xs text-violet-500 mt-5">
+              <p className="mt-6 text-center text-sm text-violet-300">
                 Έχεις ήδη λογαριασμό;{" "}
-                <button onClick={() => { setStep("login"); setError(""); }} className="text-amber-400 hover:text-amber-300 font-medium">
+                <button onClick={() => { setStep("login"); setError(""); }} className="font-medium text-amber-400 hover:text-amber-300 transition-colors">
                   Σύνδεση
                 </button>
               </p>
@@ -306,18 +300,15 @@ export default function LoginPage() {
 
           {step === "forgot" && (
             <>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <h2 className="text-lg font-semibold text-violet-100">Επαναφορά κωδικού</h2>
-              </div>
-              <p className="text-sm text-violet-400 mb-6">Εισήγαγε το email σου και θα σου στείλουμε κωδικό επαναφοράς.</p>
+              <h1 className="text-xl font-semibold text-violet-50">Επαναφορά κωδικού</h1>
+              <p className="mt-1 mb-6 text-sm text-violet-300">Εισήγαγε το email σου και θα σου στείλουμε κωδικό επαναφοράς.</p>
               <form onSubmit={handleForgot} className="flex flex-col gap-4">
                 <Input label="Email" type="email" value={email} onChange={setEmail} placeholder="you@example.com" />
-                {error && <p className="text-rose-400 text-xs">{error}</p>}
+                {error && <FormError message={error} />}
                 <SubmitButton loading={loading} label="Αποστολή κωδικού" loadingLabel="Αποστολή…" />
               </form>
-              <p className="text-center text-xs text-violet-500 mt-5">
-                <button onClick={() => { setStep("login"); setError(""); }} className="text-amber-400 hover:text-amber-300 font-medium">
+              <p className="mt-6 text-center text-sm">
+                <button onClick={() => { setStep("login"); setError(""); }} className="text-violet-300 hover:text-violet-50 transition-colors">
                   ← Επιστροφή στη σύνδεση
                 </button>
               </p>
@@ -326,15 +317,12 @@ export default function LoginPage() {
 
           {step === "reset" && (
             <>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <h2 className="text-lg font-semibold text-violet-100">Νέος κωδικός</h2>
-              </div>
-              <p className="text-sm text-violet-400 mb-6">Στείλαμε κωδικό στο <span className="text-violet-200">{email}</span>.</p>
+              <h1 className="text-xl font-semibold text-violet-50">Νέος κωδικός</h1>
+              <p className="mt-1 mb-6 text-sm text-violet-300">Στείλαμε κωδικό στο <span className="text-violet-100">{email}</span>.</p>
               <form onSubmit={handleReset} className="flex flex-col gap-4">
                 <Input label="Κωδικός επαλήθευσης" type="text" value={code} onChange={setCode} placeholder="123456" autoComplete="one-time-code" />
                 <div>
-                  <label className="block text-xs text-violet-400 mb-1.5 font-medium">Νέος κωδικός πρόσβασης</label>
+                  <label className={LABEL_CLASS}>Νέος κωδικός πρόσβασης</label>
                   <div className="relative">
                     <input
                       type={showPass ? "text" : "password"}
@@ -342,27 +330,25 @@ export default function LoginPage() {
                       onChange={(e) => setNewPassword(e.target.value)}
                       required
                       minLength={8}
-                      className="w-full bg-[#24242E] border border-violet-800/50 rounded-lg px-3 py-2.5 text-sm text-violet-100 placeholder-violet-600 focus:outline-none focus:border-amber-500/60 transition-colors pr-10"
+                      className={`${INPUT_CLASS} pr-10`}
                       placeholder="Min 8 characters"
                     />
-                    <button type="button" onClick={() => setShowPass((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-500 hover:text-violet-300">
-                      {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                    <PasswordToggle shown={showPass} onToggle={() => setShowPass((s) => !s)} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-violet-400 mb-1.5 font-medium">Επιβεβαίωση νέου κωδικού</label>
+                  <label className={LABEL_CLASS}>Επιβεβαίωση νέου κωδικού</label>
                   <input
                     type={showPass ? "text" : "password"}
                     value={confirmNewPassword}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full bg-[#24242E] border border-violet-800/50 rounded-lg px-3 py-2.5 text-sm text-violet-100 placeholder-violet-600 focus:outline-none focus:border-amber-500/60 transition-colors"
+                    className={INPUT_CLASS}
                     placeholder="Επανάλαβε τον κωδικό"
                   />
                 </div>
-                {error && <p className="text-rose-400 text-xs">{error}</p>}
+                {error && <FormError message={error} />}
                 <SubmitButton loading={loading} label="Επαναφορά & Σύνδεση" loadingLabel="Επαναφορά…" />
               </form>
             </>
@@ -370,22 +356,19 @@ export default function LoginPage() {
 
           {step === "confirm" && (
             <>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <h2 className="text-lg font-semibold text-violet-100">Έλεγξε το email σου</h2>
-              </div>
-              <p className="text-sm text-violet-400 mb-6">Στείλαμε κωδικό επιβεβαίωσης στο <span className="text-violet-200">{email}</span></p>
+              <h1 className="text-xl font-semibold text-violet-50">Έλεγξε το email σου</h1>
+              <p className="mt-1 mb-6 text-sm text-violet-300">Στείλαμε κωδικό επιβεβαίωσης στο <span className="text-violet-100">{email}</span></p>
               <form onSubmit={handleConfirm} className="flex flex-col gap-4">
                 <Input label="Verification code" type="text" value={code} onChange={setCode} placeholder="123456" autoComplete="one-time-code" />
-                {error && <p className="text-rose-400 text-xs">{error}</p>}
-                {resendMessage && <p className="text-amber-300 text-xs">{resendMessage}</p>}
+                {error && <FormError message={error} />}
+                {resendMessage && <p className="text-sm text-emerald-400">{resendMessage}</p>}
                 <SubmitButton loading={loading} label="Επιβεβαίωση & Σύνδεση" loadingLabel="Επιβεβαίωση…" />
               </form>
               <button
                 type="button"
                 onClick={handleResendCode}
                 disabled={resendLoading || resendCooldown > 0}
-                className="mt-4 text-xs text-violet-400 hover:text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="mt-4 text-sm text-violet-300 hover:text-violet-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {resendLoading
                   ? "Αποστολή νέου κωδικού..."
@@ -418,7 +401,7 @@ function Input({
 }) {
   return (
     <div>
-      <label className="block text-xs text-violet-400 mb-1.5 font-medium">{label}</label>
+      <label className={LABEL_CLASS}>{label}</label>
       <input
         type={type}
         value={value}
@@ -426,9 +409,30 @@ function Input({
         required
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="w-full bg-[#24242E] border border-violet-800/50 rounded-lg px-3 py-2.5 text-sm text-violet-100 placeholder-violet-600 focus:outline-none focus:border-amber-500/60 transition-colors"
+        className={INPUT_CLASS}
       />
     </div>
+  );
+}
+
+function PasswordToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={shown ? "Απόκρυψη κωδικού" : "Εμφάνιση κωδικού"}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-violet-300 hover:text-violet-50 transition-colors"
+    >
+      {shown ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+    </button>
+  );
+}
+
+function FormError({ message }: { message: string }) {
+  return (
+    <p role="alert" className="rounded-md border border-rose-800/60 bg-rose-950/40 px-3 py-2 text-sm text-rose-200">
+      {message}
+    </p>
   );
 }
 
@@ -437,9 +441,9 @@ function GoogleButton() {
     <button
       type="button"
       onClick={() => loginWithGoogle()}
-      className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-800 font-medium rounded-lg py-2.5 text-sm transition-all shadow-sm"
+      className="w-full flex items-center justify-center gap-2 rounded-md border border-violet-700 text-violet-100 hover:border-violet-600 hover:bg-violet-900/50 text-sm px-4 py-2 transition-colors"
     >
-      <svg className="w-4 h-4" viewBox="0 0 24 24">
+      <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
@@ -455,8 +459,9 @@ function SubmitButton({ loading, label, loadingLabel, disabled }: { loading: boo
     <button
       type="submit"
       disabled={loading || disabled}
-      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-black font-semibold rounded-lg py-2.5 text-sm transition-all shadow-lg shadow-amber-500/20 mt-1"
+      className="mt-1 w-full flex items-center justify-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
+      {loading && <Loader2 className="w-4 h-4 animate-spin" />}
       {loading ? loadingLabel : label}
     </button>
   );

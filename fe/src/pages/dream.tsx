@@ -7,13 +7,14 @@ import {
   RefreshCw,
   Coins,
   AlertCircle,
-  BookOpen,
+  Loader2,
 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { createDreamReading, DreamReading } from "@/lib/api";
 import { notifyCreditsChanged } from "@/lib/user";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
+import { DreamTabs } from "@/components/dream-tabs";
 
 const MAX_CHARS = 2000;
 
@@ -21,28 +22,18 @@ function ResultCard({
   icon: Icon,
   label,
   children,
-  accent = false,
 }: {
   icon: any;
   label: string;
   children: React.ReactNode;
-  accent?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-2xl border p-4 ${accent ? "border-amber-500/20 bg-amber-500/5" : "border-violet-800/30 bg-surface"}`}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <Icon
-          className={`w-4 h-4 shrink-0 ${accent ? "text-amber-400" : "text-violet-400"}`}
-        />
-        <span
-          className={`text-xs font-semibold uppercase tracking-wide ${accent ? "text-amber-300" : "text-violet-400"}`}
-        >
-          {label}
-        </span>
-      </div>
-      <div className="text-sm text-violet-100 leading-relaxed">{children}</div>
+    <div className="rounded-lg border border-violet-800 bg-surface p-4">
+      <h3 className="flex items-center gap-2 mb-2 text-sm font-medium text-violet-50">
+        <Icon className="w-4 h-4 text-violet-300 shrink-0" />
+        {label}
+      </h3>
+      <div className="text-sm text-violet-200 leading-relaxed">{children}</div>
     </div>
   );
 }
@@ -81,7 +72,7 @@ export default function DreamPage() {
   }
 
   return (
-    <AuthGuard>
+    <AuthGuard title="Ερμηνεία Ονείρων">
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => setCreditDialogOpen(false)}
@@ -92,40 +83,38 @@ export default function DreamPage() {
         <Navbar />
 
         <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-10">
-          <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-700 to-violet-950 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/20 glow-pulse">
-              <Moon className="w-6 h-6 text-violet-200" />
-            </div>
-            <h1 className="text-2xl font-bold text-violet-100 mb-1">
-              Ονειροκρίτης
-            </h1>
-            <p className="text-sm text-violet-400">
-              Περιέγραψε το όνειρό σου για να αποκαλύψεις το κρυφό του μήνυμα
+          <DreamTabs active="/dream" />
+
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-violet-50">Ονειροκρίτης</h1>
+            <p className="mt-1 text-sm text-violet-300">
+              Περιέγραψε το όνειρό σου για να αποκαλύψεις το κρυφό του μήνυμα.
             </p>
           </div>
 
           {!result ? (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              <div className="rounded-2xl border border-violet-800/30 bg-surface p-5">
-                <label className="flex items-center gap-1.5 text-xs text-violet-400 mb-3 font-medium">
-                  <BookOpen className="w-3.5 h-3.5" />
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div>
+                <label
+                  htmlFor="dream-text"
+                  className="block text-sm font-medium text-violet-100 mb-1.5"
+                >
                   Διηγήσου το όνειρό σου
                 </label>
                 <textarea
+                  id="dream-text"
                   value={dreamText}
                   onChange={(e) =>
                     setDreamText(e.target.value.slice(0, MAX_CHARS))
                   }
                   placeholder=""
                   rows={7}
-                  className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-3 text-sm text-violet-100 placeholder-violet-700 focus:outline-none focus:border-violet-600/60 resize-none leading-relaxed"
+                  className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500 resize-none leading-relaxed"
                 />
-                <div className="flex items-center justify-between mt-2">
-                  <p className="text-[11px] text-violet-600">
-                    Τουλάχιστον 10 χαρακτήρες
-                  </p>
+                <div className="flex items-center justify-between mt-1.5 text-xs">
+                  <p className="text-violet-300">Τουλάχιστον 10 χαρακτήρες</p>
                   <span
-                    className={`text-[11px] ${dreamText.length > MAX_CHARS * 0.9 ? "text-amber-500" : "text-violet-600"}`}
+                    className={`tabular-nums ${dreamText.length > MAX_CHARS * 0.9 ? "text-rose-300" : "text-violet-300"}`}
                   >
                     {dreamText.length}/{MAX_CHARS}
                   </span>
@@ -133,79 +122,67 @@ export default function DreamPage() {
               </div>
 
               {error && (
-                <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-3 flex items-start gap-2">
+                <div className="rounded-md border border-rose-800/60 bg-rose-950/40 p-3 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                  <p className="text-sm text-rose-300">{error}</p>
+                  <p className="text-sm text-rose-200">{error}</p>
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading || dreamText.trim().length < 10}
-                className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 disabled:opacity-50 text-white font-semibold rounded-xl py-3 text-sm transition-all shadow-lg shadow-violet-500/20"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" /> Ανάλυση
-                  </>
-                ) : (
-                  <>
-                    <Moon className="w-4 h-4" /> Ερμήνευσε
-                  </>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <button
+                  type="submit"
+                  disabled={loading || dreamText.trim().length < 10}
+                  className="flex items-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Ανάλυση…
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="w-4 h-4" /> Ερμήνευσε
+                    </>
+                  )}
+                </button>
+                {!loading && (
+                  <span className="flex items-center gap-1.5 text-xs text-violet-300">
+                    <Coins className="w-3.5 h-3.5" />1 credit
+                  </span>
                 )}
-              </button>
-              {!loading && (
-                <div className="flex items-center justify-center gap-1 text-xs text-amber-600">
-                  <Coins className="w-3 h-3" />
-                  <span>1 credit</span>
-                </div>
-              )}
+              </div>
             </form>
           ) : (
-            <div className="animate-fade-in flex flex-col gap-4">
-              <div className="rounded-2xl border border-violet-700/30 bg-gradient-to-br from-violet-900/30 to-violet-950/30 p-5 text-center">
-                <Moon className="w-5 h-5 text-violet-400 mx-auto mb-2" />
-                <p className="text-base text-violet-100 italic leading-relaxed">
-                  "{result.summary}"
-                </p>
-              </div>
+            <div className="animate-fade-in flex flex-col gap-3">
+              <p className="mb-1 text-sm text-violet-100 leading-relaxed">
+                {result.summary}
+              </p>
 
-              <ResultCard icon={Sparkles} label="Ερμηνεία" accent>
+              <ResultCard icon={Sparkles} label="Ερμηνεία">
                 {result.interpretation}
               </ResultCard>
 
-              <div className="rounded-2xl border border-violet-800/30 bg-surface p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-base">✦</span>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-violet-400">
-                    Σύμβολα & Θέματα
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {result.symbols.map((s, i) => (
-                    <span
-                      key={i}
-                      className="text-xs px-3 py-1 rounded-full border border-violet-700/40 bg-violet-900/20 text-violet-300"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
+              <div className="rounded-lg border border-violet-800 bg-surface p-4">
+                <h3 className="mb-2 text-sm font-medium text-violet-50">
+                  Σύμβολα & θέματα
+                </h3>
+                <p className="text-sm text-violet-200 leading-relaxed">
+                  {result.symbols.join(", ")}
+                </p>
               </div>
 
               <ResultCard icon={Heart} label="Συναισθήματα">
                 {result.emotions}
               </ResultCard>
-              <ResultCard icon={Lightbulb} label="Μήνυμα & Συμβουλή">
+              <ResultCard icon={Lightbulb} label="Μήνυμα & συμβουλή">
                 {result.advice}
               </ResultCard>
 
               <button
                 onClick={reset}
-                className="w-full border border-violet-700/40 hover:border-violet-600/60 text-violet-300 hover:text-violet-100 rounded-xl py-2.5 text-sm transition-all flex items-center justify-center gap-2 mt-1"
+                className="self-start mt-1 flex items-center gap-2 rounded-md border border-violet-700 text-violet-100 hover:border-violet-600 hover:bg-violet-900/50 text-sm px-4 py-2 transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
-                Ερμήνευσε Άλλο Όνειρο
+                Ερμήνευσε άλλο όνειρο
               </button>
             </div>
           )}

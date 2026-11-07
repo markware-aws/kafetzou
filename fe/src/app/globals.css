@@ -39,8 +39,7 @@
   /* ── Existing layout tokens ────────────────────────────────────────────── */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-commissioner), system-ui, sans-serif;
 }
 
 :root {
@@ -48,10 +47,19 @@
   --foreground: #C0B39F;
 }
 
+/* Smooth scrolling for in-page anchors (#horoscope etc.). _document.tsx sets
+   data-scroll-behavior="smooth" so Next switches it off for page navigations,
+   which keeps the scroll-to-top on route change instant. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-commissioner), system-ui, sans-serif;
   min-height: 100vh;
 }
 
@@ -79,11 +87,11 @@ button, [role="button"] {
 
 /* Fade in animation */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 .animate-fade-in {
-  animation: fadeIn 0.4s ease forwards;
+  animation: fadeIn 150ms ease forwards;
 }
 
 /* Shimmer effect for loading */
@@ -104,13 +112,4 @@ button, [role="button"] {
 }
 .glow-pulse {
   animation: glow-pulse 3s ease-in-out infinite;
-}
-
-/* Spin for processing orb */
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-.spin-slow {
-  animation: spin-slow 8s linear infinite;
 }

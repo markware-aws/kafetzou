@@ -9,11 +9,9 @@ import {
   AlertTriangle,
   ChevronLeft,
   RefreshCw,
-  Lock,
-  User,
   Calendar,
-  Eye,
   Coins,
+  Loader2,
   type LucideIcon,
 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
@@ -23,17 +21,12 @@ import {
   getBirthProfile,
   AstrologyReading,
 } from "@/lib/api";
-import {
-  SIGNS,
-  SIGN_BY_ID,
-  ELEMENT_COLORS,
-  ELEMENT_BG,
-  getSignFromDob,
-} from "@/lib/astrology";
+import { SIGNS, SIGN_BY_ID, getSignFromDob } from "@/lib/astrology";
 import { getIdToken } from "@/lib/auth";
 import { notifyCreditsChanged } from "@/lib/user";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
+import { Seo } from "@/components/seo";
 
 type Period = "daily" | "weekly" | "monthly";
 
@@ -104,30 +97,31 @@ function ReadingSection({
   icon: Icon,
   label,
   text,
-  accent = false,
   warning = false,
 }: {
   icon: LucideIcon;
   label: string;
   text: string;
-  accent?: boolean;
   warning?: boolean;
 }) {
-  return (
-    <div
-      className={`rounded-2xl border p-4 ${warning ? "border-rose-800/30 bg-rose-900/10" : accent ? "border-amber-500/20 bg-amber-500/5" : "border-violet-800/30 bg-[#2e2a3a]"}`}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <Icon
-          className={`w-4 h-4 shrink-0 ${warning ? "text-rose-400" : accent ? "text-amber-400" : "text-violet-400"}`}
-        />
-        <span
-          className={`text-xs font-semibold uppercase tracking-wide ${warning ? "text-rose-400" : accent ? "text-amber-300" : "text-violet-400"}`}
-        >
+  if (warning) {
+    return (
+      <div className="rounded-md border border-rose-800/60 bg-rose-950/40 p-4">
+        <h3 className="flex items-center gap-2 mb-1 text-sm font-medium text-rose-200">
+          <Icon className="w-4 h-4 text-rose-400 shrink-0" />
           {label}
-        </span>
+        </h3>
+        <p className="text-sm text-rose-100 leading-relaxed">{text}</p>
       </div>
-      <p className="text-sm text-violet-100 leading-relaxed">{text}</p>
+    );
+  }
+  return (
+    <div className="rounded-lg border border-violet-800 bg-surface p-4">
+      <h3 className="flex items-center gap-2 mb-2 text-sm font-medium text-violet-50">
+        <Icon className="w-4 h-4 text-violet-300 shrink-0" />
+        {label}
+      </h3>
+      <p className="text-sm text-violet-200 leading-relaxed">{text}</p>
     </div>
   );
 }
@@ -148,48 +142,48 @@ function HoroscopePanel({ signId }: { signId: string }) {
 
   return (
     <div className="animate-fade-in flex flex-col gap-5">
-      <div
-        className={`rounded-2xl border p-5 flex items-center gap-4 ${ELEMENT_BG[sign.element]}`}
-      >
-        <span className="text-5xl leading-none">{sign.symbol}</span>
+      <div className="flex items-center gap-4">
+        <span className="text-4xl leading-none text-violet-50">{sign.symbol}</span>
         <div>
-          <h2 className="text-xl font-bold text-violet-100">{sign.nameGr}</h2>
-          <p className="text-xs text-violet-400 mt-0.5">{sign.dates}</p>
-          <span
-            className={`text-xs font-medium mt-1 inline-block ${ELEMENT_COLORS[sign.element]}`}
-          >
-            {sign.element}
-          </span>
+          <h2 className="text-lg font-semibold text-violet-50">{sign.nameGr}</h2>
+          <p className="text-sm text-violet-300">
+            {sign.dates} · {sign.element}
+          </p>
         </div>
       </div>
 
-      <div className="flex gap-1 p-1 rounded-xl bg-[#2e2a3a] border border-violet-800/30">
-        {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(
-          ([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setPeriod(key)}
-              className={`flex-1 rounded-lg py-2 text-sm font-medium transition-all ${period === key ? "bg-violet-800/60 text-amber-300" : "text-violet-400 hover:text-violet-200"}`}
-            >
-              {label}
-            </button>
-          ),
-        )}
-      </div>
-
-      <div className="flex items-center justify-center gap-1.5 -mt-1">
-        <Calendar className="w-3.5 h-3.5 text-violet-500" />
-        <span className="text-xs text-violet-500">
+      <div>
+        <div role="tablist" className="flex gap-6 border-b border-violet-800">
+          {(Object.entries(PERIOD_LABELS) as [Period, string][]).map(
+            ([key, label]) => (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={period === key}
+                onClick={() => setPeriod(key)}
+                className={`-mb-px border-b-2 pb-2 text-sm transition-colors ${
+                  period === key
+                    ? "border-amber-500 text-violet-50"
+                    : "border-transparent text-violet-300 hover:text-violet-100"
+                }`}
+              >
+                {label}
+              </button>
+            ),
+          )}
+        </div>
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-violet-300">
+          <Calendar className="w-3.5 h-3.5" />
           {getPeriodLabel(period)}
-        </span>
+        </p>
       </div>
 
       {isLoading && !reading && (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-4 flex flex-col gap-2"
+              className="rounded-lg border border-violet-800 bg-surface p-4 flex flex-col gap-2"
             >
               <div className="h-3 w-24 rounded shimmer" />
               <div className="h-12 rounded shimmer" />
@@ -198,29 +192,28 @@ function HoroscopePanel({ signId }: { signId: string }) {
         </div>
       )}
       {errorMessage && (
-        <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 text-sm text-rose-300">
+        <div className="rounded-md border border-rose-800/60 bg-rose-950/40 p-4 text-sm text-rose-200">
           {errorMessage}
         </div>
       )}
       {reading && (
         <div className="animate-fade-in flex flex-col gap-3">
-          <ReadingSection
-            icon={Sparkles}
-            label="Γενικό Μήνυμα"
-            text={reading.general}
-            accent
-          />
-          <ReadingSection icon={Heart} label="Αγάπη" text={reading.love} />
-          <ReadingSection
-            icon={Briefcase}
-            label="Καριέρα"
-            text={reading.career}
-          />
-          <ReadingSection icon={Star} label="Τύχη" text={reading.luck} />
-          <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-violet-500/5 p-4">
-            <p className="text-sm text-amber-200 italic leading-relaxed">
-              &ldquo;{reading.summary}&rdquo;
-            </p>
+          <p className="text-sm text-violet-100 leading-relaxed">
+            {reading.summary}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ReadingSection
+              icon={Sparkles}
+              label="Γενικό μήνυμα"
+              text={reading.general}
+            />
+            <ReadingSection icon={Heart} label="Αγάπη" text={reading.love} />
+            <ReadingSection
+              icon={Briefcase}
+              label="Καριέρα"
+              text={reading.career}
+            />
+            <ReadingSection icon={Star} label="Τύχη" text={reading.luck} />
           </div>
           <ReadingSection
             icon={AlertTriangle}
@@ -231,7 +224,7 @@ function HoroscopePanel({ signId }: { signId: string }) {
         </div>
       )}
       {isValidating && reading && (
-        <p className="text-xs text-violet-500 text-center">Ανανέωση ωροσκοπίου...</p>
+        <p className="text-xs text-violet-300">Ανανέωση ωροσκοπίου...</p>
       )}
     </div>
   );
@@ -299,53 +292,52 @@ function PersonalizedForm({
 
   if (!isLoggedIn) {
     return (
-      <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-6 text-center">
-        <div className="w-12 h-12 rounded-full bg-violet-900/40 flex items-center justify-center mx-auto mb-3">
-          <Lock className="w-5 h-5 text-violet-400" />
-        </div>
-        <h3 className="text-base font-semibold text-violet-100 mb-1">
-          Εξατομικευμένη Ανάγνωση
-        </h3>
-        <p className="text-sm text-violet-400 mb-4">
-          Συνδέσου για να λάβεις μια ανάγνωση φτιαγμένη αποκλειστικά για σένα
+      <section className="rounded-lg border border-violet-800 bg-surface p-5">
+        <h2 className="text-lg font-semibold text-violet-50">
+          Εξατομικευμένη ανάγνωση
+        </h2>
+        <p className="mt-1 mb-4 text-sm text-violet-300">
+          Συνδέσου για να λάβεις μια ανάγνωση φτιαγμένη αποκλειστικά για σένα.
         </p>
         <button
           onClick={() => router.push("/login")}
-          className="bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold rounded-xl px-5 py-2.5 text-sm"
+          className="rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 transition-colors"
         >
           Σύνδεση / Εγγραφή
         </button>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5">
-      <div className="flex items-center gap-2 mb-5">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-          <User className="w-4 h-4 text-black" />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-violet-100">
-            Εξατομικευμένη Ανάγνωση
-          </h3>
-          <p className="text-xs text-violet-400">
-            {profileLoaded
-              ? "Προ-συμπληρώθηκε από το αστρολογικό σου προφίλ"
-              : "Βασισμένη στα δικά σου χαρακτηριστικά"}
-          </p>
-        </div>
-      </div>
+    <section>
+      <h2 className="text-lg font-semibold text-violet-50">
+        Εξατομικευμένη ανάγνωση
+      </h2>
+      <p className="mt-1 mb-4 text-sm text-violet-300">
+        {profileLoaded
+          ? "Προ-συμπληρώθηκε από το αστρολογικό σου προφίλ"
+          : "Βασισμένη στα δικά σου χαρακτηριστικά"}
+      </p>
 
       {!result ? (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-lg border border-violet-800 bg-surface p-5 flex flex-col gap-4"
+        >
           <div>
-            <label className="text-xs text-violet-400 mb-1 block">Ζώδιο</label>
+            <label
+              htmlFor="astro-sign"
+              className="block text-sm font-medium text-violet-100 mb-1.5"
+            >
+              Ζώδιο
+            </label>
             <select
+              id="astro-sign"
               value={sign}
               onChange={(e) => setSign(e.target.value)}
               required
-              className="w-full bg-[#24242E] border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60"
+              className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 focus:outline-none focus:border-amber-500"
             >
               <option value="">— Επέλεξε ζώδιο —</option>
               {SIGNS.map((s) => (
@@ -357,36 +349,44 @@ function PersonalizedForm({
           </div>
 
           <div>
-            <label className="text-xs text-violet-400 mb-1 block">
-              Ημερομηνία Γέννησης{" "}
-              <span className="text-violet-600 ml-1">
+            <label
+              htmlFor="astro-dob"
+              className="block text-sm font-medium text-violet-100 mb-1.5"
+            >
+              Ημερομηνία γέννησης{" "}
+              <span className="font-normal text-violet-300">
                 (προαιρετικό — συμπληρώνει το ζώδιο αυτόματα)
               </span>
             </label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-500" />
-              <input
-                type="date"
-                value={dob}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setDob(val);
-                  if (val) setSign(getSignFromDob(val));
-                }}
-                className="w-full bg-[#24242E] border border-violet-800/40 rounded-xl pl-10 pr-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60 [color-scheme:dark]"
-              />
-            </div>
+            <input
+              id="astro-dob"
+              type="date"
+              value={dob}
+              onChange={(e) => {
+                const val = e.target.value;
+                setDob(val);
+                if (val) setSign(getSignFromDob(val));
+              }}
+              className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500 [color-scheme:dark]"
+            />
           </div>
 
           <div>
-            <label className="text-xs text-violet-400 mb-1 block">Φύλο</label>
+            <label className="block text-sm font-medium text-violet-100 mb-1.5">
+              Φύλο
+            </label>
             <div className="flex gap-2">
               {SEX_OPTIONS.map((opt) => (
                 <button
                   key={opt}
                   type="button"
                   onClick={() => setSex(opt)}
-                  className={`flex-1 rounded-xl border py-2 text-sm transition-all ${sex === opt ? "border-amber-500/60 bg-amber-500/10 text-amber-300" : "border-violet-800/40 text-violet-400 hover:border-violet-600/50"}`}
+                  aria-pressed={sex === opt}
+                  className={`flex-1 rounded-md border py-2 text-sm transition-colors ${
+                    sex === opt
+                      ? "border-amber-500 bg-violet-900/60 text-violet-50"
+                      : "border-violet-700 text-violet-200 hover:border-violet-600 hover:text-violet-50"
+                  }`}
                 >
                   {opt}
                 </button>
@@ -395,9 +395,8 @@ function PersonalizedForm({
           </div>
 
           <div>
-            <label className="text-xs text-violet-400 mb-1 block">
-              <Eye className="w-3 h-3 inline mr-1" />
-              Χρώμα Ματιών
+            <label className="block text-sm font-medium text-violet-100 mb-1.5">
+              Χρώμα ματιών
             </label>
             <div className="grid grid-cols-3 gap-2">
               {EYE_COLORS.map((c) => (
@@ -405,7 +404,12 @@ function PersonalizedForm({
                   key={c}
                   type="button"
                   onClick={() => setEyeColor(c)}
-                  className={`rounded-xl border py-2 text-xs transition-all ${eyeColor === c ? "border-amber-500/60 bg-amber-500/10 text-amber-300" : "border-violet-800/40 text-violet-400 hover:border-violet-600/50"}`}
+                  aria-pressed={eyeColor === c}
+                  className={`rounded-md border py-2 text-sm transition-colors ${
+                    eyeColor === c
+                      ? "border-amber-500 bg-violet-900/60 text-violet-50"
+                      : "border-violet-700 text-violet-200 hover:border-violet-600 hover:text-violet-50"
+                  }`}
                 >
                   {c}
                 </button>
@@ -414,51 +418,51 @@ function PersonalizedForm({
           </div>
 
           {error && (
-            <p className="text-sm text-rose-300 text-center">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !sign || !sex || !eyeColor}
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-black font-semibold rounded-xl py-3 text-sm transition-all flex items-center justify-center gap-2 mt-1"
-          >
-            {loading ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" /> Οι αστέρες
-                μιλούν…
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" /> Δημιούργησε Εξατομικευμένη
-                Ανάγνωση
-              </>
-            )}
-          </button>
-          {!loading && (
-            <div className="flex items-center justify-center gap-1 text-xs text-amber-600">
-              <Coins className="w-3 h-3" />
-              <span>1 credit</span>
+            <div className="rounded-md border border-rose-800/60 bg-rose-950/40 px-3 py-2 text-sm text-rose-200">
+              {error}
             </div>
           )}
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1">
+            <button
+              type="submit"
+              disabled={loading || !sign || !sex || !eyeColor}
+              className="flex items-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Οι αστέρες μιλούν…
+                </>
+              ) : (
+                "Δημιούργησε εξατομικευμένη ανάγνωση"
+              )}
+            </button>
+            {!loading && (
+              <span className="flex items-center gap-1.5 text-xs text-violet-300">
+                <Coins className="w-3.5 h-3.5" />1 credit
+              </span>
+            )}
+          </div>
         </form>
       ) : (
         <div className="animate-fade-in flex flex-col gap-3">
-          <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-violet-500/5 p-4 mb-1">
-            <p className="text-sm text-amber-200 italic">&ldquo;{result.summary}&rdquo;</p>
+          <p className="text-sm text-violet-100 leading-relaxed">
+            {result.summary}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ReadingSection
+              icon={Sparkles}
+              label="Γενικό μήνυμα"
+              text={result.general}
+            />
+            <ReadingSection icon={Heart} label="Αγάπη" text={result.love} />
+            <ReadingSection
+              icon={Briefcase}
+              label="Καριέρα"
+              text={result.career}
+            />
+            <ReadingSection icon={Star} label="Τύχη" text={result.luck} />
           </div>
-          <ReadingSection
-            icon={Sparkles}
-            label="Γενικό Μήνυμα"
-            text={result.general}
-            accent
-          />
-          <ReadingSection icon={Heart} label="Αγάπη" text={result.love} />
-          <ReadingSection
-            icon={Briefcase}
-            label="Καριέρα"
-            text={result.career}
-          />
-          <ReadingSection icon={Star} label="Τύχη" text={result.luck} />
           <ReadingSection
             icon={AlertTriangle}
             label="Προσοχή"
@@ -467,14 +471,14 @@ function PersonalizedForm({
           />
           <button
             onClick={() => setResult(null)}
-            className="w-full border border-violet-700/40 hover:border-violet-600/60 text-violet-300 hover:text-violet-100 rounded-xl py-2.5 text-sm transition-all flex items-center justify-center gap-2 mt-1"
+            className="self-start mt-1 flex items-center gap-2 rounded-md border border-violet-700 text-violet-100 hover:border-violet-600 hover:bg-violet-900/50 text-sm px-4 py-2 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
-            Νέα Ανάγνωση
+            Νέα ανάγνωση
           </button>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -497,6 +501,11 @@ export default function AstrologyPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Seo
+        title="Ζώδια Σήμερα, Εβδομάδας & Μήνα"
+        description="Δωρεάν ημερήσιες, εβδομαδιαίες και μηνιαίες προβλέψεις για όλα τα ζώδια: έρωτας, καριέρα, τύχη. Και εξατομικευμένη ανάγνωση από τον ωροσκόπο σου."
+        path="/astrology/"
+      />
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => setCreditDialogOpen(false)}
@@ -505,38 +514,25 @@ export default function AstrologyPage() {
       />
       <Navbar />
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-violet-900 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/20 glow-pulse">
-            <span className="text-2xl">✦</span>
-          </div>
-          <h1 className="text-2xl font-bold text-violet-100 mb-1">
-            Αστρολογία
-          </h1>
-          <p className="text-sm text-violet-400">
-            Ημερήσιες, εβδομαδιαίες και μηνιαίες προβλέψεις για όλα τα ζώδια
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-violet-50">Αστρολογία</h1>
+          <p className="mt-1 text-sm text-violet-300">
+            Ημερήσιες, εβδομαδιαίες και μηνιαίες προβλέψεις για όλα τα ζώδια.
           </p>
         </div>
 
         {!selectedSign ? (
           <>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-10">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-10">
               {SIGNS.map((sign) => (
                 <button
                   key={sign.id}
                   onClick={() => selectSign(sign.id)}
-                  className="group rounded-2xl border bg-[#2e2a3a] hover:bg-[#352f43] p-4 flex flex-col items-center gap-2 transition-all border-violet-800/30 hover:border-violet-600/50 hover:shadow-lg hover:shadow-violet-900/30"
+                  className="rounded-md border border-violet-800 bg-surface text-violet-200 hover:border-violet-600 hover:text-violet-50 py-3 flex flex-col items-center gap-1 transition-colors"
                 >
-                  <span className="text-3xl leading-none group-hover:scale-110 transition-transform">
-                    {sign.symbol}
-                  </span>
-                  <span className="text-xs font-medium text-violet-200">
-                    {sign.nameGr}
-                  </span>
-                  <span
-                    className={`text-[10px] ${ELEMENT_COLORS[sign.element]}`}
-                  >
-                    {sign.element}
-                  </span>
+                  <span className="text-2xl leading-none">{sign.symbol}</span>
+                  <span className="text-sm">{sign.nameGr}</span>
+                  <span className="text-xs text-violet-300">{sign.element}</span>
                 </button>
               ))}
             </div>
@@ -545,27 +541,20 @@ export default function AstrologyPage() {
             />
           </>
         ) : (
-          <div className="flex flex-col gap-6">
-            <button
-              onClick={clearSign}
-              className="flex items-center gap-2 text-sm text-violet-400 hover:text-violet-200 transition-colors w-fit"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Όλα τα ζώδια
-            </button>
-            <HoroscopePanel signId={selectedSign} />
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px bg-violet-800/30" />
-                <span className="text-xs text-violet-500 uppercase tracking-widest">
-                  Εξατομικευμένη
-                </span>
-                <div className="flex-1 h-px bg-violet-800/30" />
-              </div>
-              <PersonalizedForm
-                onInsufficientCredits={() => setCreditDialogOpen(true)}
-              />
+          <div className="flex flex-col gap-10">
+            <div className="flex flex-col gap-6">
+              <button
+                onClick={clearSign}
+                className="flex items-center gap-1.5 text-sm text-violet-300 hover:text-violet-50 transition-colors w-fit"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Όλα τα ζώδια
+              </button>
+              <HoroscopePanel signId={selectedSign} />
             </div>
+            <PersonalizedForm
+              onInsufficientCredits={() => setCreditDialogOpen(true)}
+            />
           </div>
         )}
       </div>

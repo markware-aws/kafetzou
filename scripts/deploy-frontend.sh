@@ -14,6 +14,10 @@ AWS_REGION="eu-central-1"
 
 echo "▶ Building Next.js static export..."
 cd fe
+# Next 16 writes a global `PagesPageConfig` type into both .next/types (build) and
+# .next/dev/types (next dev), and tsconfig includes both, so a build fails with
+# "Duplicate identifier" whenever a dev server has run. The dev copy is regenerated on demand.
+rm -rf .next/dev/types
 npm run build
 
 echo "▶ Syncing to S3..."
@@ -24,10 +28,13 @@ aws s3 sync out/ "s3://${S3_BUCKET}" \
   --cache-control "public, max-age=31536000, immutable" \
   --exclude "*.html" \
   --exclude "*.json" \
+  --exclude "*.xml" \
+  --exclude "*.txt" \
   --exclude "horoscopes/*" \
   --exclude "iris/*"
 
-# HTML + JSON pages — short cache (not content-hashed, can change on deploy)
+# HTML + JSON pages, sitemap.xml and robots.txt — short cache (not content-hashed, can change
+# on deploy; Google may keep a robots.txt for as long as its max-age says)
 aws s3 sync out/ "s3://${S3_BUCKET}" \
   --delete \
   --region "$AWS_REGION" \
@@ -35,6 +42,8 @@ aws s3 sync out/ "s3://${S3_BUCKET}" \
   --exclude "*" \
   --include "*.html" \
   --include "*.json" \
+  --include "*.xml" \
+  --include "*.txt" \
   --exclude "horoscopes/*" \
   --exclude "iris/*"
 

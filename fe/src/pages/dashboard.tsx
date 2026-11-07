@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Link from "next/link";
-import { Coffee, Sparkles, Clock, ChevronRight, Upload, Eye, Star, Globe, Moon, type LucideIcon } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { getReadings, getTarotReadings, getPersonalizedAstrologyHistory, getDreamReadings } from "@/lib/api";
@@ -80,240 +80,168 @@ export default function DashboardPage() {
   const dreamReadings = data?.dreams ?? [];
   const errorMessage = error instanceof Error ? error.message : "";
 
-  const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
-    { id: "coffee", label: "Καφές", icon: Coffee },
-    { id: "tarot", label: "Ταρό", icon: Star },
-    { id: "astrology", label: "Αστρολογία", icon: Globe },
-    { id: "dreams", label: "Όνειρα", icon: Moon },
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "coffee", label: "Καφές" },
+    { id: "tarot", label: "Ταρό" },
+    { id: "astrology", label: "Αστρολογία" },
+    { id: "dreams", label: "Όνειρα" },
   ];
 
   return (
-    <AuthGuard>
+    <AuthGuard title="Ιστορικό Αναγνώσεων">
       <div className="min-h-screen flex flex-col">
         <Navbar />
 
         <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-10">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-violet-100">Οι Αναγνώσεις μου</h1>
-              <p className="text-sm text-violet-500 mt-1">Το ιστορικό σου</p>
+              <h1 className="text-2xl font-semibold text-violet-50">Οι αναγνώσεις μου</h1>
+              <p className="mt-1 text-sm text-violet-300">Το ιστορικό σου</p>
             </div>
             <Link
               href={NEW_READING_HREF[tab]}
-              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold rounded-xl px-4 py-2.5 text-sm transition-all shadow-lg shadow-amber-500/20"
+              className="flex items-center gap-2 shrink-0 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 transition-colors"
             >
-              <Upload className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
               Νέα ανάγνωση
             </Link>
           </div>
 
-          <div className="flex gap-1 p-1 rounded-xl bg-[#2e2a3a] border border-violet-800/30 mb-6">
-            {tabs.map(({ id, label, icon: Icon }) => (
+          <div role="tablist" className="flex gap-6 border-b border-violet-800 mb-5">
+            {tabs.map(({ id, label }) => (
               <button
                 key={id}
+                role="tab"
+                aria-selected={tab === id}
                 onClick={() => setTab(id)}
-                className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-all ${
-                  tab === id ? "bg-violet-800/60 text-amber-300" : "text-violet-400 hover:text-violet-200"
+                className={`-mb-px border-b-2 pb-2 text-sm transition-colors ${
+                  tab === id
+                    ? "border-amber-500 text-violet-50"
+                    : "border-transparent text-violet-300 hover:text-violet-100"
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{label}</span>
+                {label}
               </button>
             ))}
           </div>
 
           {isLoading && (
-            <div className="flex flex-col gap-3">
+            <div className="rounded-lg border border-violet-800 bg-surface divide-y divide-violet-800">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5 flex flex-col gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 rounded shimmer shrink-0" />
-                    <div className="h-4 w-48 rounded shimmer" />
-                  </div>
+                <div key={i} className="px-4 py-3 flex flex-col gap-2">
+                  <div className="h-4 w-48 rounded shimmer" />
                   <div className="h-3 w-full rounded shimmer" />
-                  <div className="flex items-center gap-3">
-                    <div className="h-3 w-16 rounded shimmer" />
-                    <div className="h-3 w-16 rounded shimmer" />
-                  </div>
                 </div>
               ))}
             </div>
           )}
 
           {errorMessage && (
-            <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-4 text-sm text-rose-300">{errorMessage}</div>
+            <div className="rounded-md border border-rose-800/60 bg-rose-950/40 p-4 text-sm text-rose-200">{errorMessage}</div>
           )}
 
           {!isLoading && tab === "coffee" && (
             readings.length === 0 ? (
-              <EmptyState icon={Coffee} label="Δεν υπάρχουν αναγνώσεις ακόμα" sub="Ανέβασε την πρώτη φωτογραφία για να ξεκινήσεις" href="/upload" btnLabel="Έναρξη ανάγνωσης" />
+              <EmptyState label="Δεν υπάρχουν αναγνώσεις ακόμα." href="/upload" btnLabel="Έναρξη ανάγνωσης" />
             ) : (
-              <div className="flex flex-col gap-3">
+              <HistoryList>
                 {readings.map((r, i) => (
-                  <Link
+                  <HistoryRow
                     key={r.reading_id}
                     href={`/reading?id=${r.reading_id}`}
-                    className="animate-fade-in group rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5 hover:border-violet-700/50 hover:bg-[#352f43] transition-all"
-                    style={{ animationDelay: `${i * 60}ms` }}
+                    index={i}
+                    createdAt={r.created_at}
+                    title={r.reading_result?.general_message ?? "Ανάγνωση καφέ"}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <p className="text-sm text-violet-100 line-clamp-1 font-medium">
-                            {r.reading_result?.general_message ?? "Ανάγνωση καφέ"}
-                          </p>
-                        </div>
-                        <p className="text-xs text-violet-400 line-clamp-2 mb-3">{r.reading_result?.prediction_summary}</p>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          {(r.symbols_detected ?? []).slice(0, 4).map((sym) => (
-                            <span key={sym} className="flex items-center gap-1 text-xs text-violet-400">
-                              <Eye className="w-3 h-3" />
-                              <span className="capitalize">{sym}</span>
-                            </span>
-                          ))}
-                          {(r.symbols_detected ?? []).length > 4 && (
-                            <span className="text-xs text-violet-600">+{r.symbols_detected.length - 4} ακόμα</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2 shrink-0">
-                        <div className="flex items-center gap-1.5 text-xs text-violet-500">
-                          <Clock className="w-3 h-3" />
-                          {timeAgo(r.created_at)}
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-violet-600 group-hover:text-amber-400 transition-colors" />
-                      </div>
-                    </div>
-                  </Link>
+                    <p className="mt-1 text-sm text-violet-200 line-clamp-2">{r.reading_result?.prediction_summary}</p>
+                    {(r.symbols_detected ?? []).length > 0 && (
+                      <p className="mt-1 text-xs text-violet-300">
+                        {r.symbols_detected.slice(0, 4).join(", ")}
+                        {r.symbols_detected.length > 4 && ` +${r.symbols_detected.length - 4} ακόμα`}
+                      </p>
+                    )}
+                  </HistoryRow>
                 ))}
-              </div>
+              </HistoryList>
             )
           )}
 
           {!isLoading && tab === "tarot" && (
             tarotReadings.length === 0 ? (
-              <EmptyState icon={Star} label="Δεν υπάρχουν αναγνώσεις ταρό ακόμα" sub="Τράβηξε τις πρώτες σου κάρτες" href="/tarot" btnLabel="Έναρξη ανάγνωσης ταρό" />
+              <EmptyState label="Δεν υπάρχουν αναγνώσεις ταρό ακόμα." href="/tarot" btnLabel="Έναρξη ανάγνωσης ταρό" />
             ) : (
-              <div className="flex flex-col gap-3">
+              <HistoryList>
                 {tarotReadings.map((r, i) => (
-                  <Link
+                  <HistoryRow
                     key={r.reading_id}
                     href={`/tarot-reading?id=${r.reading_id}`}
-                    className="animate-fade-in group rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5 hover:border-violet-700/50 hover:bg-[#352f43] transition-all"
-                    style={{ animationDelay: `${i * 60}ms` }}
+                    index={i}
+                    createdAt={r.created_at}
+                    title={r.reading_result?.summary ?? "Ανάγνωση Ταρό"}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Star className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <p className="text-sm text-violet-100 line-clamp-1 font-medium">
-                            {r.reading_result?.summary ?? "Ανάγνωση Ταρό"}
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {(r.reading_result?.cards ?? []).map((card) => (
-                            <span key={card} className="text-xs bg-violet-900/40 border border-violet-700/30 text-violet-300 rounded-full px-2 py-0.5">
-                              {getCardDisplayName(card)}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2 shrink-0">
-                        <div className="flex items-center gap-1.5 text-xs text-violet-500">
-                          <Clock className="w-3 h-3" />
-                          {timeAgo(r.created_at)}
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-violet-600 group-hover:text-amber-400 transition-colors" />
-                      </div>
-                    </div>
-                  </Link>
+                    {(r.reading_result?.cards ?? []).length > 0 && (
+                      <p className="mt-1 text-xs text-violet-300">
+                        {r.reading_result.cards.map((card) => getCardDisplayName(card)).join(", ")}
+                      </p>
+                    )}
+                  </HistoryRow>
                 ))}
-              </div>
+              </HistoryList>
             )
           )}
 
           {!isLoading && tab === "astrology" && (
             astrologyReadings.length === 0 ? (
-              <EmptyState icon={Globe} label="Δεν υπάρχουν εξατομικευμένες αναγνώσεις ακόμα" sub="Δοκίμασε την εξατομικευμένη αστρολογική ανάγνωση" href="/astrology" btnLabel="Πήγαινε στην Αστρολογία" />
+              <EmptyState label="Δεν υπάρχουν εξατομικευμένες αναγνώσεις ακόμα." href="/astrology" btnLabel="Πήγαινε στην Αστρολογία" />
             ) : (
-              <div className="flex flex-col gap-3">
+              <HistoryList>
                 {astrologyReadings.map((r, i) => {
                   const sign = SIGN_BY_ID[r.sign];
                   return (
-                    <Link
+                    <HistoryRow
                       key={r.reading_id}
                       href={`/astrology-reading?id=${r.reading_id}`}
-                      className="animate-fade-in group rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5 hover:border-violet-700/50 hover:bg-[#352f43] transition-all"
-                      style={{ animationDelay: `${i * 60}ms` }}
+                      index={i}
+                      createdAt={r.created_at}
+                      title={
+                        <>
+                          <span className="mr-1.5">{sign?.symbol ?? "✦"}</span>
+                          {sign?.nameGr ?? r.sign}
+                          <span className="ml-2 text-xs font-normal text-violet-300">{r.sex} · {r.eye_color}</span>
+                        </>
+                      }
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-lg leading-none">{sign?.symbol ?? "✦"}</span>
-                            <p className="text-sm text-violet-100 font-medium">{sign?.nameGr ?? r.sign}</p>
-                            <span className="text-xs text-violet-500">· {r.sex} · {r.eye_color}</span>
-                          </div>
-                          <p className="text-xs text-violet-400 line-clamp-2">{r.reading_result?.summary}</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-2 shrink-0">
-                          <div className="flex items-center gap-1.5 text-xs text-violet-500">
-                            <Clock className="w-3 h-3" />
-                            {timeAgo(r.created_at)}
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-violet-600 group-hover:text-amber-400 transition-colors" />
-                        </div>
-                      </div>
-                    </Link>
+                      <p className="mt-1 text-sm text-violet-200 line-clamp-2">{r.reading_result?.summary}</p>
+                    </HistoryRow>
                   );
                 })}
-              </div>
+              </HistoryList>
             )
           )}
 
           {!isLoading && tab === "dreams" && (
             dreamReadings.length === 0 ? (
-              <EmptyState icon={Moon} label="Δεν υπάρχουν ερμηνείες ονείρων ακόμα" sub="Περίγραψε ένα όνειρό σου και αποκάλυψε το μήνυμά του" href="/dream" btnLabel="Ερμήνευσε Όνειρο" />
+              <EmptyState label="Δεν υπάρχουν ερμηνείες ονείρων ακόμα." href="/dream" btnLabel="Ερμήνευσε όνειρο" />
             ) : (
-              <div className="flex flex-col gap-3">
+              <HistoryList>
                 {dreamReadings.map((r, i) => (
-                  <Link
+                  <HistoryRow
                     key={r.reading_id}
                     href={`/dream-reading?id=${r.reading_id}`}
-                    className="animate-fade-in group rounded-2xl border border-violet-800/30 bg-[#2e2a3a] p-5 hover:border-violet-700/50 hover:bg-[#352f43] transition-all"
-                    style={{ animationDelay: `${i * 60}ms` }}
+                    index={i}
+                    createdAt={r.created_at}
+                    title={r.reading_result?.summary ?? "Ερμηνεία ονείρου"}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Moon className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-                          <p className="text-sm text-violet-100 line-clamp-1 font-medium italic">
-                            &ldquo;{r.reading_result?.summary ?? "Ερμηνεία ονείρου"}&rdquo;
-                          </p>
-                        </div>
-                        <p className="text-xs text-violet-400 line-clamp-2 mb-2">{r.dream_text}</p>
-                        {(r.reading_result?.symbols ?? []).length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {(r.reading_result.symbols ?? []).slice(0, 4).map((s, idx) => (
-                              <span key={idx} className="text-xs bg-violet-900/40 border border-violet-700/30 text-violet-300 rounded-full px-2 py-0.5">{s}</span>
-                            ))}
-                            {(r.reading_result.symbols ?? []).length > 4 && (
-                              <span className="text-xs text-violet-600">+{r.reading_result.symbols.length - 4} ακόμα</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end gap-2 shrink-0">
-                        <div className="flex items-center gap-1.5 text-xs text-violet-500">
-                          <Clock className="w-3 h-3" />
-                          {timeAgo(r.created_at)}
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-violet-600 group-hover:text-amber-400 transition-colors" />
-                      </div>
-                    </div>
-                  </Link>
+                    <p className="mt-1 text-sm text-violet-200 line-clamp-2">{r.dream_text}</p>
+                    {(r.reading_result?.symbols ?? []).length > 0 && (
+                      <p className="mt-1 text-xs text-violet-300">
+                        {r.reading_result.symbols.slice(0, 4).join(", ")}
+                        {r.reading_result.symbols.length > 4 && ` +${r.reading_result.symbols.length - 4} ακόμα`}
+                      </p>
+                    )}
+                  </HistoryRow>
                 ))}
-              </div>
+              </HistoryList>
             )
           )}
         </main>
@@ -322,19 +250,40 @@ export default function DashboardPage() {
   );
 }
 
-function EmptyState({ icon: Icon, label, sub, href, btnLabel }: {
-  icon: LucideIcon; label: string; sub: string; href: string; btnLabel: string;
+function HistoryList({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-violet-800 bg-surface divide-y divide-violet-800 overflow-hidden">
+      {children}
+    </div>
+  );
+}
+
+function HistoryRow({ href, index, createdAt, title, children }: {
+  href: string; index: number; createdAt: string; title: React.ReactNode; children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div className="w-16 h-16 rounded-full bg-violet-900/40 flex items-center justify-center mb-4">
-        <Icon className="w-8 h-8 text-violet-500" />
+    <Link
+      href={href}
+      className="animate-fade-in block px-4 py-3 hover:bg-surface-hover transition-colors"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="min-w-0 text-sm font-medium text-violet-50 line-clamp-1">{title}</p>
+        <span className="shrink-0 text-xs text-violet-300 tabular-nums">{timeAgo(createdAt)}</span>
       </div>
-      <p className="text-violet-300 font-medium mb-1">{label}</p>
-      <p className="text-violet-500 text-sm mb-6">{sub}</p>
-      <Link href={href} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-semibold rounded-xl px-5 py-2.5 text-sm">
-        <Icon className="w-4 h-4" />
-        {btnLabel}
+      {children}
+    </Link>
+  );
+}
+
+function EmptyState({ label, href, btnLabel }: {
+  label: string; href: string; btnLabel: string;
+}) {
+  return (
+    <div className="rounded-lg border border-violet-800 bg-surface p-5">
+      <p className="text-sm text-violet-200">{label}</p>
+      <Link href={href} className="mt-2 inline-block text-sm text-amber-400 hover:text-amber-300 transition-colors">
+        {btnLabel} →
       </Link>
     </div>
   );

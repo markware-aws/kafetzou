@@ -1,18 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  User,
-  Calendar,
-  Clock,
   MapPin,
-  Save,
-  RefreshCw,
-  Sun,
-  Moon,
-  ArrowUp,
   AlertCircle,
   CheckCircle2,
-  Eye,
-  Coins,
   Plus,
   Loader2,
 } from "lucide-react";
@@ -26,7 +16,6 @@ import {
 import { SIGN_BY_ID } from "@/lib/astrology";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
-import type { LucideIcon } from "lucide-react";
 
 const SEX_OPTIONS = ["Άνδρας", "Γυναίκα", "Άλλο"];
 const EYE_COLORS = ["Μαύρα", "Καφέ", "Καφέ σκούρο", "Πράσινα", "Μπλε", "Γκρι"];
@@ -137,15 +126,15 @@ function PlaceAutocomplete({
           onFocus={() => results.length > 0 && setOpen(true)}
           required
           placeholder="π.χ. Αθήνα, Ελλάδα"
-          className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-2.5 pr-9 text-sm text-violet-100 placeholder-violet-600 focus:outline-none focus:border-violet-600/60"
+          className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 pr-9 text-sm text-violet-50 placeholder:text-violet-400 focus:outline-none focus:border-amber-500"
         />
         {loading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-500 animate-spin" />
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-300 animate-spin" />
         )}
       </div>
 
       {open && results.length > 0 && (
-        <ul className="absolute z-50 w-full mt-1 rounded-xl border border-violet-800/50 bg-[#1c1a2e] shadow-2xl shadow-black/40 overflow-hidden">
+        <ul className="absolute z-50 w-full mt-1 rounded-md border border-violet-700 bg-surface shadow-md overflow-hidden">
           {results.map((f, i) => {
             const label = formatPlace(f);
             return (
@@ -153,9 +142,9 @@ function PlaceAutocomplete({
                 <button
                   type="button"
                   onMouseDown={() => handleSelect(f)}
-                  className="w-full text-left px-4 py-2.5 text-sm text-violet-200 hover:bg-violet-800/40 flex items-center gap-2 transition-colors"
+                  className="w-full text-left px-3 py-2 text-sm text-violet-100 hover:bg-violet-900/60 flex items-center gap-2 transition-colors"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+                  <MapPin className="w-4 h-4 text-violet-300 shrink-0" />
                   {label}
                 </button>
               </li>
@@ -169,36 +158,29 @@ function PlaceAutocomplete({
 
 function ChartCard({
   label,
-  icon: Icon,
   sign,
   degree,
   note,
 }: {
   label: string;
-  icon: LucideIcon;
   sign: string;
   degree: number;
   note?: string;
 }) {
   const signData = SIGN_BY_ID[sign];
   return (
-    <div className="rounded-2xl border border-violet-800/30 bg-surface p-4 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-amber-400" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-violet-400 font-medium uppercase tracking-wide mb-0.5">
-          {label}
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{signData?.symbol ?? "✦"}</span>
-          <span className="text-sm font-semibold text-violet-100">
-            {signData?.nameGr ?? sign}
-          </span>
-          <span className="text-xs text-violet-500">{degree}°</span>
-        </div>
-        {note && <p className="text-[10px] text-amber-600 mt-0.5">{note}</p>}
-      </div>
+    <div className="rounded-lg border border-violet-800 bg-surface p-4">
+      <p className="text-xs text-violet-300">{label}</p>
+      <p className="mt-1.5 flex items-baseline gap-2">
+        <span className="text-lg leading-none text-violet-50">
+          {signData?.symbol ?? "✦"}
+        </span>
+        <span className="text-sm font-medium text-violet-50">
+          {signData?.nameGr ?? sign}
+        </span>
+        <span className="text-xs text-violet-300 tabular-nums">{degree}°</span>
+      </p>
+      {note && <p className="mt-1 text-xs text-violet-300">{note}</p>}
     </div>
   );
 }
@@ -265,7 +247,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <AuthGuard>
+    <AuthGuard title="Προφίλ">
       <InsufficientCreditsDialog
         open={creditDialogOpen}
         onClose={() => {
@@ -279,40 +261,28 @@ export default function ProfilePage() {
         <Navbar />
 
         <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-10">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-              <User className="w-6 h-6 text-black" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-violet-100">
-                Αστρολογικό Προφίλ
-              </h1>
-              <p className="text-sm text-violet-400">
-                Τα στοιχεία γέννησής σου για ακριβέστερες αναγνώσεις
-              </p>
-            </div>
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold text-violet-50">
+              Αστρολογικό προφίλ
+            </h1>
+            <p className="mt-1 text-sm text-violet-300">
+              Τα στοιχεία γέννησής σου για ακριβέστερες αναγνώσεις
+            </p>
           </div>
 
-          <div className="rounded-2xl border border-violet-800/30 bg-surface p-5 mb-6 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-                <Coins className="w-5 h-5 text-amber-400" />
-              </div>
-              <div>
-                <p className="text-xs text-violet-400 font-medium uppercase tracking-wide">
-                  Υπόλοιπο Credits
-                </p>
-                <p className="text-xl font-bold text-amber-300">
-                  {credits === null ? "—" : credits}
-                  <span className="text-sm font-normal text-violet-400 ml-1">
-                    credits
-                  </span>
-                </p>
-              </div>
+          <div className="rounded-lg border border-violet-800 bg-surface p-5 mb-8 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm text-violet-300">Υπόλοιπο credits</p>
+              <p className="mt-0.5 text-xl font-semibold text-violet-50 tabular-nums">
+                {credits === null ? "—" : credits}
+                <span className="ml-1 text-sm font-normal text-violet-300">
+                  credits
+                </span>
+              </p>
             </div>
             <button
               onClick={() => setCreditDialogOpen(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-semibold rounded-xl px-4 py-2 text-sm transition-all shadow-lg shadow-amber-500/20 shrink-0"
+              className="flex items-center gap-2 shrink-0 rounded-md border border-violet-700 text-violet-100 hover:border-violet-600 hover:bg-violet-900/50 text-sm px-4 py-2 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Αγόρασε
@@ -321,24 +291,18 @@ export default function ProfilePage() {
 
           {profile?.chart && (
             <div className="mb-8 animate-fade-in">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-px flex-1 bg-violet-800/30" />
-                <span className="text-xs text-violet-500 uppercase tracking-widest font-medium">
-                  Γεννητικός Χάρτης
-                </span>
-                <div className="h-px flex-1 bg-violet-800/30" />
-              </div>
+              <h2 className="text-lg font-semibold text-violet-50 mb-3">
+                Γεννητικός χάρτης
+              </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <ChartCard
                   label="Ήλιος ☉"
-                  icon={Sun}
                   sign={profile.chart.sun_sign}
                   degree={profile.chart.sun_degree}
                   note="Ψυχή & ταυτότητα"
                 />
                 <ChartCard
                   label="Σελήνη ☽"
-                  icon={Moon}
                   sign={profile.chart.moon_sign}
                   degree={profile.chart.moon_degree}
                   note={
@@ -350,87 +314,85 @@ export default function ProfilePage() {
                 {profile.chart.ascendant_sign ? (
                   <ChartCard
                     label="Ωροσκόπος ↑"
-                    icon={ArrowUp}
                     sign={profile.chart.ascendant_sign}
                     degree={profile.chart.ascendant_degree!}
                     note="Εξωτερική εικόνα"
                   />
                 ) : (
-                  <div className="rounded-2xl border border-violet-800/20 bg-surface/50 p-4 flex items-center gap-3">
-                    <ArrowUp className="w-4 h-4 text-violet-600 shrink-0" />
-                    <div>
-                      <p className="text-xs text-violet-500 font-medium uppercase tracking-wide mb-0.5">
-                        Ωροσκόπος ↑
-                      </p>
-                      <p className="text-xs text-violet-600">
-                        Απαιτεί ώρα γέννησης
-                      </p>
-                    </div>
+                  <div className="rounded-lg border border-dashed border-violet-800 p-4">
+                    <p className="text-xs text-violet-300">Ωροσκόπος ↑</p>
+                    <p className="mt-1.5 text-sm text-violet-200">
+                      Απαιτεί ώρα γέννησης
+                    </p>
                   </div>
                 )}
               </div>
-              <p className="text-xs text-violet-500 mt-3 text-center">
+              <p className="text-xs text-violet-300 mt-3">
                 Αυτά τα δεδομένα χρησιμοποιούνται αυτόματα στις εξατομικευμένες
                 αστρολογικές αναγνώσεις σου.
               </p>
             </div>
           )}
 
-          <div className="rounded-2xl border border-violet-800/30 bg-surface p-6">
+          <div className="rounded-lg border border-violet-800 bg-surface p-5">
             {loading ? (
               <div className="flex flex-col gap-3">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-10 shimmer rounded-xl" />
+                  <div key={i} className="h-10 shimmer rounded-md" />
                 ))}
               </div>
             ) : (
               <form onSubmit={handleSave} className="flex flex-col gap-5">
                 <div>
-                  <label className="flex items-center gap-1.5 text-xs text-violet-400 mb-2 font-medium">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Ημερομηνία Γέννησης
+                  <label
+                    htmlFor="profile-dob"
+                    className="block text-sm font-medium text-violet-100 mb-1.5"
+                  >
+                    Ημερομηνία γέννησης
                   </label>
                   <input
+                    id="profile-dob"
                     type="date"
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
                     required
-                    className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60 [color-scheme:dark]"
+                    className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 focus:outline-none focus:border-amber-500 [color-scheme:dark]"
                   />
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-1.5 text-xs text-violet-400 mb-2 font-medium">
-                    <Clock className="w-3.5 h-3.5" />
-                    Ώρα Γέννησης
+                  <label
+                    htmlFor="profile-birth-time"
+                    className="block text-sm font-medium text-violet-100 mb-1.5"
+                  >
+                    Ώρα γέννησης
                   </label>
-                  <div className="flex items-center gap-3 mb-2">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={timeUnknown}
-                        onChange={(e) => {
-                          setTimeUnknown(e.target.checked);
-                          if (e.target.checked) setBirthTime("");
-                        }}
-                        className="w-4 h-4 rounded accent-amber-500"
-                      />
-                      <span className="text-xs text-violet-400">
-                        Δεν γνωρίζω την ώρα
-                      </span>
-                    </label>
-                  </div>
+                  <label className="inline-flex items-center gap-2 mb-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={timeUnknown}
+                      onChange={(e) => {
+                        setTimeUnknown(e.target.checked);
+                        if (e.target.checked) setBirthTime("");
+                      }}
+                      className="w-4 h-4 rounded accent-amber-500"
+                    />
+                    <span className="text-sm text-violet-200">
+                      Δεν γνωρίζω την ώρα
+                    </span>
+                  </label>
                   {!timeUnknown ? (
                     <input
+                      id="profile-birth-time"
                       type="time"
                       value={birthTime}
                       onChange={(e) => setBirthTime(e.target.value)}
-                      className="w-full bg-bg border border-violet-800/40 rounded-xl px-4 py-2.5 text-sm text-violet-100 focus:outline-none focus:border-violet-600/60 [color-scheme:dark]"
+                      className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-sm text-violet-50 focus:outline-none focus:border-amber-500 [color-scheme:dark]"
                     />
                   ) : (
-                    <div className="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
-                      <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-300 leading-relaxed">
+                    <div className="flex items-start gap-2 rounded-md border border-violet-700 bg-bg p-3">
+                      <AlertCircle className="w-4 h-4 text-violet-300 shrink-0 mt-0.5" />
+                      <p className="text-sm text-violet-200 leading-relaxed">
                         Θα χρησιμοποιηθεί 12:00 μεσημέρι. Το ζώδιο Σελήνης
                         ενδέχεται να διαφέρει κατά ±1 ζώδιο και ο Ωροσκόπος δεν
                         θα υπολογιστεί.
@@ -440,29 +402,24 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-1.5 text-xs text-violet-400 mb-2 font-medium">
-                    <MapPin className="w-3.5 h-3.5" />
-                    Τόπος Γέννησης
+                  <label className="block text-sm font-medium text-violet-100 mb-1.5">
+                    Τόπος γέννησης
                   </label>
                   <PlaceAutocomplete
                     value={birthPlace}
                     onChange={setBirthPlace}
                   />
-                  <p className="text-[11px] text-violet-600 mt-1">
+                  <p className="text-xs text-violet-300 mt-1.5">
                     Χρησιμοποιείται για τον υπολογισμό του Ωροσκόπου
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="h-px flex-1 bg-violet-800/30" />
-                  <span className="text-[10px] text-violet-600 uppercase tracking-widest">
-                    Για αστρολογικές αναγνώσεις
-                  </span>
-                  <div className="h-px flex-1 bg-violet-800/30" />
-                </div>
+                <h3 className="border-t border-violet-800 pt-5 text-sm font-medium text-violet-50">
+                  Για αστρολογικές αναγνώσεις
+                </h3>
 
                 <div>
-                  <label className="text-xs text-violet-400 mb-2 block font-medium">
+                  <label className="block text-sm font-medium text-violet-100 mb-1.5">
                     Φύλο
                   </label>
                   <div className="flex gap-2">
@@ -471,7 +428,8 @@ export default function ProfilePage() {
                         key={opt}
                         type="button"
                         onClick={() => setSex(opt)}
-                        className={`flex-1 rounded-xl border py-2 text-sm transition-all ${sex === opt ? "border-amber-500/60 bg-amber-500/10 text-amber-300" : "border-violet-800/40 text-violet-400 hover:border-violet-600/50"}`}
+                        aria-pressed={sex === opt}
+                        className={`flex-1 rounded-md border py-2 text-sm transition-colors ${sex === opt ? "border-amber-500 bg-violet-900/60 text-violet-50" : "border-violet-700 text-violet-200 hover:border-violet-600 hover:text-violet-50"}`}
                       >
                         {opt}
                       </button>
@@ -480,9 +438,8 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-1.5 text-xs text-violet-400 mb-2 font-medium">
-                    <Eye className="w-3.5 h-3.5" />
-                    Χρώμα Ματιών
+                  <label className="block text-sm font-medium text-violet-100 mb-1.5">
+                    Χρώμα ματιών
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {EYE_COLORS.map((c) => (
@@ -490,7 +447,8 @@ export default function ProfilePage() {
                         key={c}
                         type="button"
                         onClick={() => setEyeColor(c)}
-                        className={`rounded-xl border py-2 text-xs transition-all ${eyeColor === c ? "border-amber-500/60 bg-amber-500/10 text-amber-300" : "border-violet-800/40 text-violet-400 hover:border-violet-600/50"}`}
+                        aria-pressed={eyeColor === c}
+                        className={`rounded-md border py-2 text-sm transition-colors ${eyeColor === c ? "border-amber-500 bg-violet-900/60 text-violet-50" : "border-violet-700 text-violet-200 hover:border-violet-600 hover:text-violet-50"}`}
                       >
                         {c}
                       </button>
@@ -499,20 +457,20 @@ export default function ProfilePage() {
                 </div>
 
                 {(error || loadErrorMessage) && (
-                  <div className="rounded-xl border border-rose-800/40 bg-rose-900/10 p-3 flex items-start gap-2">
+                  <div className="rounded-md border border-rose-800/60 bg-rose-950/40 p-3 flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                    <p className="text-sm text-rose-300">{error || loadErrorMessage}</p>
+                    <p className="text-sm text-rose-200">{error || loadErrorMessage}</p>
                   </div>
                 )}
 
                 <button
                   type="submit"
                   disabled={saving || !dob || !birthPlace}
-                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-black font-semibold rounded-xl py-3 text-sm transition-all shadow-lg shadow-amber-500/20"
+                  className="self-start flex items-center gap-2 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" /> Υπολογισμός
+                      <Loader2 className="w-4 h-4 animate-spin" /> Υπολογισμός
                       χάρτη…
                     </>
                   ) : success ? (
@@ -520,10 +478,7 @@ export default function ProfilePage() {
                       <CheckCircle2 className="w-4 h-4" /> Αποθηκεύτηκε!
                     </>
                   ) : (
-                    <>
-                      <Save className="w-4 h-4" /> Αποθήκευση & Υπολογισμός
-                      Χάρτη
-                    </>
+                    "Αποθήκευση & υπολογισμός χάρτη"
                   )}
                 </button>
               </form>

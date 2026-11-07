@@ -4,11 +4,21 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Hub } from "aws-amplify/utils";
 import { getUser } from "@/lib/auth";
-import { Coffee } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { Seo } from "@/components/seo";
 
 type Status = "checking" | "authed" | "unauthed";
 
-export function AuthGuard({ children }: { children: React.ReactNode }) {
+interface AuthGuardProps {
+  /** Browser-tab title. Guarded pages are per-user, so they are always noindex. */
+  title: string;
+  children: React.ReactNode;
+}
+
+export function AuthGuard({ title, children }: AuthGuardProps) {
+  // Rendered in both states so the exported HTML (the "checking" state) carries the tags.
+  const head = <Seo title={title} noindex />;
+
   const [status, setStatus] = useState<Status>("checking");
   const router = useRouter();
 
@@ -40,16 +50,22 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (status !== "authed") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center glow-pulse">
-            <Coffee className="w-6 h-6 text-black" />
+      <>
+        {head}
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex items-center gap-2 text-sm text-violet-300">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Φόρτωση…
           </div>
-          <p className="text-violet-400 text-sm animate-pulse">Ανάλυση…</p>
         </div>
-      </div>
+      </>
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {head}
+      {children}
+    </>
+  );
 }
