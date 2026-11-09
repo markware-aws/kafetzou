@@ -38,6 +38,7 @@ Copy `.env.example` to `.env` and fill in:
 | `DYNAMODB_ASTROLOGY_TABLE`                    | Public horoscope cache table                                |
 | `DYNAMODB_ASTROLOGY_PERSONALIZED_TABLE`       | Personalized astrology table                                |
 | `DYNAMODB_DREAMS_TABLE`                       | Dream readings table                                        |
+| `DYNAMODB_NATAL_TABLE`                        | Natal chart readings table (default `natal_readings`)       |
 | `DYNAMODB_USERS_TABLE`                        | Users table                                                 |
 | `COGNITO_USER_POOL_ID`                        | e.g. `eu-central-1_xxxxxxxxx`                               |
 | `COGNITO_APP_CLIENT_ID`                       | Cognito app client ID                                       |
@@ -68,10 +69,14 @@ All protected routes require `Authorization: Bearer <cognito-id-token>`.
 | GET    | `/astrology/{sign}/{period}`      | —          | Public horoscope (daily/weekly/monthly)          |
 | POST   | `/astrology/personalized`         | JWT        | Personalized astrology reading (costs 1 credit)  |
 | GET    | `/astrology/personalized/history` | JWT        | List personalized readings                       |
+| POST   | `/astrology/natal`                | JWT        | AI reading of the saved birth chart (2 credits)  |
+| GET    | `/astrology/natal/history`        | JWT        | List natal chart readings                        |
+| GET    | `/astrology/natal/{id}`           | JWT        | Get one natal chart reading (with its chart)     |
+| POST   | `/chart/calculate`                | JWT        | Full natal chart from birth data (no credits)    |
 | POST   | `/dreams/interpret`               | JWT        | Dream interpretation (costs 1 credit)            |
 | GET    | `/dreams`                         | JWT        | List dream readings                              |
 | GET    | `/dreams/{id}`                    | JWT        | Get one dream reading                            |
-| GET    | `/profile/birth`                  | JWT        | Get birth profile                                |
+| GET    | `/profile/birth`                  | JWT        | Get birth profile (recalculates old charts)      |
 | PUT    | `/profile/birth`                  | JWT        | Save birth profile (triggers natal chart calc)   |
 | GET    | `/payments/bundles`               | —          | List credit bundles                              |
 | POST   | `/payments/checkout`              | JWT        | Create Stripe checkout session                   |
@@ -96,6 +101,7 @@ app/
 │   ├── astrology.py           # /astrology/*
 │   ├── dreams.py              # /dreams/*
 │   ├── profile.py             # /profile/birth
+│   ├── chart.py               # /chart/calculate
 │   └── payments.py            # /payments/*
 ├── services/
 │   ├── openai_service.py      # structured_chat() helper
@@ -103,6 +109,10 @@ app/
 │   ├── fortune_service.py     # Step 2: generate reading from symbols
 │   ├── tarot_service.py       # Tarot card selection + AI interpretation
 │   ├── astrology_service.py   # Horoscope + personalized astrology
+│   ├── sky_service.py         # Planet movements for horoscope prompts (Swiss Ephemeris)
+│   ├── chart_service.py       # Full natal chart: planets, houses, aspects (Swiss Ephemeris)
+│   ├── birth_profile_service.py # Loads the birth profile, recalculates old chart versions
+│   ├── natal_service.py       # AI natal chart reading
 │   ├── dream_service.py       # Dream interpretation
 │   ├── s3_service.py          # Presigned upload/get URLs
 │   └── dynamodb_service.py    # All DynamoDB operations
@@ -124,9 +134,11 @@ New users get **5 free credits**. Costs per action:
 | Coffee reading         | 2       |
 | AI tarot reading       | 1       |
 | Personalized astrology | 1       |
+| Natal chart reading    | 2       |
 | Dream interpretation   | 1       |
 | Daily tarot card       | Free    |
 | Public horoscopes      | Free    |
+| Natal chart (no AI)    | Free    |
 
 Credits are enforced via `RequireCredits(n)` FastAPI dependency in `core/credits.py`. Uses DynamoDB atomic conditional update to prevent race conditions.
 

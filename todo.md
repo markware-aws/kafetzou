@@ -11,6 +11,8 @@
 ## AWS Infrastructure (deployment)
 
 - [ ] DynamoDB tables — create `dream_readings` and `astrology_personalized` tables in prod
+- [ ] Natal chart reading: create the `natal_readings` table in prod (PK `user_id`, SK `reading_id`), add its ARN to the Lambda role and `DYNAMODB_NATAL_TABLE=natal_readings` to the Lambda env, then deploy the backend (it now needs `timezonefinder`) before the frontend
+- [ ] Check the CloudFront origin timeout for `/api/*` (default 30 s) against the natal reading's generation time
 - [ ] Lambda + API Gateway — deploy FastAPI backend (Mangum)
 - [ ] S3 bucket — images bucket with CORS policy
 - [ ] CloudFront — frontend CDN distribution

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import useSWR from "swr";
 import {
   Sparkles,
@@ -25,6 +26,7 @@ import { getIdToken } from "@/lib/auth";
 import { notifyCreditsChanged } from "@/lib/user";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 import { CautionNote } from "@/components/caution-note";
+import { BIRTH_PROFILE_SWR_KEY, NatalReadingButton } from "@/components/natal-reading-button";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
 import { Seo } from "@/components/seo";
 
@@ -231,8 +233,9 @@ function PersonalizedForm({
     revalidateOnFocus: false,
   });
   const isLoggedIn = token === undefined ? null : !!token;
+  // Same key as the chart reading section below, so the profile is fetched once.
   const { data: birthProfile } = useAuthedSWR(
-    token ? ["astrology-prefill-birth-profile"] : null,
+    token ? BIRTH_PROFILE_SWR_KEY : null,
     () => getBirthProfile(),
   );
 
@@ -459,6 +462,25 @@ function PersonalizedForm({
   );
 }
 
+function NatalChartSection() {
+  return (
+    <section
+      id="xartis"
+      className="scroll-mt-20 rounded-lg border border-amber-600/60 bg-surface p-5"
+    >
+      <h2 className="text-lg font-semibold text-violet-50">Ο αστρολογικός σου χάρτης</h2>
+      <p className="mt-1 mb-4 text-sm text-violet-200 leading-relaxed">
+        Μια ανάγνωση όλου του χάρτη γέννησής σου: ο χαρακτήρας, τα συναισθήματα, ο έρωτας, η
+        καριέρα και ο δρόμος σου. Γίνεται από τα στοιχεία γέννησης του προφίλ σου.{" "}
+        <Link href="/zodia/astrologikos-xartis/" className="text-amber-400 hover:text-amber-300">
+          Τι δείχνει ο χάρτης
+        </Link>
+      </p>
+      <NatalReadingButton returnTo="/astrology/#xartis" />
+    </section>
+  );
+}
+
 export default function AstrologyPage() {
   const router = useRouter();
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
@@ -516,6 +538,9 @@ export default function AstrologyPage() {
             <PersonalizedForm
               onInsufficientCredits={() => setCreditDialogOpen(true)}
             />
+            <div className="mt-10">
+              <NatalChartSection />
+            </div>
           </>
         ) : (
           <div className="flex flex-col gap-10">
@@ -532,6 +557,7 @@ export default function AstrologyPage() {
             <PersonalizedForm
               onInsufficientCredits={() => setCreditDialogOpen(true)}
             />
+            <NatalChartSection />
           </div>
         )}
       </div>

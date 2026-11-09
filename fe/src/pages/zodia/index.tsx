@@ -38,6 +38,11 @@ const TOOLS = [
     title: "Υπολογισμός ωροσκόπου",
     text: "Βρες τον ωροσκόπο σου από την ώρα και τον τόπο γέννησης.",
   },
+  {
+    href: "/zodia/astrologikos-xartis/",
+    title: "Αστρολογικός χάρτης",
+    text: "Όλοι οι πλανήτες, οι οίκοι και οι όψεις του χάρτη γέννησής σου.",
+  },
 ];
 
 interface ZodiacHubProps {
@@ -100,7 +105,7 @@ export default function ZodiacHub({ signs }: ZodiacHubProps) {
         ))}
       </ul>
 
-      <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
         {TOOLS.map((tool) => (
           <Link
             key={tool.href}

@@ -29,12 +29,18 @@ app/
 ├── routes/
 │   ├── upload.py            # POST /upload-url
 │   ├── readings.py          # POST /readings/read-coffee, GET /readings, GET /readings/{id}
+│   ├── profile.py           # GET/PUT /profile/birth
+│   ├── chart.py             # POST /chart/calculate (full natal chart, no credits)
+│   ├── astrology.py         # horoscopes, /personalized, /natal (natal chart reading)
 │   └── auth.py              # GET /auth/me (creates user on first login)
 ├── services/
 │   ├── openai_service.py    # structured_chat() — shared OpenAI helper
 │   ├── writing_style.py     # shared banned phrases, gender rule, check-and-regenerate-once guardrail (all reader-facing AI text goes through it)
 │   ├── vision_service.py    # Step 1: analyze_coffee_image()
 │   ├── fortune_service.py   # Step 2: generate_coffee_reading()
+│   ├── chart_service.py     # calculate_chart(): planets, houses, aspects (Swiss Ephemeris)
+│   ├── birth_profile_service.py # load_birth_profile(): recalculates charts of an older version
+│   ├── natal_service.py     # generate_natal_reading(): AI reading of the full chart
 │   ├── s3_service.py        # presigned upload/get URLs
 │   └── dynamodb_service.py  # save_reading, get_readings, get_reading, get_or_create_user
 └── schemas/
@@ -52,6 +58,10 @@ lambda_handler.py            # Mangum(app) — entry point for Lambda
 | GET | `/readings` | JWT | List user readings |
 | GET | `/readings/{reading_id}` | JWT | Get one reading |
 | GET | `/auth/me` | JWT | Get/create user profile |
+| GET/PUT | `/profile/birth` | JWT | Birth profile + chart |
+| POST | `/chart/calculate` | JWT | Full natal chart from date, time, place (no credits) |
+| POST | `/astrology/natal` | JWT | AI natal chart reading of the saved profile (2 credits) |
+| GET | `/astrology/natal/history`, `/astrology/natal/{reading_id}` | JWT | Stored natal readings |
 
 ## AI Pipeline
 ```python
@@ -70,8 +80,30 @@ dynamodb_service.save_reading(...)
 Fields: image_key, vision_analysis, symbols_detected, reading_result, tokens_used, cost, created_at
 
 **users** — PK: user_id
-Fields: email, plan, credits, created_at
+Fields: email, plan, credits, created_at, birth profile (birth_date, birth_time, birth_time_known,
+birth_place, birth_lat, birth_lon, chart, sex, eye_color)
 (plan/credits ready for Stripe integration)
+
+**natal_readings** (`DYNAMODB_NATAL_TABLE`): PK user_id, SK reading_id
+Fields: sex, date_of_birth, chart (snapshot of the chart that was read), reading_result, tokens_used,
+cost, created_at. Numbers come back as Decimal: read through `_from_decimal`.
+
+## Natal chart
+- `chart_service.calculate_chart()` returns `ChartData` version 2 (`schemas/profile.py`): the 10
+  planets + North Node (sign, degree, retrograde, house), Ascendant, Midheaven, 12 house cusps,
+  aspects, plus the 7 legacy keys (`sun_sign` ... `time_known`) that mobile and older code read.
+- **Birth times are read in the time zone of the birth place** (`time_zone_for()`, timezonefinder,
+  imported lazily; falls back to Europe/Athens at sea). `birth_time_to_utc()` defaults to Athens.
+- Unknown birth time: computed at 12:00 local, no Ascendant/MC/houses, no Moon aspects,
+  `moon_day_signs` when the Moon changed sign that day.
+- Houses are Placidus, whole-sign above 66° latitude or when swisseph cannot solve Placidus.
+- Stored charts of an older version are recalculated on load by
+  `birth_profile_service.load_birth_profile()`. Use it, not `dynamodb_service.get_birth_profile`,
+  wherever a route needs the profile. It never raises because of the upgrade.
+- Ephemeris tests check against JPL Horizons values, never values produced by swisseph itself.
+- The natal reading (`natal_service`) has its own style block; the horoscope rules forbid numbered
+  houses. It goes through `writing_style.generate_with_guardrail` like every reader-facing text.
+  The route charges 2 credits only after the reading is saved.
 
 ## S3 Structure
 ```

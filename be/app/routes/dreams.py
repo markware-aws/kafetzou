@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from app.core.credits import RequireCredits
 from app.core.security import get_current_user
 from app.schemas.dream_reading import DreamReading
-from app.services import dream_service, dynamodb_service
+from app.services import birth_profile_service, dream_service, dynamodb_service
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ async def interpret_dream(
     reading_id = str(uuid.uuid4())
 
     # Optionally enrich with birth profile context
-    birth_profile = dynamodb_service.get_birth_profile(user_id)
+    birth_profile = await birth_profile_service.load_birth_profile(user_id)
     sex = birth_profile.get("sex") if birth_profile else None
     sun_sign = None
     if birth_profile and birth_profile.get("chart"):

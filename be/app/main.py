@@ -4,7 +4,7 @@ import time
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import astrology, auth, dreams, payments, profile, readings, tarot, upload
+from app.routes import astrology, auth, chart, dreams, payments, profile, readings, tarot, upload
 
 # Lambda already attaches a root handler — just set the level.
 # basicConfig is a no-op when a handler already exists, so this is safe for local dev too.
@@ -59,6 +59,7 @@ async def no_cache_middleware(request: Request, call_next):
 
 app.include_router(auth.router)
 app.include_router(profile.router)
+app.include_router(chart.router)
 app.include_router(payments.router)
 app.include_router(dreams.router)
 app.include_router(upload.router)

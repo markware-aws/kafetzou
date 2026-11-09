@@ -27,6 +27,7 @@
  *   /tarot-reading/       → /tarot-reading/index.html  (?id=xxx)
  *   /astrology/           → /astrology/index.html
  *   /astrology-reading/   → /astrology-reading/index.html (?id=xxx)
+ *   /natal-reading/       → /natal-reading/index.html  (?id=xxx)
  *   /dream/               → /dream/index.html
  *   /dream-reading/       → /dream-reading/index.html  (?id=xxx)
  *   /dream-dictionary/    → /dream-dictionary/index.html (?q=xxx)

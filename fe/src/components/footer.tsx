@@ -12,6 +12,7 @@ const GUIDE_LINKS = [
   { href: "/astrology/", label: "Ζώδια σήμερα" },
   { href: "/zodia/symvatotita/", label: "Συμβατότητα ζωδίων" },
   { href: "/zodia/oroskopos/", label: "Υπολογισμός ωροσκόπου" },
+  { href: "/zodia/astrologikos-xartis/", label: "Αστρολογικός χάρτης" },
 ];
 
 export function Footer() {

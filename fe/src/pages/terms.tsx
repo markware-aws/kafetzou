@@ -82,6 +82,10 @@ export default function TermsPage() {
               βάσει γεννητικού χάρτη (1 credit)
             </li>
             <li>
+              <span className="font-medium text-violet-50">Ανάγνωση αστρολογικού χάρτη</span>{" "}
+              με όλους τους πλανήτες, τους οίκους και τις όψεις (2 credits)
+            </li>
+            <li>
               <span className="font-medium text-violet-50">Ερμηνεία ονείρων</span> (1
               credit)
             </li>

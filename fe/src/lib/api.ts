@@ -20,6 +20,54 @@ export async function getMe(): Promise<any> {
 
 // ── Profile ───────────────────────────────────────────────────────────────────
 
+export type PlanetId =
+  | "sun"
+  | "moon"
+  | "mercury"
+  | "venus"
+  | "mars"
+  | "jupiter"
+  | "saturn"
+  | "uranus"
+  | "neptune"
+  | "pluto"
+  | "north_node";
+
+export type AspectType = "conjunction" | "sextile" | "square" | "trine" | "opposition";
+
+export interface ChartPlanet {
+  id: PlanetId;
+  /** Ecliptic longitude, 0 to 360. */
+  longitude: number;
+  sign: string;
+  /** Degree inside the sign, 0 to under 30, one decimal. */
+  degree: number;
+  retrograde: boolean;
+  /** Null when the birth time is unknown. */
+  house: number | null;
+}
+
+export interface ChartPoint {
+  longitude: number;
+  sign: string;
+  degree: number;
+}
+
+export interface ChartHouse extends ChartPoint {
+  number: number;
+}
+
+export interface ChartAspect {
+  planet_a: PlanetId;
+  planet_b: PlanetId;
+  type: AspectType;
+  orb: number;
+}
+
+/**
+ * The first seven keys exist on every stored chart. The rest came with the full chart
+ * (version 2), so a chart saved before it may lack them until the backend upgrades it.
+ */
 export interface ChartData {
   sun_sign: string;
   sun_degree: number;
@@ -28,6 +76,18 @@ export interface ChartData {
   ascendant_sign: string | null;
   ascendant_degree: number | null;
   time_known: boolean;
+  version?: number;
+  /** IANA time zone the birth time was read in. */
+  time_zone?: string;
+  planets?: ChartPlanet[];
+  /** Null when the birth time is unknown. */
+  ascendant?: ChartPoint | null;
+  midheaven?: ChartPoint | null;
+  houses?: ChartHouse[] | null;
+  house_system?: "placidus" | "whole_sign" | null;
+  aspects?: ChartAspect[];
+  /** Time unknown and the Moon changed sign that day: [sign at 00:00, sign at 23:59]. */
+  moon_day_signs?: [string, string] | null;
 }
 
 export interface BirthProfile {
@@ -66,6 +126,37 @@ export async function saveBirthProfile(body: BirthProfileRequest): Promise<Birth
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail ?? "Failed to save birth profile");
+  }
+  return res.json();
+}
+
+export interface ChartCalculationRequest {
+  date_of_birth: string;
+  /** "HH:MM" clock time at the birth place, or null when unknown. */
+  time_of_birth: string | null;
+  latitude: number;
+  longitude: number;
+}
+
+const CHART_ERROR_MESSAGE = "Δεν μπορέσαμε να υπολογίσουμε τον χάρτη. Δοκίμασε ξανά σε λίγο.";
+
+/** Free chart calculation for the public calculators; needs an account, costs no credits. */
+export async function calculateChart(body: ChartCalculationRequest): Promise<ChartData> {
+  const headers = await authHeaders();
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/chart/calculate`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error(CHART_ERROR_MESSAGE);
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    // Validation errors carry a list in `detail`; only a string is a message for people.
+    throw new Error(typeof err.detail === "string" ? err.detail : CHART_ERROR_MESSAGE);
   }
   return res.json();
 }
@@ -366,5 +457,71 @@ export async function getPersonalizedAstrologyHistory(): Promise<any[]> {
     headers: await authHeaders(),
   });
   if (!res.ok) throw new Error("Failed to fetch astrology history");
+  return res.json();
+}
+
+// ── Natal chart reading ───────────────────────────────────────────────────────
+
+export const NATAL_READING_CREDITS = 2;
+const NATAL_ERROR_MESSAGE = "Η ανάγνωση του χάρτη απέτυχε. Δοκίμασε ξανά.";
+
+export interface NatalReading {
+  summary: string;
+  personality: string;
+  emotions: string;
+  mind: string;
+  love: string;
+  career: string;
+  strengths: string;
+  challenges: string;
+  life_path: string;
+  warning: string;
+}
+
+export interface NatalReadingResponse {
+  reading_id: string;
+  reading: NatalReading;
+  chart: ChartData;
+}
+
+export interface NatalHistoryItem {
+  reading_id: string;
+  created_at: string;
+  sex: string | null;
+  date_of_birth: string;
+  /** The chart as it was when it was read. */
+  chart: ChartData;
+  reading_result: NatalReading;
+  tokens_used: number;
+}
+
+/** Reads the chart saved in the birth profile; takes no body. */
+export async function createNatalReading(): Promise<NatalReadingResponse> {
+  const res = await fetch(`${API_URL}/astrology/natal`, {
+    method: "POST",
+    headers: await authHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    if (typeof err.detail === "string") throw new Error(err.detail);
+    // Callers spot a missing balance by the word "credits", so keep it in the fallback too.
+    throw new Error(res.status === 402 ? "Not enough credits" : NATAL_ERROR_MESSAGE);
+  }
+  return res.json();
+}
+
+export async function getNatalReadingHistory(): Promise<NatalHistoryItem[]> {
+  const res = await fetch(`${API_URL}/astrology/natal/history`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error("Δεν φόρτωσαν οι αναγνώσεις του χάρτη.");
+  return res.json();
+}
+
+export async function getNatalReading(readingId: string): Promise<NatalHistoryItem> {
+  const res = await fetch(`${API_URL}/astrology/natal/${readingId}`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error("Δεν βρέθηκε η ανάγνωση του χάρτη.");
   return res.json();
 }

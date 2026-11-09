@@ -15,6 +15,9 @@ import {
 } from "@/lib/api";
 import { SIGN_BY_ID } from "@/lib/astrology";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
+import { NatalChartWheel } from "@/components/natal-chart-wheel";
+import { NatalChartDetails } from "@/components/natal-chart-details";
+import { BIRTH_PROFILE_SWR_KEY, NatalReadingButton } from "@/components/natal-reading-button";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
 
 const SEX_OPTIONS = ["Άνδρας", "Γυναίκα", "Άλλο"];
@@ -68,7 +71,7 @@ export default function ProfilePage() {
     error: profileLoadError,
     isLoading: profileLoading,
     mutate: mutateProfile,
-  } = useAuthedSWR(["birth-profile"], () => getBirthProfile());
+  } = useAuthedSWR(BIRTH_PROFILE_SWR_KEY, () => getBirthProfile());
 
   const credits = meData ? Number(meData.credits ?? 0) : null;
   const loading = profile === undefined && profileLoading;
@@ -195,6 +198,25 @@ export default function ProfilePage() {
                 Αυτά τα δεδομένα χρησιμοποιούνται αυτόματα στις εξατομικευμένες
                 αστρολογικές αναγνώσεις σου.
               </p>
+
+              {profile.chart.planets && profile.chart.planets.length > 0 && (
+                <div className="mt-6 flex flex-col gap-6">
+                  <NatalChartWheel chart={profile.chart} />
+                  <NatalChartDetails chart={profile.chart} />
+                </div>
+              )}
+
+              <section className="mt-6 rounded-lg border border-amber-600/60 bg-surface p-5">
+                <h3 className="text-base font-semibold text-violet-50">
+                  Η ανάγνωση του χάρτη σου
+                </h3>
+                <p className="mt-1 mb-4 text-sm text-violet-200 leading-relaxed">
+                  Η καφετζού διαβάζει ολόκληρο τον χάρτη σου: τον χαρακτήρα, τα
+                  συναισθήματα, τον έρωτα, την καριέρα, τα δυνατά σου σημεία και τον
+                  δρόμο σου.
+                </p>
+                <NatalReadingButton returnTo="/profile/" />
+              </section>
             </div>
           )}
 
@@ -258,8 +280,8 @@ export default function ProfilePage() {
                       <AlertCircle className="w-4 h-4 text-violet-300 shrink-0 mt-0.5" />
                       <p className="text-sm text-violet-200 leading-relaxed">
                         Θα χρησιμοποιηθεί 12:00 μεσημέρι. Το ζώδιο Σελήνης
-                        ενδέχεται να διαφέρει κατά ±1 ζώδιο και ο Ωροσκόπος δεν
-                        θα υπολογιστεί.
+                        ενδέχεται να διαφέρει κατά ±1 ζώδιο, ενώ ο Ωροσκόπος και
+                        οι οίκοι δεν θα υπολογιστούν.
                       </p>
                     </div>
                   )}
@@ -274,7 +296,7 @@ export default function ProfilePage() {
                     onChange={setBirthPlace}
                   />
                   <p className="text-xs text-violet-300 mt-1.5">
-                    Χρησιμοποιείται για τον υπολογισμό του Ωροσκόπου
+                    Χρησιμοποιείται για τον υπολογισμό του Ωροσκόπου και των οίκων
                   </p>
                 </div>
 

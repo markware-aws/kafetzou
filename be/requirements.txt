@@ -11,3 +11,4 @@ pyswisseph==2.10.3.2
 stripe==11.4.1
 resend==2.10.0
 tzdata==2025.3
+timezonefinder==9.2.0

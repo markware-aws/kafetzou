@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     dynamodb_astrology_table: str = "astrology_readings"
     dynamodb_astrology_personalized_table: str = "astrology_personalized"
     dynamodb_dreams_table: str = "dream_readings"
+    dynamodb_natal_table: str = "natal_readings"
     dynamodb_users_table: str = "users"
 
     # Cognito

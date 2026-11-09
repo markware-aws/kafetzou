@@ -25,12 +25,13 @@ src/
 │   ├── index.tsx           # Landing page — hero, features, free horoscope
 │   ├── login.tsx           # Sign in / Sign up / Email confirmation
 │   ├── upload.tsx          # Main page — drag & drop, max 3 images
-│   ├── dashboard.tsx       # Past readings list (tabbed: coffee / tarot)
+│   ├── dashboard.tsx       # Past readings list (tabs: coffee / tarot / astrology / chart / dreams)
 │   ├── reading.tsx         # Coffee reading detail — uses ?id= query param
 │   ├── tarot.tsx           # Tarot page — daily card + AI reading
 │   ├── tarot-reading.tsx   # Tarot reading detail — uses ?id= query param
 │   ├── astrology.tsx       # Astrology page — sign grid + personalized reading
 │   ├── astrology-reading.tsx # Astrology reading detail — uses ?id= query param
+│   ├── natal-reading.tsx   # Natal chart reading detail: wheel from the stored chart, ?id= query param
 │   ├── dream.tsx           # Dream interpretation page
 │   ├── dream-reading.tsx   # Dream reading detail — uses ?id= query param
 │   ├── dream-dictionary.tsx # Free symbol dictionary — live search, ?q= query param
@@ -46,7 +47,7 @@ src/
 │   ├── symvola-kafe/       # index (hub) + [slug] — coffee-cup symbols
 │   ├── oneirokritis/       # index (hub + search) + [slug] (one page per entry)
 │   ├── taro/               # index (78 cards) + [slug] (card) + nai-i-oxi (yes/no tool)
-│   └── zodia/              # index + [slug] (sign) + oroskopos (Ascendant calculator)
+│   └── zodia/              # index + [slug] (sign) + oroskopos (Ascendant) + astrologikos-xartis (full chart)
 │       └── symvatotita/    # index (matrix + picker) + [slug] (pair, e.g. krios-leon)
 ├── styles/
 │   └── globals.css         # TailwindCSS v4 + custom animations + theme vars (imported by _app.tsx)
@@ -64,8 +65,11 @@ src/
 │   ├── dream-search-box.tsx # Search input + autocomplete (ARIA combobox)
 │   ├── dream-entry-card.tsx # One dictionary entry: meaning, scenarios, related
 │   ├── cookie-banner.tsx   # Accept/reject bar for Google Analytics; reopened from the footer
-│   ├── place-autocomplete.tsx # Birth place search (Photon), used by profile + Ascendant calculator
-│   ├── signup-prompt-dialog.tsx # "Δημιούργησε λογαριασμό" modal for the Ascendant calculator
+│   ├── place-autocomplete.tsx # Birth place search (Photon), used by profile + both chart calculators
+│   ├── signup-prompt-dialog.tsx # "Δημιούργησε λογαριασμό" modal for members-only tools (returnTo, featureText)
+│   ├── natal-chart-wheel.tsx   # SVG chart wheel: signs, houses, planets, aspect lines
+│   ├── natal-chart-details.tsx # Placements table, element balance, aspect list, time-unknown notes
+│   ├── natal-reading-button.tsx # Paid natal reading (2 credits) of the saved profile chart, every state
 │   └── credits-dialog.tsx  # Insufficient credits modal
 └── lib/
     ├── amplify-config.ts   # Amplify.configure() with Cognito settings
@@ -81,7 +85,8 @@ src/
     ├── tarot-cards.ts      # Tarot guide types + helpers (no data)
     ├── zodiac.ts           # Zodiac guide types, sign slugs, compatibility URLs (no data)
     ├── content-data.ts     # Build-time loaders for all guide content — getStatic* ONLY
-    ├── birth-chart.ts      # Local time → UTC, Sun longitude, Ascendant (Meeus)
+    ├── chart-wheel.ts      # Pure wheel geometry: longitude → screen angle, label spreading (tested)
+    ├── planets.ts          # Planet/aspect names and glyphs, element balance, degree formatting (tested)
     └── place-search.ts     # Photon search URL + result → { label, latitude, longitude }
 
 src/content/*.json                 # Guide content: coffee symbols, tarot cards, zodiac signs, pairs
@@ -117,6 +122,7 @@ scripts/generate-dream-data.mjs    # Runs before dev/build: writes the gitignore
 | `/tarot-reading?id=xxx` | Tarot reading detail |
 | `/astrology` | Sign grid + personalized reading |
 | `/astrology-reading?id=xxx` | Astrology reading detail |
+| `/natal-reading?id=xxx` | Natal chart reading detail |
 | `/dream` | Dream interpretation |
 | `/dream-reading?id=xxx` | Dream reading detail |
 | `/dream-dictionary?q=xxx` | Dream symbol dictionary — no AI, no credits |
@@ -130,6 +136,7 @@ scripts/generate-dream-data.mjs    # Runs before dev/build: writes the gitignore
 | `/oneirokritis/`, `/oneirokritis/<id>/` | Public dream dictionary |
 | `/taro/`, `/taro/<card>/`, `/taro/nai-i-oxi/` | Tarot cards + yes/no tool |
 | `/zodia/`, `/zodia/<sign>/`, `/zodia/oroskopos/` | Zodiac signs + Ascendant calculator |
+| `/zodia/astrologikos-xartis/` | Full birth chart calculator (wheel, placements, aspects) |
 | `/zodia/symvatotita/`, `/zodia/symvatotita/<a>-<b>/` | Zodiac compatibility |
 
 ## SEO guide pages
@@ -140,9 +147,18 @@ Public, indexable pages that target Greek search terms and link into the app fea
 - **The full dream dictionary is never served whole.** Search downloads only `dream-index.json` (names, aliases, a sorted bag of keywords); an entry's text is on its page and in `data/dream/<id>.json`.
 - **Sitemap is generated** by `scripts/generate-sitemap.mjs` after `next build`: every exported page that is not `noindex` is listed. The script fails the build if an indexable page has no canonical, a canonical that is not its own URL, or a title/description shared with another page.
 - **Horoscope text** on `/zodia/<sign>/` is fetched in the browser from the prewarmed CDN JSON (`docs/horoscope-cdn-architecture.md`), so the static HTML carries only the evergreen sign content.
-- **The Ascendant calculator** runs entirely in the browser (`lib/birth-chart.ts`); `birth-chart.test.ts` checks it against JPL ephemeris values. The app's personalized readings still use Swiss Ephemeris on the backend.
-  - It needs an account: the page stays public and indexable, but «Υπολόγισε» opens `SignupPromptDialog` for signed-out visitors, and so does the homepage guide card. It is a prompt, not a lock.
-  - The birth place comes from `PlaceAutocomplete` (coordinates only). Birth times are always read as Greek time (`Europe/Athens`), and the page doesn't mention time zones.
+- **The chart calculators** (`/zodia/oroskopos/` and `/zodia/astrologikos-xartis/`) call `POST /chart/calculate` (`calculateChart` in `api.ts`): Swiss Ephemeris on the backend, the same numbers as the profile and the readings. No chart maths runs in the browser.
+  - They need an account: the pages stay public and indexable, but the calculate button opens `SignupPromptDialog` for signed-out visitors, and so does the homepage guide card (it points at the full chart page).
+  - The birth place comes from `PlaceAutocomplete` (coordinates only). Birth times are read in the time zone of the birth place (the backend finds it from the coordinates). The pages don't talk about time zones: they ask for the time as the clock showed it.
+  - The full chart page has a «Δεν ξέρω την ώρα» option (no houses, no Ascendant) and saves the chart to the profile with «Αποθήκευση στο προφίλ» (keeping the profile's sex and eye colour), because the paid reading always reads the saved profile chart.
+
+## Natal chart
+- `ChartData` (`api.ts`): the seven legacy keys are always there; `planets`, `houses`, `aspects`, `ascendant`, `midheaven`, `moon_day_signs` came with chart version 2 and are optional. Draw the wheel and details only when `planets` exists (`NatalChartWheel`/`NatalChartDetails` return null otherwise).
+- The wheel puts the Ascendant at 9 o'clock (0° Aries when the time is unknown) and runs the zodiac counter-clockwise. Geometry lives in `lib/chart-wheel.ts`, pure and unit-tested; it and `lib/planets.ts` use relative imports only, since vitest has no `@/` alias.
+- Every glyph drawn as text (planets, ♈-♓) gets the text variation selector `︎` (`planetGlyph`/`signGlyph`), or iOS draws colour emoji.
+- Colours come from Tailwind classes on the SVG (`fill-*`, `stroke-*`), so they follow the theme in `globals.css`.
+- The birth profile has one SWR key, `BIRTH_PROFILE_SWR_KEY` (`natal-reading-button.tsx`), shared by `/profile`, `/astrology` and the chart page, so a save shows up everywhere at once.
+- The natal reading costs 2 credits (`NATAL_READING_CREDITS`): `NatalReadingButton` on `/profile`, `/astrology#xartis` and the chart page; results at `/natal-reading/?id=` and in the dashboard's «Χάρτης» tab.
 - **`/login?mode=register`** opens the sign-up form; combine with `returnTo`.
 
 ## Mobile (iOS Safari) rules

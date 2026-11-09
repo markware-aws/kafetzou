@@ -3,7 +3,15 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
-import { getReadings, getTarotReadings, getPersonalizedAstrologyHistory, getDreamReadings } from "@/lib/api";
+import {
+  getReadings,
+  getTarotReadings,
+  getPersonalizedAstrologyHistory,
+  getDreamReadings,
+  getNatalReadingHistory,
+  type ChartData,
+  type NatalHistoryItem,
+} from "@/lib/api";
 import { getCardDisplayName } from "@/lib/tarot";
 import { SIGN_BY_ID } from "@/lib/astrology";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
@@ -39,27 +47,46 @@ interface DreamItem {
   reading_result: { summary: string; symbols: string[]; interpretation: string; };
 }
 
-type Tab = "coffee" | "tarot" | "astrology" | "dreams";
+type Tab = "coffee" | "tarot" | "astrology" | "natal" | "dreams";
 
 const NEW_READING_HREF: Record<Tab, string> = {
-  coffee: "/upload", tarot: "/tarot", astrology: "/astrology", dreams: "/dream",
+  coffee: "/upload",
+  tarot: "/tarot",
+  astrology: "/astrology",
+  natal: "/astrology#xartis",
+  dreams: "/dream",
 };
+
+/** "☉ Σκορπιός · ☽ Καρκίνος · ↑ Λέων". \uFE0E keeps iOS from drawing the glyphs as emoji. */
+function chartSummary(chart: ChartData | undefined): string {
+  if (!chart) return "";
+  const signName = (signId: string) => SIGN_BY_ID[signId]?.nameGr ?? signId;
+  const parts = [
+    `☉\uFE0E ${signName(chart.sun_sign)}`,
+    `☽\uFE0E ${signName(chart.moon_sign)}`,
+  ];
+  if (chart.ascendant_sign) parts.push(`↑ ${signName(chart.ascendant_sign)}`);
+  return parts.join(" · ");
+}
 
 export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>("coffee");
   const { data, error, isLoading } = useAuthedSWR(
     ["dashboard-data"],
     async () => {
-      const [coffee, tarot, astrology, dreams] = await Promise.all([
+      const [coffee, tarot, astrology, natal, dreams] = await Promise.all([
         getReadings(),
         getTarotReadings(),
         getPersonalizedAstrologyHistory(),
+        // A missing table or a failing list must not take the whole dashboard down.
+        getNatalReadingHistory().catch(() => [] as NatalHistoryItem[]),
         getDreamReadings(),
       ]);
       return {
         coffee: coffee as Reading[],
         tarot: tarot as TarotItem[],
         astrology: astrology as AstrologyItem[],
+        natal,
         dreams: dreams as DreamItem[],
       };
     },
@@ -68,6 +95,7 @@ export default function DashboardPage() {
   const readings = data?.coffee ?? [];
   const tarotReadings = data?.tarot ?? [];
   const astrologyReadings = data?.astrology ?? [];
+  const natalReadings = data?.natal ?? [];
   const dreamReadings = data?.dreams ?? [];
   const errorMessage = error instanceof Error ? error.message : "";
 
@@ -75,6 +103,7 @@ export default function DashboardPage() {
     { id: "coffee", label: "Καφές" },
     { id: "tarot", label: "Ταρό" },
     { id: "astrology", label: "Αστρολογία" },
+    { id: "natal", label: "Χάρτης" },
     { id: "dreams", label: "Όνειρα" },
   ];
 
@@ -98,7 +127,7 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          <div role="tablist" className="flex gap-6 border-b border-violet-800 mb-5">
+          <div role="tablist" className="flex gap-4 sm:gap-6 border-b border-violet-800 mb-5">
             {tabs.map(({ id, label }) => (
               <button
                 key={id}
@@ -206,6 +235,26 @@ export default function DashboardPage() {
                     </HistoryRow>
                   );
                 })}
+              </HistoryList>
+            )
+          )}
+
+          {!isLoading && tab === "natal" && (
+            natalReadings.length === 0 ? (
+              <EmptyState label="Δεν υπάρχουν αναγνώσεις χάρτη ακόμα." href="/astrology#xartis" btnLabel="Διάβασε τον χάρτη σου" />
+            ) : (
+              <HistoryList>
+                {natalReadings.map((r, i) => (
+                  <HistoryRow
+                    key={r.reading_id}
+                    href={`/natal-reading/?id=${r.reading_id}`}
+                    index={i}
+                    createdAt={r.created_at}
+                    title={r.reading_result?.summary ?? "Ανάγνωση χάρτη"}
+                  >
+                    <p className="mt-1 text-xs text-violet-300">{chartSummary(r.chart)}</p>
+                  </HistoryRow>
+                ))}
               </HistoryList>
             )
           )}

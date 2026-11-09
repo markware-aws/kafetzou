@@ -244,6 +244,10 @@ interface Guide {
   requiresAuth?: boolean;
 }
 
+/** The one members-only guide card, so the sign-up prompt names it and returns to it. */
+const CHART_GUIDE_PATH = "/zodia/astrologikos-xartis/";
+const CHART_GUIDE_SIGNUP_TEXT = "Ο αστρολογικός χάρτης είναι διαθέσιμος για τα μέλη.";
+
 const GUIDES: Guide[] = [
   {
     href: "/symvola-kafe/",
@@ -271,9 +275,9 @@ const GUIDES: Guide[] = [
     text: "Πώς ταιριάζουν δύο ζώδια μεταξύ τους.",
   },
   {
-    href: "/zodia/oroskopos/",
-    title: "Υπολογισμός ωροσκόπου",
-    text: "Βρες τον ωροσκόπο σου από την ώρα γέννησης.",
+    href: CHART_GUIDE_PATH,
+    title: "Αστρολογικός χάρτης",
+    text: "Οι πλανήτες, οι οίκοι και οι όψεις της γέννησής σου.",
     requiresAuth: true,
   },
 ];
@@ -290,6 +294,8 @@ export default function Home() {
       <SignupPromptDialog
         open={signupPromptOpen}
         onClose={() => setSignupPromptOpen(false)}
+        returnTo={CHART_GUIDE_PATH}
+        featureText={CHART_GUIDE_SIGNUP_TEXT}
       />
       {/* The coffee keywords belong to /anagnosi-kafe/; the homepage targets the brand mix. */}
       <Seo

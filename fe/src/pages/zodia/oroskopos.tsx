@@ -2,24 +2,20 @@ import { useState } from "react";
 import type { GetStaticProps } from "next";
 import Link from "next/link";
 import useSWR from "swr";
+import { Loader2 } from "lucide-react";
 import { Seo } from "@/components/seo";
 import { ContentLayout, ContentSection, FeatureCta } from "@/components/content-layout";
 import { PlaceAutocomplete } from "@/components/place-autocomplete";
 import { SignupPromptDialog } from "@/components/signup-prompt-dialog";
+import { calculateChart } from "@/lib/api";
 import { getUser } from "@/lib/auth";
-import {
-  ascendantLongitude,
-  longitudeToSign,
-  sunLongitude,
-  zonedTimeToUtc,
-} from "@/lib/birth-chart";
 import type { PlaceOption } from "@/lib/place-search";
-import { zodiacSignPath } from "@/lib/zodiac";
+import { SLUG_BY_SIGN_ID, zodiacSignPath } from "@/lib/zodiac";
 import { getZodiacSigns } from "@/lib/content-data";
 
 const EARLIEST_BIRTH_YEAR = 1900;
-/** Birth times are read as Greek clock time, whatever place is picked. */
-const BIRTH_TIME_ZONE = "Europe/Athens";
+const FULL_CHART_PATH = "/zodia/astrologikos-xartis/";
+const NOT_AUTHENTICATED = "Not authenticated";
 
 interface SignInfo {
   slug: string;
@@ -29,14 +25,14 @@ interface SignInfo {
 }
 
 interface CalculatorProps {
-  /** Zodiac order, so index = sign index from longitudeToSign. */
+  /** Zodiac order. */
   signs: SignInfo[];
 }
 
 interface ChartResult {
-  ascendantIndex: number;
+  ascendantSlug: string;
   ascendantDegree: number;
-  sunIndex: number;
+  sunSlug: string;
 }
 
 export const getStaticProps: GetStaticProps<CalculatorProps> = async () => ({
@@ -65,6 +61,7 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
   const [place, setPlace] = useState<PlaceOption | null>(null);
   const [result, setResult] = useState<ChartResult | null>(null);
   const [error, setError] = useState("");
+  const [calculating, setCalculating] = useState(false);
   const [signupPromptOpen, setSignupPromptOpen] = useState(false);
   // Same SWR key as the site header, so the auth check is shared.
   const { data: user } = useSWR(["home-user"], () => getUser(), {
@@ -74,7 +71,7 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
 
   async function calculate(event: React.FormEvent) {
     event.preventDefault();
-    // The calculator is for members. It runs in the browser, so this is a prompt, not a lock.
+    // The calculator is for members: the backend needs a signed-in user to compute the chart.
     if (!(await getUser())) {
       setSignupPromptOpen(true);
       return;
@@ -96,18 +93,37 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
       setResult(null);
       return;
     }
-    const utc = zonedTimeToUtc(year, month, day, hour, minute, BIRTH_TIME_ZONE);
-    const ascendant = longitudeToSign(ascendantLongitude(utc, place.latitude, place.longitude));
+    setCalculating(true);
     setError("");
-    setResult({
-      ascendantIndex: ascendant.signIndex,
-      ascendantDegree: Math.floor(ascendant.degree),
-      sunIndex: longitudeToSign(sunLongitude(utc)).signIndex,
-    });
+    try {
+      const chart = await calculateChart({
+        date_of_birth: birthDate,
+        time_of_birth: birthTime,
+        latitude: place.latitude,
+        longitude: place.longitude,
+      });
+      const ascendantSlug = chart.ascendant_sign && SLUG_BY_SIGN_ID[chart.ascendant_sign];
+      const sunSlug = SLUG_BY_SIGN_ID[chart.sun_sign];
+      if (!ascendantSlug || !sunSlug || chart.ascendant_degree === null) {
+        throw new Error("Δεν μπορέσαμε να υπολογίσουμε τον ωροσκόπο. Δοκίμασε ξανά.");
+      }
+      setResult({
+        ascendantSlug,
+        ascendantDegree: Math.floor(chart.ascendant_degree),
+        sunSlug,
+      });
+    } catch (caught: unknown) {
+      const message = caught instanceof Error ? caught.message : "";
+      setResult(null);
+      if (message === NOT_AUTHENTICATED) setSignupPromptOpen(true);
+      else setError(message || "Κάτι πήγε στραβά. Δοκίμασε ξανά.");
+    } finally {
+      setCalculating(false);
+    }
   }
 
-  const ascendantSign = result ? signs[result.ascendantIndex] : null;
-  const sunSign = result ? signs[result.sunIndex] : null;
+  const ascendantSign = result ? signs.find((sign) => sign.slug === result.ascendantSlug) : null;
+  const sunSign = result ? signs.find((sign) => sign.slug === result.sunSlug) : null;
 
   return (
     <ContentLayout
@@ -187,9 +203,11 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
         <div className="sm:col-span-2 flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-2">
           <button
             type="submit"
-            className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-md px-5 py-2 text-sm transition-colors"
+            disabled={calculating}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-md px-5 py-2 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Υπολόγισε
+            {calculating && <Loader2 className="w-4 h-4 animate-spin" />}
+            {calculating ? "Υπολογισμός…" : "Υπολόγισε"}
           </button>
           {isSignedOut && (
             <p className="text-xs text-violet-300 text-center sm:text-left">
@@ -220,6 +238,9 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
                 Το ζώδιό σου: {sunSign.name}
               </Link>
             )}
+            <Link href={FULL_CHART_PATH} className="text-amber-400 hover:text-amber-300">
+              Ολόκληρος ο αστρολογικός σου χάρτης
+            </Link>
           </div>
         </section>
       )}
@@ -245,6 +266,13 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
           αφήνεις πριν σε γνωρίσουν. Γι’ αυτό δύο άνθρωποι του ίδιου ζωδίου μπορεί να μοιάζουν
           τόσο διαφορετικοί.
         </p>
+        <p>
+          Ο ωροσκόπος είναι ένα κομμάτι του χάρτη γέννησης. Στον{" "}
+          <Link href={FULL_CHART_PATH} className="text-amber-400 hover:text-amber-300">
+            αστρολογικό χάρτη
+          </Link>{" "}
+          βλέπεις και όλους τους πλανήτες, τους οίκους και τις όψεις τους.
+        </p>
         {/* "Ωροσκόπος" sits on its own line so every card has the same two-line height. */}
         <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {signs.map((sign) => (
@@ -264,7 +292,7 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
         </ul>
       </ContentSection>
 
-      <FeatureCta feature="astrology" />
+      <FeatureCta feature="natal" />
     </ContentLayout>
   );
 }

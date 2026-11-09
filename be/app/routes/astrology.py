@@ -8,13 +8,29 @@ from pydantic import BaseModel
 from app.core.config import settings
 from app.core.credits import RequireCredits
 from app.core.security import get_current_user
-from app.schemas.astrology import AstrologyReading, PersonalizedReadingRequest, ZodiacSign, PeriodType
-from app.services import astrology_service, dynamodb_service, s3_service
+from app.schemas.astrology import (
+    AstrologyReading,
+    NatalReading,
+    NatalReadingItem,
+    PeriodType,
+    PersonalizedReadingRequest,
+    ZodiacSign,
+)
+from app.schemas.profile import ChartData
+from app.services import (
+    astrology_service,
+    birth_profile_service,
+    dynamodb_service,
+    natal_service,
+    s3_service,
+)
 
 ALL_SIGNS: list[ZodiacSign] = [
     "aries", "taurus", "gemini", "cancer", "leo", "virgo",
     "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces",
 ]
+
+NATAL_READING_CREDITS = 2
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +48,12 @@ class PersonalizedResponse(BaseModel):
     reading_id: str
     sign: str
     reading: AstrologyReading
+
+
+class NatalResponse(BaseModel):
+    reading_id: str
+    reading: NatalReading
+    chart: ChartData
 
 
 # ── Prewarm (called by EventBridge Scheduler) ────────────────────────────────
@@ -100,7 +122,7 @@ async def create_personalized_reading(
     reading_id = str(uuid.uuid4())
 
     # Enrich with natal chart if the user has a saved birth profile
-    birth_profile = dynamodb_service.get_birth_profile(user_id)
+    birth_profile = await birth_profile_service.load_birth_profile(user_id)
     chart = birth_profile.get("chart") if birth_profile else None
 
     try:
@@ -155,6 +177,96 @@ async def get_personalized_reading(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     item = dynamodb_service.get_personalized_astrology_reading(user_id, reading_id)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
+    return item
+
+
+# ── Natal chart reading (separate from /personalized, whose history mobile lists as sign
+#    readings; also defined BEFORE the parameterized route) ─────────────────────────────
+
+@router.post("/natal", response_model=NatalResponse)
+async def create_natal_reading(
+    current_user: dict = Depends(get_current_user),
+    _: None = Depends(RequireCredits(NATAL_READING_CREDITS)),
+) -> NatalResponse:
+    """Auth-required: AI reading of the saved birth chart (costs 2 credits)."""
+    user_id = current_user.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    profile = await birth_profile_service.load_birth_profile(user_id)
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Συμπλήρωσε πρώτα τα στοιχεία γέννησής σου στο προφίλ.",
+        )
+    chart = profile.get("chart")
+    if not chart or not chart.get("planets"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ο χάρτης σου δεν είναι πλήρης. Αποθήκευσε ξανά τα στοιχεία γέννησης στο προφίλ.",
+        )
+
+    try:
+        reading, usage = await natal_service.generate_natal_reading(
+            chart=chart,
+            sex=profile.get("sex"),
+            date_of_birth=profile["date_of_birth"],
+        )
+    except Exception:
+        logger.exception("Natal reading failed for user %s", user_id)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Η ανάγνωση του χάρτη δεν ολοκληρώθηκε. Δοκίμασε ξανά σε λίγο.",
+        )
+
+    # Saved before charging: a reading the user cannot open again is not charged
+    reading_id = str(uuid.uuid4())
+    try:
+        dynamodb_service.save_natal_reading(
+            user_id=user_id,
+            reading_id=reading_id,
+            sex=profile.get("sex"),
+            date_of_birth=profile["date_of_birth"],
+            chart=chart,
+            reading=reading,
+            tokens=usage["total_tokens"],
+        )
+    except Exception:
+        logger.exception("Failed to save natal reading for user %s", user_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Η ανάγνωση δεν αποθηκεύτηκε και δεν χρεώθηκες. Δοκίμασε ξανά σε λίγο.",
+        )
+
+    try:
+        dynamodb_service.deduct_credits(user_id, NATAL_READING_CREDITS)
+    except Exception as exc:
+        logger.error("Failed to deduct credits for user %s: %s", user_id, exc)
+
+    return NatalResponse(reading_id=reading_id, reading=reading, chart=ChartData(**chart))
+
+
+@router.get("/natal/history", response_model=list[NatalReadingItem])
+async def list_natal_readings(
+    current_user: dict = Depends(get_current_user),
+) -> list[dict]:
+    user_id = current_user.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    return dynamodb_service.get_natal_readings(user_id)
+
+
+@router.get("/natal/{reading_id}", response_model=NatalReadingItem)
+async def get_natal_reading(
+    reading_id: str,
+    current_user: dict = Depends(get_current_user),
+) -> dict:
+    user_id = current_user.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    item = dynamodb_service.get_natal_reading(user_id, reading_id)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reading not found")
     return item

@@ -7,7 +7,7 @@ from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
 from app.core.config import settings
-from app.schemas.astrology import AstrologyReading
+from app.schemas.astrology import AstrologyReading, NatalReading
 from app.schemas.coffee_reading import CoffeeReading
 from app.schemas.dream_reading import DreamReading
 from app.schemas.tarot_reading import TarotReading
@@ -26,6 +26,21 @@ def _to_decimal(obj):
         return {k: _to_decimal(v) for k, v in obj.items()}
     if isinstance(obj, list):
         return [_to_decimal(v) for v in obj]
+    return obj
+
+
+def _from_decimal(obj):
+    """Recursively turn DynamoDB Decimals back into int (whole numbers) or float.
+
+    Without this FastAPI serializes Decimals as strings. DynamoDB drops trailing zeros, so a
+    stored 12.0 comes back as 12: response models turn it into a float again where it matters.
+    """
+    if isinstance(obj, Decimal):
+        return int(obj) if obj == obj.to_integral_value() else float(obj)
+    if isinstance(obj, dict):
+        return {k: _from_decimal(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_from_decimal(v) for v in obj]
     return obj
 
 
@@ -54,6 +69,10 @@ def _astrology_personalized_table():
 
 def _dreams_table():
     return get_dynamodb().Table(settings.dynamodb_dreams_table)
+
+
+def _natal_table():
+    return get_dynamodb().Table(settings.dynamodb_natal_table)
 
 
 def _users_table():
@@ -330,6 +349,66 @@ def get_dream_reading(user_id: str, reading_id: str) -> dict | None:
     return response.get("Item")
 
 
+def save_natal_reading(
+    *,
+    user_id: str,
+    reading_id: str,
+    sex: str | None,
+    date_of_birth: str,
+    chart: dict,
+    reading: NatalReading,
+    tokens: int,
+) -> dict:
+    """Persist a natal chart reading with a snapshot of the chart it read."""
+    table = _natal_table()
+    now = datetime.now(timezone.utc).isoformat()
+    cost = round(tokens * 0.00000015 + tokens * 0.0000006, 6)
+    item = {
+        "user_id": user_id,
+        "reading_id": reading_id,
+        "sex": sex,
+        "date_of_birth": date_of_birth,
+        # The profile can change later; the detail page draws the chart that was read
+        "chart": chart,
+        "reading_result": reading.model_dump(),
+        "tokens_used": tokens,
+        "cost": str(cost),
+        "created_at": now,
+    }
+    try:
+        table.put_item(Item=_to_decimal(item))
+    except ClientError as exc:
+        logger.error("Failed to save natal reading to DynamoDB: %s", exc)
+        raise
+    logger.info("Saved natal reading %s for user %s", reading_id, user_id)
+    return item
+
+
+def get_natal_readings(user_id: str) -> list[dict]:
+    """Fetch all natal readings for a user, newest first."""
+    table = _natal_table()
+    try:
+        response = table.query(KeyConditionExpression=Key("user_id").eq(user_id))
+    except ClientError as exc:
+        logger.error("Failed to query natal readings: %s", exc)
+        raise
+    items = [_from_decimal(item) for item in response.get("Items", [])]
+    # The sort key is a random UUID, so the table order says nothing about time
+    return sorted(items, key=lambda item: item.get("created_at", ""), reverse=True)
+
+
+def get_natal_reading(user_id: str, reading_id: str) -> dict | None:
+    """Fetch a single natal reading by composite key."""
+    table = _natal_table()
+    try:
+        response = table.get_item(Key={"user_id": user_id, "reading_id": reading_id})
+    except ClientError as exc:
+        logger.error("Failed to get natal reading: %s", exc)
+        raise
+    item = response.get("Item")
+    return _from_decimal(item) if item else None
+
+
 def get_user(user_id: str) -> dict | None:
     """Fetch a user record by user_id (without creating one)."""
     table = _users_table()
@@ -486,6 +565,22 @@ def save_birth_profile(
     return updates
 
 
+def update_birth_chart(user_id: str, chart: dict) -> None:
+    """Replace only the stored chart (used when an older chart version is recalculated)."""
+    table = _users_table()
+    try:
+        table.update_item(
+            Key={"user_id": user_id},
+            UpdateExpression="SET #chart = :chart",
+            ExpressionAttributeNames={"#chart": "chart"},
+            ExpressionAttributeValues={":chart": _to_decimal(chart)},
+        )
+    except ClientError as exc:
+        logger.error("Failed to update birth chart: %s", exc)
+        raise
+    logger.info("Updated birth chart for user %s", user_id)
+
+
 def get_birth_profile(user_id: str) -> dict | None:
     """Return birth profile fields from the users table, or None if not set."""
     user = get_user(user_id)
@@ -498,7 +593,7 @@ def get_birth_profile(user_id: str) -> dict | None:
         "birth_place": user.get("birth_place"),
         "birth_lat": float(user["birth_lat"]) if user.get("birth_lat") else None,
         "birth_lon": float(user["birth_lon"]) if user.get("birth_lon") else None,
-        "chart": user.get("chart"),
+        "chart": _from_decimal(user.get("chart")),
         "sex": user.get("sex"),
         "eye_color": user.get("eye_color"),
     }

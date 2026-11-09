@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.security import get_current_user
 from app.schemas.profile import BirthProfileRequest, BirthProfileResponse, ChartData
-from app.services import dynamodb_service
+from app.services import birth_profile_service, dynamodb_service
 from app.services.chart_service import calculate_chart, geocode_place
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ async def get_birth_profile(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    profile = dynamodb_service.get_birth_profile(user_id)
+    profile = await birth_profile_service.load_birth_profile(user_id)
     if not profile:
         return None
 
@@ -47,7 +47,10 @@ async def save_birth_profile(
     body: BirthProfileRequest,
     current_user: dict = Depends(get_current_user),
 ) -> BirthProfileResponse:
-    """Save birth data, geocode the birth place, and calculate the natal chart."""
+    """Save birth data, geocode the birth place, and calculate the natal chart.
+
+    The birth time is read in the time zone of the birth place.
+    """
     user_id = current_user.get("sub")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
