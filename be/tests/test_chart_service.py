@@ -38,30 +38,40 @@ class TestBirthTimeToUtc:
         assert utc == datetime(1990, 7, 15, 2, 0, tzinfo=timezone.utc)
 
 
-class TestTimeZoneFor:
+class TestIsValidTimeZone:
     @pytest.mark.parametrize(
-        "lat, lon, expected",
+        "name",
         [
-            (37.98, 23.73, "Europe/Athens"),  # Athens
-            (35.34, 25.13, "Europe/Athens"),  # Heraklion, Crete
-            (52.52, 13.40, "Europe/Berlin"),
-            (-33.87, 151.21, "Australia/Sydney"),
+            "Europe/Athens",
+            "America/Argentina/Buenos_Aires",
+            "America/Port-au-Prince",
+            "Etc/GMT+3",
+            "UTC",
+            "Asia/Calcutta",  # an old alias that browsers still list
         ],
     )
-    def test_should_find_the_time_zone_of_the_birth_place(self, lat, lon, expected):
-        assert chart_service.time_zone_for(lat, lon) == expected
+    def test_should_accept_a_tz_database_name(self, name):
+        assert chart_service.is_valid_time_zone(name) is True
 
-    def test_should_fall_back_to_athens_at_sea(self):
-        # Ionian Sea, between Greece and Sicily
-        assert chart_service.time_zone_for(37.0, 19.0) == "Europe/Athens"
-
-    def test_should_fall_back_to_athens_when_the_lookup_fails(self, monkeypatch):
-        def failing_finder():
-            raise ImportError("timezonefinder is not installed")
-
-        monkeypatch.setattr(chart_service, "_timezone_finder", failing_finder)
-
-        assert chart_service.time_zone_for(52.52, 13.40) == "Europe/Athens"
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "",
+            "Mars/Olympus_Mons",
+            "europe/athens",
+            "Europe",  # a folder of the tz database, not a zone
+            "Europe/",
+            " Europe/Athens",
+            "Europe\\Athens",
+            "../../etc/passwd",
+            "/etc/localtime",
+            "zone1970.tab",
+            "Europe/Athens\x00",
+            "Europe/" + "A" * 60,
+        ],
+    )
+    def test_should_reject_anything_else(self, name):
+        assert chart_service.is_valid_time_zone(name) is False
 
 
 class TestLongitudeToSign:
@@ -176,12 +186,21 @@ def _planet_by_id(chart: dict, planet_id: str) -> dict:
 # ecliptic point on the eastern horizon for the Ascendant (moved here from the web calculator's
 # tests when it switched to this backend).
 REFERENCE_CASES = [
-    pytest.param("1985-07-15", "10:30", 37.98, 23.73, 163.2, 112.756, id="Athens, summer time"),
     pytest.param(
-        "1992-01-20", "23:15", 40.64, 22.94, 188.89, 300.072, id="Thessaloniki, Sun on a cusp",
+        "1985-07-15", "10:30", 37.98, 23.73, "Europe/Athens", 163.2, 112.756,
+        id="Athens, summer time",
     ),
-    pytest.param("2001-11-03", "06:05", 35.17, 33.36, 218.99, 220.801, id="Nicosia"),
-    pytest.param("1978-03-09", "14:40", -37.81, 144.96, 91.68, 348.254, id="Melbourne"),
+    pytest.param(
+        "1992-01-20", "23:15", 40.64, 22.94, "Europe/Athens", 188.89, 300.072,
+        id="Thessaloniki, Sun on a cusp",
+    ),
+    pytest.param(
+        "2001-11-03", "06:05", 35.17, 33.36, "Asia/Nicosia", 218.99, 220.801, id="Nicosia",
+    ),
+    pytest.param(
+        "1978-03-09", "14:40", -37.81, 144.96, "Australia/Melbourne", 91.68, 348.254,
+        id="Melbourne",
+    ),
 ]
 
 # JPL Horizons apparent geocentric ecliptic longitudes of date (quantity 31), in degrees.
@@ -232,12 +251,14 @@ class TestCalculateChart:
         assert chart["ascendant_degree"] == pytest.approx(degree, abs=1)
 
     @pytest.mark.parametrize(
-        "date_of_birth, time_of_birth, lat, lon, ascendant, sun", REFERENCE_CASES,
+        "date_of_birth, time_of_birth, lat, lon, time_zone, ascendant, sun", REFERENCE_CASES,
     )
     def test_should_match_reference_ascendant_and_sun_in_the_local_time_zone(
-        self, date_of_birth, time_of_birth, lat, lon, ascendant, sun
+        self, date_of_birth, time_of_birth, lat, lon, time_zone, ascendant, sun
     ):
-        chart = chart_service.calculate_chart(date_of_birth, time_of_birth, lat, lon)
+        chart = chart_service.calculate_chart(
+            date_of_birth, time_of_birth, lat, lon, time_zone=time_zone
+        )
 
         assert _longitude_distance(chart["ascendant"]["longitude"], ascendant) < 0.2
         assert _longitude_distance(_planet_by_id(chart, "sun")["longitude"], sun) < 0.02
@@ -274,6 +295,10 @@ class TestCalculateChart:
 
         assert [planet["id"] for planet in chart["planets"]] == list(chart_service.PLANET_BODIES)
         assert chart["version"] == chart_service.CHART_VERSION
+
+    def test_should_read_the_birth_time_in_greek_time_by_default(self):
+        chart = chart_service.calculate_chart("1985-07-15", "10:30", *ATHENS)
+
         assert chart["time_zone"] == "Europe/Athens"
 
     def test_should_keep_the_legacy_keys_in_step_with_the_full_chart(self):
@@ -297,7 +322,9 @@ class TestCalculateChart:
             assert _longitude_distance(cusps[index + 6], cusps[index] + 180) < 0.02
 
     def test_should_use_whole_sign_houses_above_the_arctic_circle(self):
-        chart = chart_service.calculate_chart("1990-01-10", "13:00", *TROMSO)
+        chart = chart_service.calculate_chart(
+            "1990-01-10", "13:00", *TROMSO, time_zone="Europe/Oslo"
+        )
 
         ascendant_sign = chart_service.ZODIAC_SIGNS.index(chart["ascendant"]["sign"])
         assert chart["house_system"] == "whole_sign"
@@ -332,15 +359,37 @@ class TestCalculateChart:
             expected = chart_service.house_of(planet["longitude"], cusps)
             assert planet["house"] == expected, planet["id"]
 
-    def test_should_read_the_birth_time_in_the_birth_place_time_zone(self):
+    def test_should_read_the_birth_time_in_the_given_time_zone(self):
         # 12:00 in Berlin and 13:00 in Athens are the same moment in June 1990
-        berlin = chart_service.calculate_chart("1990-06-15", "12:00", 52.52, 13.40)
+        berlin = chart_service.calculate_chart(
+            "1990-06-15", "12:00", 52.52, 13.40, time_zone="Europe/Berlin"
+        )
         athens = chart_service.calculate_chart("1990-06-15", "13:00", *ATHENS)
 
         assert berlin["time_zone"] == "Europe/Berlin"
         assert _longitude_distance(
             _planet_by_id(berlin, "moon")["longitude"], _planet_by_id(athens, "moon")["longitude"]
         ) < 0.01
+
+    def test_should_not_take_the_time_zone_from_the_birth_place(self):
+        # Born in Athens while the clock showed Berlin time: an hour later than Greek time
+        berlin_clock = chart_service.calculate_chart(
+            "1990-06-15", "12:00", *ATHENS, time_zone="Europe/Berlin"
+        )
+        greek_clock = chart_service.calculate_chart("1990-06-15", "13:00", *ATHENS)
+
+        assert berlin_clock["ascendant"] == greek_clock["ascendant"]
+        assert berlin_clock["time_zone"] == "Europe/Berlin"
+
+    def test_should_find_the_moon_signs_of_the_day_in_the_given_time_zone(self):
+        # From the Horizons positions in the ingress test below, the Moon entered Capricorn at
+        # about 18:00 UT on 15 August 2024. That day ended at 10:00 UT in Kiritimati (UTC+14),
+        # so there the Moon spent all of it in Sagittarius.
+        chart = chart_service.calculate_chart(
+            "2024-08-15", "12:00", *ATHENS, time_known=False, time_zone="Pacific/Kiritimati"
+        )
+
+        assert chart["moon_day_signs"] is None
 
     def test_should_leave_out_houses_angles_and_moon_aspects_without_a_birth_time(self):
         chart = chart_service.calculate_chart("1985-07-15", "12:00", *ATHENS, time_known=False)

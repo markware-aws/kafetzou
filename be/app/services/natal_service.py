@@ -260,3 +260,83 @@ async def generate_natal_reading(
         field_patterns=_NATAL_FIELD_PATTERNS,
         extra_checks=[_example_copy_check],
     )
+
+
+# ── One reading per set of birth details ──────────────────────────────────────
+
+# Places are geocoded again on every profile save and can move by a few metres. Two decimals
+# (about 1 km) still tell two towns apart and change nothing in a chart.
+_BIRTH_KEY_COORDINATE_DECIMALS = 2
+# Readings saved before birth_key existed are matched on their chart snapshot. The same
+# calculation gives the same numbers (stored to 0.01°), so a gap past rounding means the birth
+# details changed: the Moon moves 0.05° in about 5 minutes, the Ascendant in seconds.
+_LEGACY_LONGITUDE_TOLERANCE = 0.05
+_LEGACY_COMPARED_POINTS = ("sun", "moon", "ascendant")
+
+
+def birth_key(profile: dict) -> str:
+    """The birth details a reading was made from: date, time (or unknown), place, time zone.
+
+    The zone is part of it even without a birth time: the chart is then drawn at local noon,
+    so another zone moves the Moon.
+    """
+    time_of_birth = profile.get("time_of_birth")
+    time_part = time_of_birth if profile.get("time_known") and time_of_birth else "unknown"
+    lat, lon = profile.get("birth_lat"), profile.get("birth_lon")
+    if lat is None or lon is None:
+        place_part = "unknown"
+    else:
+        place_part = (
+            f"{lat:.{_BIRTH_KEY_COORDINATE_DECIMALS}f},{lon:.{_BIRTH_KEY_COORDINATE_DECIMALS}f}"
+        )
+    zone_part = profile.get("birth_time_zone") or "unknown"
+    return f"{profile['date_of_birth']}|{time_part}|{place_part}|{zone_part}"
+
+
+def _chart_longitudes(chart: dict) -> dict[str, float]:
+    points = {planet["id"]: planet["longitude"] for planet in chart.get("planets") or []}
+    if chart.get("ascendant"):
+        points["ascendant"] = chart["ascendant"]["longitude"]
+    return points
+
+
+def _angular_distance(first: float, second: float) -> float:
+    return abs((first - second + 180) % 360 - 180)
+
+
+def _same_chart(stored: dict, current: dict) -> bool:
+    if bool(stored.get("time_known")) != bool(current.get("time_known")):
+        return False
+    stored_points, current_points = _chart_longitudes(stored), _chart_longitudes(current)
+    for point in _LEGACY_COMPARED_POINTS:
+        stored_value, current_value = stored_points.get(point), current_points.get(point)
+        if stored_value is None and current_value is None:
+            continue
+        if stored_value is None or current_value is None:
+            return False
+        if _angular_distance(stored_value, current_value) > _LEGACY_LONGITUDE_TOLERANCE:
+            return False
+    return True
+
+
+def reading_matches_profile(reading: dict, profile: dict) -> bool:
+    """True when a stored reading was made from the profile's birth details as they are now."""
+    stored_key = reading.get("birth_key")
+    if stored_key:
+        return stored_key == birth_key(profile)
+    return reading.get("date_of_birth") == profile.get("date_of_birth") and _same_chart(
+        reading.get("chart") or {}, profile.get("chart") or {}
+    )
+
+
+def find_current_reading(readings: list[dict], profile: dict | None) -> dict | None:
+    """The newest of `readings` (newest first) that matches the profile, or None.
+
+    A chart never changes, so a profile is read once; only changed birth details make room
+    for a new paid reading.
+    """
+    if not profile:
+        return None
+    return next(
+        (reading for reading in readings if reading_matches_profile(reading, profile)), None
+    )

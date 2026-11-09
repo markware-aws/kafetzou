@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/generate-dream-data.mjs",
+    "predev": "node scripts/generate-dream-data.mjs && node scripts/generate-chart-text-data.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/generate-dream-data.mjs",
+    "prebuild": "node scripts/generate-dream-data.mjs && node scripts/generate-chart-text-data.mjs",
     "build": "next build && node scripts/generate-sitemap.mjs",
     "start": "next start",
     "lint": "eslint",

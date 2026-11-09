@@ -39,14 +39,16 @@ app/
 │   ├── vision_service.py    # Step 1: analyze_coffee_image()
 │   ├── fortune_service.py   # Step 2: generate_coffee_reading()
 │   ├── chart_service.py     # calculate_chart(): planets, houses, aspects (Swiss Ephemeris)
-│   ├── birth_profile_service.py # load_birth_profile(): recalculates charts of an older version
-│   ├── natal_service.py     # generate_natal_reading(): AI reading of the full chart
+│   ├── birth_profile_service.py # load_birth_profile(): recalculates charts of an older version; profile_time_zone()
+│   ├── natal_service.py     # generate_natal_reading(): AI reading of the full chart; birth_key(), find_current_reading()
 │   ├── s3_service.py        # presigned upload/get URLs
 │   └── dynamodb_service.py  # save_reading, get_readings, get_reading, get_or_create_user
 └── schemas/
     ├── vision.py            # CoffeeSymbol, CoffeeVisionAnalysis
     └── coffee_reading.py    # CoffeeReading
 lambda_handler.py            # Mangum(app) — entry point for Lambda
+scripts/
+└── generate_chart_texts.py  # offline, run by hand: writes the instant chart texts (fe/src/content/chart-texts.json); not in the Lambda image
 ```
 
 ## API Endpoints
@@ -60,8 +62,9 @@ lambda_handler.py            # Mangum(app) — entry point for Lambda
 | GET | `/auth/me` | JWT | Get/create user profile |
 | GET/PUT | `/profile/birth` | JWT | Birth profile + chart |
 | POST | `/chart/calculate` | JWT | Full natal chart from date, time, place (no credits) |
-| POST | `/astrology/natal` | JWT | AI natal chart reading of the saved profile (2 credits) |
+| POST | `/astrology/natal` | JWT | AI natal chart reading of the saved profile (2 credits; free, no AI call, when those birth details already have a reading) |
 | GET | `/astrology/natal/history`, `/astrology/natal/{reading_id}` | JWT | Stored natal readings |
+| GET | `/astrology/natal/current` | JWT | `current_reading_id` (reading of the profile's birth details as they are now) and `latest_reading_id` |
 
 ## AI Pipeline
 ```python
@@ -81,29 +84,59 @@ Fields: image_key, vision_analysis, symbols_detected, reading_result, tokens_use
 
 **users** — PK: user_id
 Fields: email, plan, credits, created_at, birth profile (birth_date, birth_time, birth_time_known,
-birth_place, birth_lat, birth_lon, chart, sex, eye_color)
-(plan/credits ready for Stripe integration)
+birth_place, birth_lat, birth_lon, chart, sex, eye_color, birth_time_zone)
+(plan/credits ready for Stripe integration). `birth_time_zone` is the IANA zone the user picked;
+profiles saved before it have none (see "Natal chart" for the fallback).
 
 **natal_readings** (`DYNAMODB_NATAL_TABLE`): PK user_id, SK reading_id
-Fields: sex, date_of_birth, chart (snapshot of the chart that was read), reading_result, tokens_used,
-cost, created_at. Numbers come back as Decimal: read through `_from_decimal`.
+Fields: sex, date_of_birth, chart (snapshot of the chart that was read), birth_key, reading_result,
+tokens_used, cost, created_at. Numbers come back as Decimal: read through `_from_decimal`.
 
 ## Natal chart
 - `chart_service.calculate_chart()` returns `ChartData` version 2 (`schemas/profile.py`): the 10
   planets + North Node (sign, degree, retrograde, house), Ascendant, Midheaven, 12 house cusps,
   aspects, plus the 7 legacy keys (`sun_sign` ... `time_known`) that mobile and older code read.
-- **Birth times are read in the time zone of the birth place** (`time_zone_for()`, timezonefinder,
-  imported lazily; falls back to Europe/Athens at sea). `birth_time_to_utc()` defaults to Athens.
+- **Birth times are read in the time zone the user picks**, an IANA name sent by the web
+  (`birth_time_zone` on PUT `/profile/birth`, `time_zone` on POST `/chart/calculate`), checked
+  with `chart_service.is_valid_time_zone()` (422 «Η ζώνη ώρας δεν είναι σωστή.»).
+  `calculate_chart()` and `birth_time_to_utc()` default to Europe/Athens. Nothing derives the
+  zone from the coordinates: the old lookup library (numpy + map data) was removed because its
+  first lookup took ~12 s on the 512 MB Lambda. Do not add a dependency like it back.
+- A profile's zone comes from `birth_profile_service.profile_time_zone()`: the stored
+  `birth_time_zone`, else the `time_zone` of its version 2 chart (so no saved chart moves), else
+  Europe/Athens. GET/PUT `/profile/birth` always return it. A PUT without a zone (mobile sends
+  none) keeps the stored one: `save_birth_profile` writes `birth_time_zone` only when given.
 - Unknown birth time: computed at 12:00 local, no Ascendant/MC/houses, no Moon aspects,
   `moon_day_signs` when the Moon changed sign that day.
 - Houses are Placidus, whole-sign above 66° latitude or when swisseph cannot solve Placidus.
 - Stored charts of an older version are recalculated on load by
   `birth_profile_service.load_birth_profile()`. Use it, not `dynamodb_service.get_birth_profile`,
-  wherever a route needs the profile. It never raises because of the upgrade.
+  wherever a route needs the profile. It never raises because of the upgrade, recalculates in
+  the profile's zone, and sets `birth_time_zone` on the profile it returns.
 - Ephemeris tests check against JPL Horizons values, never values produced by swisseph itself.
 - The natal reading (`natal_service`) has its own style block; the horoscope rules forbid numbered
   houses. It goes through `writing_style.generate_with_guardrail` like every reader-facing text.
   The route charges 2 credits only after the reading is saved.
+- **A chart is read once.** `natal_service.birth_key()` (date | time or `unknown` | lat,lon to 2
+  decimals | birth_time_zone) is stored on each reading; POST `/astrology/natal` returns the newest
+  reading with the profile's key free (checked before credits, so 0 credits still gets it back).
+  Readings saved before `birth_key` match on date of birth + chart snapshot (time_known, Sun, Moon,
+  Ascendant within 0.05°). Changed birth details make room for a new paid reading.
+- **Instant chart texts** (`fe/src/content/chart-texts.json`, 490 keys: `ascendant-<sign>`,
+  `<planet>-<sign>`, `<planet>-house-<n>`, `<planet_a>-<type>-<planet_b>` in `PLANET_BODIES`
+  order) are written offline by `scripts/generate_chart_texts.py`, never at runtime. The 11
+  aspects Mercury and Venus cannot reach from the Sun or each other (Sun square Mercury, Mercury
+  trine Venus...) have no key: `MAX_ELONGATION` derives them. Each text adapts the verified
+  passage of Heindel, "The Message of the Stars" (1918, public domain,
+  `docs/heindel-message-of-the-stars.json`, `--source`) into a Greek character portrait; Pluto
+  and North Node keys are written in-house from a meaning sheet. Rerun from `be/` with the key in
+  `.env`: `python -m scripts.generate_chart_texts --all` fills missing keys (resumable, saves
+  after every text); `--keys a,b --force` redoes chosen keys (the report lists failed keys,
+  texts still with problems and over-used words and phrases); `--sample --markdown <file>` for
+  a review set. `--fix --dry-run` lists the library texts that fail a check (grouped by
+  problem, no API calls) and `--fix` regenerates them, best of 3 attempts, never keeping a worse
+  text. Junk (anything that is not Greek text and its punctuation, unbalanced « ») is never
+  stripped: it is a problem, so the text is regenerated.
 
 ## S3 Structure
 ```

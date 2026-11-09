@@ -100,6 +100,8 @@ export interface BirthProfile {
   chart: ChartData | null;
   sex: string | null;
   eye_color: string | null;
+  /** IANA zone the birth time is read in. Optional until every backend sends it. */
+  birth_time_zone?: string;
 }
 
 export interface BirthProfileRequest {
@@ -108,6 +110,8 @@ export interface BirthProfileRequest {
   birth_place: string;
   sex?: string;
   eye_color?: string;
+  /** IANA name; left out, the backend keeps the stored zone. */
+  birth_time_zone?: string | null;
 }
 
 export async function getBirthProfile(): Promise<BirthProfile | null> {
@@ -136,6 +140,8 @@ export interface ChartCalculationRequest {
   time_of_birth: string | null;
   latitude: number;
   longitude: number;
+  /** IANA zone the birth time is read in. */
+  time_zone: string;
 }
 
 const CHART_ERROR_MESSAGE = "Δεν μπορέσαμε να υπολογίσουμε τον χάρτη. Δοκίμασε ξανά σε λίγο.";
@@ -512,6 +518,22 @@ export async function createNatalReading(): Promise<NatalReadingResponse> {
 
 export async function getNatalReadingHistory(): Promise<NatalHistoryItem[]> {
   const res = await fetch(`${API_URL}/astrology/natal/history`, {
+    headers: await authHeaders(),
+  });
+  if (!res.ok) throw new Error("Δεν φόρτωσαν οι αναγνώσεις του χάρτη.");
+  return res.json();
+}
+
+export interface CurrentNatalReading {
+  /** The reading of the birth details the profile has now; null until there is one. */
+  current_reading_id: string | null;
+  /** The newest reading of any birth details, so a changed profile can still open it. */
+  latest_reading_id: string | null;
+}
+
+/** A chart is read once: this says whether the profile's chart already has its reading. */
+export async function getCurrentNatalReading(): Promise<CurrentNatalReading> {
+  const res = await fetch(`${API_URL}/astrology/natal/current`, {
     headers: await authHeaders(),
   });
   if (!res.ok) throw new Error("Δεν φόρτωσαν οι αναγνώσεις του χάρτη.");

@@ -15,6 +15,8 @@ class BirthProfileRequest(BaseModel):
     birth_place: str             # "Athens, Greece"
     sex: str | None = None       # stored for quick use in astrology readings
     eye_color: str | None = None
+    # IANA name the birth time is read in. None keeps the saved one (mobile never sends it).
+    birth_time_zone: str | None = None
 
 
 class ChartPoint(BaseModel):
@@ -79,3 +81,4 @@ class BirthProfileResponse(BaseModel):
     chart: ChartData | None = None
     sex: str | None = None
     eye_color: str | None = None
+    birth_time_zone: str  # IANA name the birth time is read in

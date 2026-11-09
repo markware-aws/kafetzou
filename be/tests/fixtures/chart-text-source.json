@@ -1,0 +1,56 @@
+{
+  "source": {
+    "title": "Test fixture in the shape of docs/heindel-message-of-the-stars.json",
+    "note": "Invented sentences, not the book's text"
+  },
+  "passages": {
+    "sun-scorpio": {
+      "heading": "The Sun in Scorpio",
+      "text": "A determined nature that keeps its own counsel. Strong likes and dislikes.",
+      "verified": true,
+      "similarity": 0.97
+    },
+    "moon-virgo": {
+      "heading": "The Moon in Virgo",
+      "text": "Unverified text that must never reach a prompt.",
+      "verified": false,
+      "similarity": 0.41
+    },
+    "venus-harmonious-jupiter": {
+      "heading": "Venus Sextile or Trine Jupiter",
+      "text": "A generous and sociable disposition, fond of comfort and good company.",
+      "verified": true,
+      "similarity": 0.95
+    },
+    "mars-tense-saturn": {
+      "heading": "Mars Square or Opposition Saturn",
+      "text": "Energy held back by caution, so that action comes in bursts.",
+      "verified": true,
+      "similarity": 0.93
+    },
+    "planet-sun": {
+      "heading": "The Sun",
+      "text": "The Sun stands for the will and the life force.",
+      "verified": true,
+      "similarity": 0.99
+    },
+    "sign-scorpio": {
+      "heading": "Scorpio",
+      "text": "A fixed watery sign of intensity and secrecy.",
+      "verified": true,
+      "similarity": 0.98
+    },
+    "house-5": {
+      "heading": "The Fifth House",
+      "text": "The house of pleasure, children and speculation.",
+      "verified": true,
+      "similarity": 0.96
+    },
+    "house-8": {
+      "heading": "The Eighth House",
+      "text": "Unverified background that must never reach a prompt.",
+      "verified": false,
+      "similarity": 0.52
+    }
+  }
+}

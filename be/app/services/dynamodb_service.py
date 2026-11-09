@@ -358,8 +358,13 @@ def save_natal_reading(
     chart: dict,
     reading: NatalReading,
     tokens: int,
+    birth_key: str,
 ) -> dict:
-    """Persist a natal chart reading with a snapshot of the chart it read."""
+    """Persist a natal chart reading with a snapshot of the chart it read.
+
+    `birth_key` (natal_service.birth_key) tells later requests whether the profile still has
+    the birth details this reading was made from.
+    """
     table = _natal_table()
     now = datetime.now(timezone.utc).isoformat()
     cost = round(tokens * 0.00000015 + tokens * 0.0000006, 6)
@@ -370,6 +375,7 @@ def save_natal_reading(
         "date_of_birth": date_of_birth,
         # The profile can change later; the detail page draws the chart that was read
         "chart": chart,
+        "birth_key": birth_key,
         "reading_result": reading.model_dump(),
         "tokens_used": tokens,
         "cost": str(cost),
@@ -527,8 +533,13 @@ def save_birth_profile(
     chart: dict | None,
     sex: str | None = None,
     eye_color: str | None = None,
+    birth_time_zone: str | None = None,
 ) -> dict:
-    """Persist birth profile + calculated chart into the users table."""
+    """Persist birth profile + calculated chart into the users table.
+
+    sex, eye_color and birth_time_zone are written only when given, so a save that leaves one
+    out keeps the stored value.
+    """
     table = _users_table()
     updates: dict = {
         "birth_date": date_of_birth,
@@ -545,6 +556,8 @@ def save_birth_profile(
         updates["sex"] = sex
     if eye_color:
         updates["eye_color"] = eye_color
+    if birth_time_zone:
+        updates["birth_time_zone"] = birth_time_zone
 
     expr_parts = [f"#{k} = :{k}" for k in updates]
     expr_names = {f"#{k}": k for k in updates}
@@ -596,6 +609,7 @@ def get_birth_profile(user_id: str) -> dict | None:
         "chart": _from_decimal(user.get("chart")),
         "sex": user.get("sex"),
         "eye_color": user.get("eye_color"),
+        "birth_time_zone": user.get("birth_time_zone"),
     }
 
 

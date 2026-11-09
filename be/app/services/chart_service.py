@@ -7,8 +7,9 @@ aspects. The seven legacy keys (sun/moon/ascendant sign and degree, time_known) 
 top level for older readers (mobile, personalized horoscopes, dreams).
 
 Notes:
-- The birth time is the wall-clock time of the birth place; its IANA time zone comes from the
-  coordinates (timezonefinder), with historical summer-time rules from the tz database.
+- The birth time is the wall-clock time of the birth place, read in the IANA time zone the
+  caller passes (the user picks it, Europe/Athens by default), with historical summer-time
+  rules from the tz database.
 - When the birth time is unknown the chart is computed for 12:00 local time and has no
   Ascendant, Midheaven or houses. The Moon moves ~13° a day, so its aspects are left out and
   `moon_day_signs` says when it changed sign that day.
@@ -20,8 +21,8 @@ Notes:
 """
 
 import logging
+import re
 from datetime import datetime, timezone
-from functools import lru_cache
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import httpx
@@ -38,8 +39,13 @@ except ImportError:
 # Version 1 charts held only the seven legacy keys; older stored charts are upgraded on load
 CHART_VERSION = 2
 
-# Used when the birth place has no time zone (at sea) or the lookup fails: most users are Greek
+# Used when no birth time zone is given: most users are Greek
 DEFAULT_TIME_ZONE = "Europe/Athens"
+# Twice the longest tz database name (32 characters): room for new names, none for junk
+MAX_TIME_ZONE_LENGTH = 64
+# IANA names are ASCII letters, digits and "_+-" between slashes. Checked before ZoneInfo
+# looks the name up as a file, so a space, dot or backslash never reaches the file system.
+_TIME_ZONE_NAME = re.compile(r"[A-Za-z0-9_+-]+(?:/[A-Za-z0-9_+-]+)*")
 
 ZODIAC_SIGNS = [
     "aries", "taurus", "gemini", "cancer", "leo", "virgo",
@@ -183,29 +189,16 @@ def _point(longitude: float) -> dict:
 
 # ── Time ─────────────────────────────────────────────────────────────────────
 
-@lru_cache(maxsize=1)
-def _timezone_finder():
-    # timezonefinder loads numpy and its polygon data: import it on first use, so cold
-    # starts of requests that never calculate a chart stay fast
-    from timezonefinder import TimezoneFinder
-    return TimezoneFinder()
-
-
-def time_zone_for(lat: float, lon: float) -> str:
-    """IANA time zone of a birth place; DEFAULT_TIME_ZONE at sea or when the lookup fails."""
-    try:
-        name = _timezone_finder().timezone_at_land(lng=lon, lat=lat)
-    except Exception as exc:  # a missing time zone must never block a chart
-        logger.error("Time zone lookup failed for %s, %s: %s", lat, lon, exc)
-        return DEFAULT_TIME_ZONE
-    if not name:
-        return DEFAULT_TIME_ZONE
+def is_valid_time_zone(name: str) -> bool:
+    """True when `name` is a time zone of the tz database, such as "Europe/Berlin"."""
+    if len(name) > MAX_TIME_ZONE_LENGTH or not _TIME_ZONE_NAME.fullmatch(name):
+        return False
     try:
         ZoneInfo(name)
-    except ZoneInfoNotFoundError:
-        logger.warning("Time zone %s is not in the tz database, using %s", name, DEFAULT_TIME_ZONE)
-        return DEFAULT_TIME_ZONE
-    return name
+    except (ValueError, OSError, ZoneInfoNotFoundError):
+        # OSError: a tz database folder such as "Europe" is found but cannot be read as a zone
+        return False
+    return True
 
 
 def birth_time_to_utc(
@@ -288,10 +281,11 @@ def _moon_day_signs(date_of_birth: str, time_zone: str) -> list[str] | None:
 
 def calculate_chart(
     date_of_birth: str,   # "YYYY-MM-DD"
-    time_of_birth: str,   # "HH:MM" local time of the birth place; pass "12:00" when unknown
+    time_of_birth: str,   # "HH:MM" wall-clock time in time_zone; pass "12:00" when unknown
     lat: float,
     lon: float,
     time_known: bool = True,
+    time_zone: str = DEFAULT_TIME_ZONE,  # IANA name, checked with is_valid_time_zone()
 ) -> dict:
     """Calculate the natal chart (the ChartData shape in schemas/profile.py, version 2).
 
@@ -300,7 +294,6 @@ def calculate_chart(
     if not _SWE_AVAILABLE:
         raise EphemerisUnavailableError("pyswisseph is not installed: add it to requirements.txt")
 
-    time_zone = time_zone_for(lat, lon)
     jd = _julian_day(birth_time_to_utc(date_of_birth, time_of_birth, time_zone))
     planets = _planets(jd)
 

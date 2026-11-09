@@ -28,6 +28,8 @@ fe/out/
 # generated from fe/src/content/dream-dictionary.json by fe/scripts/generate-dream-data.mjs
 fe/public/data/dream-index.json
 fe/public/data/dream/
+# generated from fe/src/content/chart-texts.json by fe/scripts/generate-chart-text-data.mjs
+fe/public/data/chart/
 
 # expo / react native
 mobile/.expo/

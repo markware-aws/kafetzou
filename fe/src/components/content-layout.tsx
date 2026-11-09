@@ -12,11 +12,17 @@ interface ContentLayoutProps {
 }
 
 /** Shell for the public guide pages (coffee symbols, tarot, zodiac, dreams). */
-export function ContentLayout({ breadcrumbs, wide = false, children }: ContentLayoutProps) {
+export function ContentLayout({
+  breadcrumbs,
+  wide = false,
+  children,
+}: ContentLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className={`${wide ? "max-w-5xl" : "max-w-3xl"} mx-auto w-full px-4 pt-8 pb-16`}>
+      <main
+        className={`${wide ? "max-w-5xl" : "max-w-3xl"} mx-auto w-full px-4 pt-8 pb-16`}
+      >
         <Breadcrumbs items={breadcrumbs} />
         {children}
       </main>
@@ -66,7 +72,7 @@ const FEATURE_CTAS = {
   natal: {
     href: "/astrology#xartis",
     title: "Η ανάγνωση του χάρτη σου",
-    text: "Η καφετζού διαβάζει ολόκληρο τον αστρολογικό σου χάρτη: τον χαρακτήρα σου, τα συναισθήματα, τον έρωτα, την καριέρα και τον δρόμο σου.",
+    text: "Διαβάζουμε ολόκληρο τον αστρολογικό σου χάρτη: τον χαρακτήρα σου, τα συναισθήματα, τον έρωτα, την καριέρα και τον δρόμο σου.",
     action: "Διάβασε τον χάρτη σου",
   },
   dream: {
@@ -81,13 +87,19 @@ const FEATURE_CTAS = {
  * Call to action from a free guide into the app. Guarded app pages send signed-out visitors
  * to /login and back, so the link can point straight at the feature.
  */
-export function FeatureCta({ feature }: { feature: keyof typeof FEATURE_CTAS }) {
+export function FeatureCta({
+  feature,
+}: {
+  feature: keyof typeof FEATURE_CTAS;
+}) {
   const cta = FEATURE_CTAS[feature];
   return (
     <aside className="mt-12 rounded-lg border border-violet-800 bg-surface p-5">
       <p className="text-base font-semibold text-violet-50">{cta.title}</p>
       <p className="mt-1 text-sm text-violet-200 leading-relaxed">{cta.text}</p>
-      <p className="mt-1 text-xs text-violet-300">5 δωρεάν credits με την εγγραφή.</p>
+      <p className="mt-1 text-xs text-violet-300">
+        5 δωρεάν credits με την εγγραφή.
+      </p>
       <Link
         href={cta.href}
         className="mt-4 inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-md px-4 py-2 text-sm transition-colors"

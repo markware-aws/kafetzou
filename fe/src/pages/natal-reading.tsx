@@ -75,7 +75,7 @@ export default function NatalReadingPage() {
     <AuthGuard title="Η ανάγνωση του χάρτη σου">
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-10">
+        <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-10">
           <Link
             href="/dashboard"
             className="inline-flex items-center gap-2 text-sm text-violet-300 hover:text-violet-50 transition-colors mb-8"
@@ -88,7 +88,7 @@ export default function NatalReadingPage() {
             <div className="flex flex-col gap-4">
               <div className="h-7 w-56 rounded shimmer" />
               <div className="h-4 w-40 rounded shimmer" />
-              <div className="mx-auto aspect-square w-full max-w-[520px] rounded-full shimmer" />
+              <div className="mx-auto aspect-square w-full max-w-[676px] rounded-full shimmer" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className="h-24 rounded-lg shimmer" />

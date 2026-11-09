@@ -48,8 +48,8 @@ const ELEMENT_FILL: Record<string, string> = {
 };
 
 const ASPECT_STROKE = {
-  harmonious: "stroke-sky-400/80",
-  tense: "stroke-amber-500/80",
+  harmonious: "stroke-sky-400/50",
+  tense: "stroke-amber-500/50",
 } as const;
 
 function describeChart(chart: ChartData, planets: ChartPlanet[]): string {
@@ -148,7 +148,7 @@ export function NatalChartWheel({ chart }: { chart: ChartData }) {
       viewBox={`0 0 ${SIZE} ${SIZE}`}
       role="img"
       aria-label={describeChart(chart, planets)}
-      className="w-full max-w-[520px] mx-auto h-auto select-none"
+      className="w-full max-w-[676px] mx-auto h-auto select-none"
     >
       <circle
         cx={CENTER}
@@ -301,25 +301,27 @@ export function NatalChartWheel({ chart }: { chart: ChartData }) {
         strokeWidth={1}
       />
 
-      {(chart.aspects ?? []).map((aspect) => {
-        const kind = ASPECTS[aspect.type]?.kind;
-        const from = angleById.get(aspect.planet_a);
-        const to = angleById.get(aspect.planet_b);
-        // A conjunction's planets sit side by side, so a line would add nothing.
-        if (kind === undefined || kind === "neutral" || from === undefined || to === undefined) {
-          return null;
-        }
-        return (
-          <Line
-            key={`${aspect.planet_a}-${aspect.planet_b}-${aspect.type}`}
-            from={from}
-            to={to}
-            fromRadius={R_ASPECT}
-            toRadius={R_ASPECT}
-            className={ASPECT_STROKE[kind]}
-          />
-        );
-      })}
+      <g strokeLinecap="round">
+        {(chart.aspects ?? []).map((aspect) => {
+          const kind = ASPECTS[aspect.type]?.kind;
+          const from = angleById.get(aspect.planet_a);
+          const to = angleById.get(aspect.planet_b);
+          // A conjunction's planets sit side by side, so a line would add nothing.
+          if (kind === undefined || kind === "neutral" || from === undefined || to === undefined) {
+            return null;
+          }
+          return (
+            <Line
+              key={`${aspect.planet_a}-${aspect.planet_b}-${aspect.type}`}
+              from={from}
+              to={to}
+              fromRadius={R_ASPECT}
+              toRadius={R_ASPECT}
+              className={ASPECT_STROKE[kind]}
+            />
+          );
+        })}
+      </g>
 
       {planets.map((planet, index) => {
         const angle = planetAngles[index];

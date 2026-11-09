@@ -20,9 +20,10 @@ _LATEST_TIME_ZONE = ZoneInfo("Pacific/Kiritimati")
 
 class ChartRequest(BaseModel):
     date_of_birth: str  # "YYYY-MM-DD"
-    time_of_birth: str | None = None  # "HH:MM" local time of the birth place, None = unknown
+    time_of_birth: str | None = None  # "HH:MM" wall-clock time in time_zone, None = unknown
     latitude: float
     longitude: float
+    time_zone: str = chart_service.DEFAULT_TIME_ZONE  # IANA name the birth time is read in
 
 
 def _input_error(body: ChartRequest) -> str | None:
@@ -39,6 +40,8 @@ def _input_error(body: ChartRequest) -> str | None:
             datetime.strptime(body.time_of_birth, "%H:%M")
         except ValueError:
             return "Η ώρα γέννησης δεν είναι σωστή."
+    if not chart_service.is_valid_time_zone(body.time_zone):
+        return "Η ζώνη ώρας δεν είναι σωστή."
     if not -90 <= body.latitude <= 90 or not -180 <= body.longitude <= 180:
         return "Ο τόπος γέννησης δεν είναι σωστός. Διάλεξε ξανά την πόλη."
     return None
@@ -61,6 +64,7 @@ async def calculate_chart(
             lat=body.latitude,
             lon=body.longitude,
             time_known=body.time_of_birth is not None,
+            time_zone=body.time_zone,
         )
     except chart_service.EphemerisUnavailableError as exc:
         logger.error("Chart calculation unavailable: %s", exc)

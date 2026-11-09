@@ -4,7 +4,12 @@ import { useRouter } from "next/router";
 import useSWR from "swr";
 import { AlertCircle, Coins, Loader2 } from "lucide-react";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
-import { NATAL_READING_CREDITS, createNatalReading, getBirthProfile } from "@/lib/api";
+import {
+  NATAL_READING_CREDITS,
+  createNatalReading,
+  getBirthProfile,
+  getCurrentNatalReading,
+} from "@/lib/api";
 import { getIdToken } from "@/lib/auth";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
 import { notifyCreditsChanged } from "@/lib/user";
@@ -27,6 +32,10 @@ function isCreditsError(message: string): boolean {
   return message.includes("credits") || message.includes("402");
 }
 
+function natalReadingHref(readingId: string): string {
+  return `/natal-reading/?id=${encodeURIComponent(readingId)}`;
+}
+
 interface NatalReadingButtonProps {
   /** Where sign-in brings the visitor back to, e.g. "/astrology/#xartis". */
   returnTo: string;
@@ -34,7 +43,9 @@ interface NatalReadingButtonProps {
 
 /**
  * Starts the paid AI reading of the chart saved in the birth profile. Handles every state on
- * the way: signed out, no profile yet, birth time unknown, too few credits.
+ * the way: signed out, no profile yet, birth time unknown, too few credits. A chart is read
+ * once: when the profile's chart already has its reading the button opens it, and a new paid
+ * reading is offered only after the birth details change.
  */
 export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
   const router = useRouter();
@@ -50,6 +61,24 @@ export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
     token ? BIRTH_PROFILE_SWR_KEY : null,
     () => getBirthProfile(),
   );
+  // Keyed on the birth details, so a profile saved on another page asks again.
+  const {
+    data: current,
+    error: currentError,
+    mutate: mutateCurrent,
+  } = useAuthedSWR(
+    profile?.chart
+      ? [
+          "natal-current",
+          profile.date_of_birth,
+          profile.time_of_birth,
+          profile.birth_lat,
+          profile.birth_lon,
+          profile.birth_time_zone ?? null,
+        ]
+      : null,
+    () => getCurrentNatalReading(),
+  );
 
   async function startReading() {
     setLoading(true);
@@ -57,17 +86,30 @@ export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
     try {
       const response = await createNatalReading();
       notifyCreditsChanged();
-      router.push(`/natal-reading/?id=${encodeURIComponent(response.reading_id)}`);
+      const readingIds = {
+        current_reading_id: response.reading_id,
+        latest_reading_id: response.reading_id,
+      };
+      await mutateCurrent(readingIds, { revalidate: false });
+      router.push(natalReadingHref(response.reading_id));
     } catch (caught: unknown) {
-      const message = caught instanceof Error ? caught.message : "Κάτι πήγε στραβά";
+      const message =
+        caught instanceof Error ? caught.message : "Κάτι πήγε στραβά";
       if (isCreditsError(message)) setCreditDialogOpen(true);
       else setError(message);
       setLoading(false);
     }
   }
 
-  if (token === undefined || (token && profile === undefined && !profileError)) {
-    return <div className="h-10 w-full max-w-xs rounded-md shimmer" aria-hidden />;
+  const profileLoading = token && profile === undefined && !profileError;
+  // Without the answer the button falls back to a paid reading: the backend still hands back an
+  // existing reading free, so a failed lookup never charges twice.
+  const currentLoading =
+    profile?.chart && current === undefined && !currentError;
+  if (token === undefined || profileLoading || currentLoading) {
+    return (
+      <div className="h-10 w-full max-w-xs rounded-md shimmer" aria-hidden />
+    );
   }
 
   if (!token) {
@@ -75,11 +117,14 @@ export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
     return (
       <div>
         <p className="text-sm text-violet-200 leading-relaxed">
-          Συνδέσου για να διαβάσει η καφετζού τον χάρτη σου. Η εγγραφή είναι δωρεάν και παίρνεις
-          5 δωρεάν credits.
+          Συνδέσου για να διαβάσεις τον χάρτη σου. Η εγγραφή είναι δωρεάν και
+          παίρνεις 5 δωρεάν credits.
         </p>
         <div className="mt-3 flex flex-col-reverse sm:flex-row gap-2">
-          <Link href={`/login?returnTo=${encodedReturnTo}`} className={secondaryLinkClassName}>
+          <Link
+            href={`/login?returnTo=${encodedReturnTo}`}
+            className={secondaryLinkClassName}
+          >
             Σύνδεση
           </Link>
           <Link
@@ -107,7 +152,10 @@ export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
         <p className="text-sm text-violet-200 leading-relaxed">
           Για την ανάγνωση χρειάζονται τα στοιχεία γέννησής σου στο προφίλ.
         </p>
-        <Link href="/profile" className={`mt-3 inline-block ${secondaryLinkClassName}`}>
+        <Link
+          href="/profile"
+          className={`mt-3 inline-block ${secondaryLinkClassName}`}
+        >
           Συμπλήρωσε το προφίλ
         </Link>
       </div>
@@ -121,6 +169,29 @@ export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
   ]
     .filter(Boolean)
     .join(", ");
+  const birthDetailsLine = (
+    <p className="text-xs text-violet-300">
+      Από τον χάρτη του προφίλ σου:{" "}
+      <span className="text-violet-100">{birthDetails}</span>
+    </p>
+  );
+
+  const currentReadingId = current?.current_reading_id ?? null;
+  if (currentReadingId) {
+    return (
+      <div>
+        {birthDetailsLine}
+        <Link
+          href={natalReadingHref(currentReadingId)}
+          className={`mt-3 inline-block ${primaryLinkClassName}`}
+        >
+          Δες την ανάγνωσή σου
+        </Link>
+      </div>
+    );
+  }
+
+  const previousReadingId = current?.latest_reading_id ?? null;
 
   return (
     <div>
@@ -130,9 +201,13 @@ export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
         requiredCredits={NATAL_READING_CREDITS}
         featureName="την ανάγνωση του χάρτη"
       />
-      <p className="text-xs text-violet-300">
-        Από τον χάρτη του προφίλ σου: <span className="text-violet-100">{birthDetails}</span>
-      </p>
+      {birthDetailsLine}
+      {previousReadingId && (
+        <p className="mt-2 text-xs text-violet-300 leading-relaxed">
+          Τα στοιχεία γέννησης στο προφίλ σου άλλαξαν από την τελευταία σου
+          ανάγνωση.
+        </p>
+      )}
       {!profile.time_known && (
         <p className="mt-2 flex items-start gap-2 text-xs text-violet-300 leading-relaxed">
           <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
@@ -155,12 +230,16 @@ export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
             <>
               <Loader2 className="w-4 h-4 animate-spin" /> Οι αστέρες μιλούν…
             </>
+          ) : previousReadingId ? (
+            "Νέα ανάγνωση"
           ) : (
             "Διάβασε τον χάρτη μου"
           )}
         </button>
         {loading ? (
-          <span className="text-xs text-violet-300">Παίρνει λίγη ώρα, μην κλείσεις τη σελίδα.</span>
+          <span className="text-xs text-violet-300">
+            Παίρνει λίγη ώρα, μην κλείσεις τη σελίδα.
+          </span>
         ) : (
           <span className="flex items-center gap-1.5 text-xs text-violet-300">
             <Coins className="w-3.5 h-3.5" />
@@ -168,6 +247,14 @@ export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
           </span>
         )}
       </div>
+      {previousReadingId && (
+        <Link
+          href={natalReadingHref(previousReadingId)}
+          className="mt-3 inline-block text-sm text-amber-400 hover:text-amber-300 transition-colors"
+        >
+          Δες την προηγούμενη ανάγνωση →
+        </Link>
+      )}
     </div>
   );
 }

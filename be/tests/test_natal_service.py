@@ -260,3 +260,113 @@ class TestNatalRules:
         assert set(lines) == set(NatalReading.model_fields)
         for field, label, pattern in natal_service._NATAL_FIELD_PATTERNS:
             assert not pattern.search(lines[field]), label
+
+
+def _profile(**overrides) -> dict:
+    profile = {
+        "date_of_birth": "1990-11-12", "time_of_birth": "14:05", "time_known": True,
+        "birth_lat": 40.6401, "birth_lon": 22.9444, "birth_time_zone": "Europe/Athens",
+        "chart": _match_chart(),
+    }
+    profile.update(overrides)
+    return profile
+
+
+def _match_chart(sun=229.6, moon=101.2, ascendant=318.4, time_known=True) -> dict:
+    chart = {
+        "time_known": time_known,
+        "planets": [
+            {"id": "sun", "longitude": sun}, {"id": "moon", "longitude": moon},
+            {"id": "mars", "longitude": 75.0},
+        ],
+        "ascendant": {"longitude": ascendant} if ascendant is not None else None,
+    }
+    return chart
+
+
+def _legacy_reading(**overrides) -> dict:
+    """A reading saved before birth_key: only the date and the chart snapshot to go by."""
+    reading = {"reading_id": "r-legacy", "date_of_birth": "1990-11-12", "chart": _match_chart()}
+    reading.update(overrides)
+    return reading
+
+
+class TestBirthKey:
+    def test_should_join_date_time_place_and_time_zone(self):
+        expected = "1990-11-12|14:05|40.64,22.94|Europe/Athens"
+
+        assert natal_service.birth_key(_profile()) == expected
+
+    def test_should_write_unknown_for_a_birth_time_that_is_not_known(self):
+        profile = _profile(time_of_birth=None, time_known=False)
+
+        assert natal_service.birth_key(profile) == "1990-11-12|unknown|40.64,22.94|Europe/Athens"
+
+    def test_should_ignore_a_stored_time_the_user_marked_as_unknown(self):
+        profile = _profile(time_of_birth="12:00", time_known=False)
+
+        assert natal_service.birth_key(profile).split("|")[1] == "unknown"
+
+    def test_should_write_unknown_for_a_place_without_coordinates(self):
+        profile = _profile(birth_lat=None, birth_lon=None)
+
+        assert natal_service.birth_key(profile).split("|")[2] == "unknown"
+
+    def test_should_not_change_when_the_place_is_geocoded_a_few_metres_away(self):
+        moved = _profile(birth_lat=40.6403, birth_lon=22.9441)
+
+        assert natal_service.birth_key(moved) == natal_service.birth_key(_profile())
+
+    def test_should_change_with_the_birth_time_zone_even_without_a_birth_time(self):
+        athens = _profile(time_of_birth=None, time_known=False)
+        london = {**athens, "birth_time_zone": "Europe/London"}
+
+        assert natal_service.birth_key(athens) != natal_service.birth_key(london)
+
+
+class TestFindCurrentReading:
+    def test_should_return_the_newest_reading_with_the_same_birth_key(self):
+        profile = _profile()
+        key = natal_service.birth_key(profile)
+        readings = [
+            {"reading_id": "r-other", "birth_key": "1990-11-12|09:00|40.64,22.94|Europe/Athens"},
+            {"reading_id": "r-newest", "birth_key": key},
+            {"reading_id": "r-oldest", "birth_key": key},
+        ]
+
+        assert natal_service.find_current_reading(readings, profile)["reading_id"] == "r-newest"
+
+    def test_should_return_none_without_a_profile(self):
+        readings = [{"reading_id": "r-1", "birth_key": "anything"}]
+
+        assert natal_service.find_current_reading(readings, None) is None
+
+    def test_should_trust_the_birth_key_over_the_chart_when_there_is_one(self):
+        reading = _legacy_reading(birth_key="1990-11-12|09:00|40.64,22.94|Europe/Athens")
+
+        assert natal_service.find_current_reading([reading], _profile()) is None
+
+    def test_should_match_a_legacy_reading_with_the_same_chart(self):
+        found = natal_service.find_current_reading([_legacy_reading()], _profile())
+
+        assert found["reading_id"] == "r-legacy"
+
+    def test_should_match_a_legacy_reading_across_rounding_and_the_zero_degree_line(self):
+        profile = _profile(chart=_match_chart(sun=359.99, ascendant=0.02))
+        reading = _legacy_reading(chart=_match_chart(sun=0.01, ascendant=359.98))
+
+        assert natal_service.find_current_reading([reading], profile) is not None
+
+    @pytest.mark.parametrize(
+        "reading",
+        [
+            _legacy_reading(date_of_birth="1990-11-13"),
+            # A different birth time moves the Ascendant first
+            _legacy_reading(chart=_match_chart(ascendant=320.1)),
+            # A birth place in another time zone moves the Moon even without a time
+            _legacy_reading(chart=_match_chart(moon=102.0)),
+            _legacy_reading(chart=_match_chart(time_known=False, ascendant=None)),
+        ],
+    )
+    def test_should_not_match_a_legacy_reading_of_other_birth_details(self, reading):
+        assert natal_service.find_current_reading([reading], _profile()) is None

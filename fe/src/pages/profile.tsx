@@ -1,23 +1,19 @@
 import { useState, useEffect } from "react";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Plus,
-  Loader2,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, Plus, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { PlaceAutocomplete } from "@/components/place-autocomplete";
-import {
-  getBirthProfile,
-  saveBirthProfile,
-  getMe,
-} from "@/lib/api";
+import { TimeZoneSelect } from "@/components/time-zone-select";
+import { getBirthProfile, saveBirthProfile, getMe } from "@/lib/api";
 import { SIGN_BY_ID } from "@/lib/astrology";
+import { DEFAULT_TIME_ZONE } from "@/lib/time-zones";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
 import { NatalChartWheel } from "@/components/natal-chart-wheel";
 import { NatalChartDetails } from "@/components/natal-chart-details";
-import { BIRTH_PROFILE_SWR_KEY, NatalReadingButton } from "@/components/natal-reading-button";
+import {
+  BIRTH_PROFILE_SWR_KEY,
+  NatalReadingButton,
+} from "@/components/natal-reading-button";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
 
 const SEX_OPTIONS = ["Άνδρας", "Γυναίκα", "Άλλο"];
@@ -62,10 +58,13 @@ export default function ProfilePage() {
   const [timeUnknown, setTimeUnknown] = useState(false);
   const [birthTime, setBirthTime] = useState("");
   const [birthPlace, setBirthPlace] = useState("");
+  const [timeZone, setTimeZone] = useState(DEFAULT_TIME_ZONE);
   const [sex, setSex] = useState("");
   const [eyeColor, setEyeColor] = useState("");
 
-  const { data: meData, mutate: mutateMe } = useAuthedSWR(["me"], () => getMe());
+  const { data: meData, mutate: mutateMe } = useAuthedSWR(["me"], () =>
+    getMe(),
+  );
   const {
     data: profile,
     error: profileLoadError,
@@ -84,6 +83,7 @@ export default function ProfilePage() {
     setTimeUnknown(!profile.time_known);
     setBirthTime(profile.time_of_birth ?? "");
     setBirthPlace(profile.birth_place ?? "");
+    setTimeZone(profile.birth_time_zone || DEFAULT_TIME_ZONE);
     setSex(profile.sex ?? "");
     setEyeColor(profile.eye_color ?? "");
   }, [profile]);
@@ -99,6 +99,7 @@ export default function ProfilePage() {
         date_of_birth: dob,
         time_of_birth: timeUnknown ? null : birthTime || null,
         birth_place: birthPlace,
+        birth_time_zone: timeZone,
         sex: sex || undefined,
         eye_color: eyeColor || undefined,
       });
@@ -212,8 +213,8 @@ export default function ProfilePage() {
                 </h3>
                 <p className="mt-1 mb-4 text-sm text-violet-200 leading-relaxed">
                   Η καφετζού διαβάζει ολόκληρο τον χάρτη σου: τον χαρακτήρα, τα
-                  συναισθήματα, τον έρωτα, την καριέρα, τα δυνατά σου σημεία και τον
-                  δρόμο σου.
+                  συναισθήματα, τον έρωτα, την καριέρα, τα δυνατά σου σημεία και
+                  τον δρόμο σου.
                 </p>
                 <NatalReadingButton returnTo="/profile/" />
               </section>
@@ -296,7 +297,30 @@ export default function ProfilePage() {
                     onChange={setBirthPlace}
                   />
                   <p className="text-xs text-violet-300 mt-1.5">
-                    Χρησιμοποιείται για τον υπολογισμό του Ωροσκόπου και των οίκων
+                    Χρησιμοποιείται για τον υπολογισμό του Ωροσκόπου και των
+                    οίκων
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="profile-time-zone"
+                    className="block text-sm font-medium text-violet-100 mb-1.5"
+                  >
+                    Ζώνη ώρας γέννησης
+                  </label>
+                  <TimeZoneSelect
+                    id="profile-time-zone"
+                    value={timeZone}
+                    onChange={setTimeZone}
+                    describedBy="profile-time-zone-hint"
+                  />
+                  <p
+                    id="profile-time-zone-hint"
+                    className="text-xs text-violet-300 mt-1.5"
+                  >
+                    Αν γεννήθηκες εκτός Ελλάδας, διάλεξε τη χώρα ή την πόλη της
+                    γέννησης.
                   </p>
                 </div>
 
@@ -345,7 +369,9 @@ export default function ProfilePage() {
                 {(error || loadErrorMessage) && (
                   <div className="rounded-md border border-rose-800/60 bg-rose-950/40 p-3 flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                    <p className="text-sm text-rose-200">{error || loadErrorMessage}</p>
+                    <p className="text-sm text-rose-200">
+                      {error || loadErrorMessage}
+                    </p>
                   </div>
                 )}
 

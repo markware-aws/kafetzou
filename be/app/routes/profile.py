@@ -4,8 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.security import get_current_user
 from app.schemas.profile import BirthProfileRequest, BirthProfileResponse, ChartData
-from app.services import birth_profile_service, dynamodb_service
-from app.services.chart_service import calculate_chart, geocode_place
+from app.services import birth_profile_service, chart_service, dynamodb_service
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +38,7 @@ async def get_birth_profile(
         chart=chart_data,
         sex=profile.get("sex"),
         eye_color=profile.get("eye_color"),
+        birth_time_zone=profile["birth_time_zone"],
     )
 
 
@@ -49,17 +49,27 @@ async def save_birth_profile(
 ) -> BirthProfileResponse:
     """Save birth data, geocode the birth place, and calculate the natal chart.
 
-    The birth time is read in the time zone of the birth place.
+    The birth time is read in `birth_time_zone`; without one, in the zone of the saved profile.
     """
     user_id = current_user.get("sub")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
+    if body.birth_time_zone is None:
+        time_zone = birth_profile_service.stored_time_zone(user_id)
+    elif chart_service.is_valid_time_zone(body.birth_time_zone):
+        time_zone = body.birth_time_zone
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Η ζώνη ώρας δεν είναι σωστή.",
+        )
+
     time_known = body.time_of_birth is not None
     birth_time = body.time_of_birth or "12:00"
 
     # Geocode the birth place
-    coords = await geocode_place(body.birth_place)
+    coords = await chart_service.geocode_place(body.birth_place)
     if not coords:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -69,12 +79,13 @@ async def save_birth_profile(
 
     # Calculate natal chart
     try:
-        chart_dict = calculate_chart(
+        chart_dict = chart_service.calculate_chart(
             date_of_birth=body.date_of_birth,
             time_of_birth=birth_time,
             lat=lat,
             lon=lon,
             time_known=time_known,
+            time_zone=time_zone,
         )
     except RuntimeError as exc:
         logger.error("Chart calculation failed: %s", exc)
@@ -86,7 +97,7 @@ async def save_birth_profile(
             detail=f"Σφάλμα υπολογισμού χάρτη: {exc}",
         )
 
-    # Persist to DynamoDB
+    # Persist to DynamoDB. A missing zone is not written, so the saved one stays.
     dynamodb_service.save_birth_profile(
         user_id=user_id,
         date_of_birth=body.date_of_birth,
@@ -98,6 +109,7 @@ async def save_birth_profile(
         chart=chart_dict,
         sex=body.sex,
         eye_color=body.eye_color,
+        birth_time_zone=body.birth_time_zone,
     )
 
     return BirthProfileResponse(
@@ -110,4 +122,5 @@ async def save_birth_profile(
         chart=ChartData(**chart_dict),
         sex=body.sex,
         eye_color=body.eye_color,
+        birth_time_zone=time_zone,
     )

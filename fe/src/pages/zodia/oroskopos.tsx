@@ -7,9 +7,11 @@ import { Seo } from "@/components/seo";
 import { ContentLayout, ContentSection, FeatureCta } from "@/components/content-layout";
 import { PlaceAutocomplete } from "@/components/place-autocomplete";
 import { SignupPromptDialog } from "@/components/signup-prompt-dialog";
+import { TimeZoneSelect } from "@/components/time-zone-select";
 import { calculateChart } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import type { PlaceOption } from "@/lib/place-search";
+import { DEFAULT_TIME_ZONE } from "@/lib/time-zones";
 import { SLUG_BY_SIGN_ID, zodiacSignPath } from "@/lib/zodiac";
 import { getZodiacSigns } from "@/lib/content-data";
 
@@ -59,6 +61,7 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
   const [birthTime, setBirthTime] = useState("");
   const [placeQuery, setPlaceQuery] = useState("");
   const [place, setPlace] = useState<PlaceOption | null>(null);
+  const [timeZone, setTimeZone] = useState(DEFAULT_TIME_ZONE);
   const [result, setResult] = useState<ChartResult | null>(null);
   const [error, setError] = useState("");
   const [calculating, setCalculating] = useState(false);
@@ -101,6 +104,7 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
         time_of_birth: birthTime,
         latitude: place.latitude,
         longitude: place.longitude,
+        time_zone: timeZone,
       });
       const ascendantSlug = chart.ascendant_sign && SLUG_BY_SIGN_ID[chart.ascendant_sign];
       const sunSlug = SLUG_BY_SIGN_ID[chart.sun_sign];
@@ -194,6 +198,20 @@ export default function AscendantCalculator({ signs }: CalculatorProps) {
             }}
             onSelect={setPlace}
           />
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="ascendant-time-zone" className={labelClassName}>
+            Ζώνη ώρας γέννησης
+          </label>
+          <TimeZoneSelect
+            id="ascendant-time-zone"
+            value={timeZone}
+            onChange={setTimeZone}
+            describedBy="ascendant-time-zone-hint"
+          />
+          <p id="ascendant-time-zone-hint" className="mt-1.5 text-xs text-violet-300">
+            Αν γεννήθηκες εκτός Ελλάδας, διάλεξε τη χώρα ή την πόλη της γέννησης.
+          </p>
         </div>
         {error && (
           <p role="alert" className="sm:col-span-2 text-sm text-rose-300">

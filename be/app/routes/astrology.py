@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel
 
 from app.core.config import settings
-from app.core.credits import RequireCredits
+from app.core.credits import RequireCredits, check_credits
 from app.core.security import get_current_user
 from app.schemas.astrology import (
     AstrologyReading,
@@ -54,6 +54,13 @@ class NatalResponse(BaseModel):
     reading_id: str
     reading: NatalReading
     chart: ChartData
+
+
+class NatalCurrentResponse(BaseModel):
+    # The reading of the birth details the profile has now; None until there is one
+    current_reading_id: str | None
+    # The newest reading of any birth details, so a changed profile can still link to it
+    latest_reading_id: str | None
 
 
 # ── Prewarm (called by EventBridge Scheduler) ────────────────────────────────
@@ -185,12 +192,26 @@ async def get_personalized_reading(
 # ── Natal chart reading (separate from /personalized, whose history mobile lists as sign
 #    readings; also defined BEFORE the parameterized route) ─────────────────────────────
 
+def _list_natal_readings_or_503(user_id: str) -> list[dict]:
+    try:
+        return dynamodb_service.get_natal_readings(user_id)
+    except Exception:
+        logger.exception("Failed to list natal readings for user %s", user_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Οι αναγνώσεις του χάρτη δεν φόρτωσαν. Δοκίμασε ξανά σε λίγο.",
+        )
+
+
 @router.post("/natal", response_model=NatalResponse)
 async def create_natal_reading(
     current_user: dict = Depends(get_current_user),
-    _: None = Depends(RequireCredits(NATAL_READING_CREDITS)),
 ) -> NatalResponse:
-    """Auth-required: AI reading of the saved birth chart (costs 2 credits)."""
+    """Auth-required: AI reading of the saved birth chart (costs 2 credits).
+
+    A chart is read once: when the profile's birth details already have a reading, that
+    reading comes back free, without an AI call, whatever the credit balance.
+    """
     user_id = current_user.get("sub")
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
@@ -207,6 +228,17 @@ async def create_natal_reading(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Ο χάρτης σου δεν είναι πλήρης. Αποθήκευσε ξανά τα στοιχεία γέννησης στο προφίλ.",
         )
+
+    # Listing fails on the same table the save would use, so refusing here charges nothing
+    existing = natal_service.find_current_reading(_list_natal_readings_or_503(user_id), profile)
+    if existing:
+        return NatalResponse(
+            reading_id=existing["reading_id"],
+            reading=NatalReading(**existing["reading_result"]),
+            chart=ChartData(**existing["chart"]),
+        )
+
+    check_credits(user_id, NATAL_READING_CREDITS)
 
     try:
         reading, usage = await natal_service.generate_natal_reading(
@@ -232,6 +264,7 @@ async def create_natal_reading(
             chart=chart,
             reading=reading,
             tokens=usage["total_tokens"],
+            birth_key=natal_service.birth_key(profile),
         )
     except Exception:
         logger.exception("Failed to save natal reading for user %s", user_id)
@@ -256,6 +289,24 @@ async def list_natal_readings(
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     return dynamodb_service.get_natal_readings(user_id)
+
+
+@router.get("/natal/current", response_model=NatalCurrentResponse)
+async def get_current_natal_reading(
+    current_user: dict = Depends(get_current_user),
+) -> NatalCurrentResponse:
+    """Which reading the reading button should open, and whether a new one is on offer."""
+    user_id = current_user.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    readings = _list_natal_readings_or_503(user_id)
+    profile = await birth_profile_service.load_birth_profile(user_id)
+    current = natal_service.find_current_reading(readings, profile)
+    return NatalCurrentResponse(
+        current_reading_id=current["reading_id"] if current else None,
+        latest_reading_id=readings[0]["reading_id"] if readings else None,
+    )
 
 
 @router.get("/natal/{reading_id}", response_model=NatalReadingItem)

@@ -3,12 +3,21 @@ import Link from "next/link";
 import useSWR, { useSWRConfig } from "swr";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Seo } from "@/components/seo";
-import { ContentLayout, ContentSection, RelatedLinks } from "@/components/content-layout";
+import {
+  ContentLayout,
+  ContentSection,
+  RelatedLinks,
+} from "@/components/content-layout";
 import { PlaceAutocomplete } from "@/components/place-autocomplete";
 import { SignupPromptDialog } from "@/components/signup-prompt-dialog";
+import { TimeZoneSelect } from "@/components/time-zone-select";
 import { NatalChartWheel } from "@/components/natal-chart-wheel";
 import { NatalChartDetails } from "@/components/natal-chart-details";
-import { BIRTH_PROFILE_SWR_KEY, NatalReadingButton } from "@/components/natal-reading-button";
+import { NatalChartTexts } from "@/components/natal-chart-texts";
+import {
+  BIRTH_PROFILE_SWR_KEY,
+  NatalReadingButton,
+} from "@/components/natal-reading-button";
 import {
   calculateChart,
   getBirthProfile,
@@ -19,6 +28,7 @@ import { getUser } from "@/lib/auth";
 import { SIGN_BY_ID } from "@/lib/astrology";
 import { ASPECTS, PLANETS, planetGlyph } from "@/lib/planets";
 import type { PlaceOption } from "@/lib/place-search";
+import { DEFAULT_TIME_ZONE } from "@/lib/time-zones";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
 import { SLUG_BY_SIGN_ID, zodiacSignPath } from "@/lib/zodiac";
 
@@ -59,6 +69,8 @@ interface ChartInput {
   dateOfBirth: string;
   timeOfBirth: string | null;
   placeLabel: string;
+  /** IANA zone the birth time was read in. */
+  timeZone: string;
 }
 
 interface ChartResult {
@@ -105,6 +117,7 @@ export default function BirthChartPage() {
   const [timeUnknown, setTimeUnknown] = useState(false);
   const [placeQuery, setPlaceQuery] = useState("");
   const [place, setPlace] = useState<PlaceOption | null>(null);
+  const [timeZoneChoice, setTimeZoneChoice] = useState<string | null>(null);
   const [result, setResult] = useState<ChartResult | null>(null);
   const [error, setError] = useState("");
   const [calculating, setCalculating] = useState(false);
@@ -119,9 +132,14 @@ export default function BirthChartPage() {
     revalidateOnFocus: false,
   });
   const isSignedOut = user === null;
-  const { data: profile } = useAuthedSWR(user ? BIRTH_PROFILE_SWR_KEY : null, () =>
-    getBirthProfile(),
+  const { data: profile } = useAuthedSWR(
+    user ? BIRTH_PROFILE_SWR_KEY : null,
+    () => getBirthProfile(),
   );
+  // Until a zone is picked, the signed-in user's own one: their family was most likely born
+  // in the same country.
+  const timeZone =
+    timeZoneChoice ?? (profile?.birth_time_zone || DEFAULT_TIME_ZONE);
 
   function fail(message: string) {
     setError(message);
@@ -152,6 +170,7 @@ export default function BirthChartPage() {
       dateOfBirth: birthDate,
       timeOfBirth: timeUnknown ? null : birthTime,
       placeLabel: place.label,
+      timeZone,
     };
     setCalculating(true);
     setError("");
@@ -163,6 +182,7 @@ export default function BirthChartPage() {
         time_of_birth: input.timeOfBirth,
         latitude: place.latitude,
         longitude: place.longitude,
+        time_zone: input.timeZone,
       });
       setResult({ chart, input });
     } catch (caught: unknown) {
@@ -185,6 +205,7 @@ export default function BirthChartPage() {
         date_of_birth: result.input.dateOfBirth,
         time_of_birth: result.input.timeOfBirth,
         birth_place: result.input.placeLabel,
+        birth_time_zone: result.input.timeZone,
         sex: existing?.sex ?? undefined,
         eye_color: existing?.eye_color ?? undefined,
       });
@@ -221,10 +242,10 @@ export default function BirthChartPage() {
         Αστρολογικός χάρτης
       </h1>
       <p className="mt-4 text-[15px] text-violet-200 leading-relaxed">
-        Ο αστρολογικός χάρτης δείχνει πού βρισκόταν ο Ήλιος, η Σελήνη και όλοι οι πλανήτες τη
-        στιγμή που γεννήθηκες. Δώσε ημερομηνία, ώρα και τόπο γέννησης και δες τον δικό σου
-        χάρτη: σε ποιο ζώδιο είναι κάθε πλανήτης, σε ποιον οίκο πέφτει και ποιες όψεις
-        σχηματίζει με τους άλλους.
+        Ο αστρολογικός χάρτης δείχνει πού βρισκόταν ο Ήλιος, η Σελήνη και όλοι
+        οι πλανήτες τη στιγμή που γεννήθηκες. Δώσε ημερομηνία, ώρα και τόπο
+        γέννησης και δες τον δικό σου χάρτη: σε ποιο ζώδιο είναι κάθε πλανήτης,
+        σε ποιον οίκο πέφτει και ποιες όψεις σχηματίζει με τους άλλους.
       </p>
 
       <SignupPromptDialog
@@ -253,7 +274,10 @@ export default function BirthChartPage() {
           />
         </div>
         <div>
-          <label htmlFor={timeUnknown ? undefined : "chart-time"} className={labelClassName}>
+          <label
+            htmlFor={timeUnknown ? undefined : "chart-time"}
+            className={labelClassName}
+          >
             Ώρα γέννησης
           </label>
           {timeUnknown ? (
@@ -295,6 +319,24 @@ export default function BirthChartPage() {
             onSelect={setPlace}
           />
         </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="chart-time-zone" className={labelClassName}>
+            Ζώνη ώρας γέννησης
+          </label>
+          <TimeZoneSelect
+            id="chart-time-zone"
+            value={timeZone}
+            onChange={setTimeZoneChoice}
+            describedBy="chart-time-zone-hint"
+          />
+          <p
+            id="chart-time-zone-hint"
+            className="mt-1.5 text-xs text-violet-300"
+          >
+            Αν γεννήθηκες εκτός Ελλάδας, διάλεξε τη χώρα ή την πόλη της
+            γέννησης.
+          </p>
+        </div>
         {error && (
           <p role="alert" className="sm:col-span-2 text-sm text-rose-300">
             {error}
@@ -318,9 +360,15 @@ export default function BirthChartPage() {
       </form>
 
       {result && chart && (
-        <section aria-live="polite" className="mt-8 animate-fade-in">
+        // On large screens the result breaks out of the reading column so the aspects get room.
+        <section
+          aria-live="polite"
+          className="mt-8 animate-fade-in lg:relative lg:left-1/2 lg:w-[min(64rem,calc(100vw-3rem))] lg:-translate-x-1/2"
+        >
           <h2 className="text-lg font-semibold text-violet-50">Ο χάρτης σου</h2>
-          <p className="mt-1 text-sm text-violet-300">{formatInput(result.input)}</p>
+          <p className="mt-1 text-sm text-violet-300">
+            {formatInput(result.input)}
+          </p>
           <div className="mt-5">
             <NatalChartWheel chart={chart} />
           </div>
@@ -328,32 +376,41 @@ export default function BirthChartPage() {
             <SignLink label="Ήλιος" signId={chart.sun_sign} />
             <SignLink label="Σελήνη" signId={chart.moon_sign} />
             {chart.ascendant_sign && (
-              <SignLink label="Ωροσκόπος" signId={chart.ascendant_sign} anchor="#oroskopos" />
+              <SignLink
+                label="Ωροσκόπος"
+                signId={chart.ascendant_sign}
+                anchor="#oroskopos"
+              />
             )}
           </div>
           <div className="mt-6">
             <NatalChartDetails chart={chart} />
           </div>
+          <NatalChartTexts chart={chart} className="mt-8" />
         </section>
       )}
 
       <section className="mt-8 rounded-lg border border-amber-600/60 bg-surface p-5">
-        <h2 className="text-base font-semibold text-violet-50">Η ανάγνωση του χάρτη σου</h2>
+        <h2 className="text-base font-semibold text-violet-50">
+          Η ανάγνωση του χάρτη σου
+        </h2>
         <p className="mt-1 text-sm text-violet-200 leading-relaxed">
-          Η καφετζού διαβάζει ολόκληρο τον χάρτη σου: τον χαρακτήρα, τα συναισθήματα, τον
-          έρωτα, την καριέρα, τα δυνατά σου σημεία και τον δρόμο σου. Η ανάγνωση γίνεται από
-          τον χάρτη που είναι αποθηκευμένος στο προφίλ σου.
+          Ο υπολογισμός εξηγεί κάθε θέση του χάρτη χωριστά. Διαβάζουμε όλο τον
+          χάρτη μαζί και αναλύουμε τον χαρακτήρα σου, τα συναισθήματα, τον
+          έρωτα, την καριέρα, τα δυνατά σου σημεία και τον δρόμο σου. Η ανάγνωση
+          γίνεται από τον χάρτη που είναι αποθηκευμένος στο προφίλ σου.
         </p>
 
         {result && user && (
           <div className="mt-4 rounded-md border border-violet-700 bg-bg p-3">
             <p className="text-sm text-violet-200 leading-relaxed">
-              Είναι αυτός ο δικός σου χάρτης; Αποθήκευσέ τον στο προφίλ για να τον διαβάσει η
-              καφετζού.
+              Είναι αυτός ο δικός σου χάρτης; Αποθήκευσέ τον στο προφίλ για να
+              τον διαβάσει η καφετζού.
             </p>
             {profile && (
               <p className="mt-1 text-xs text-violet-300">
-                Η αποθήκευση αντικαθιστά τα στοιχεία γέννησης που έχει ήδη το προφίλ σου.
+                Η αποθήκευση αντικαθιστά τα στοιχεία γέννησης που έχει ήδη το
+                προφίλ σου.
               </p>
             )}
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -367,13 +424,18 @@ export default function BirthChartPage() {
                 Αποθήκευση στο προφίλ
               </button>
               {saved && (
-                <span role="status" className="flex items-center gap-1.5 text-sm text-violet-100">
+                <span
+                  role="status"
+                  className="flex items-center gap-1.5 text-sm text-violet-100"
+                >
                   <CheckCircle2 className="w-4 h-4 text-amber-400" />
                   Αποθηκεύτηκε
                 </span>
               )}
             </div>
-            {saveError && <p className="mt-2 text-sm text-rose-300">{saveError}</p>}
+            {saveError && (
+              <p className="mt-2 text-sm text-rose-300">{saveError}</p>
+            )}
           </div>
         )}
 
@@ -384,27 +446,31 @@ export default function BirthChartPage() {
 
       <ContentSection title="Τι είναι ο αστρολογικός χάρτης">
         <p>
-          Ο αστρολογικός χάρτης, ή γενέθλιος χάρτης, είναι μια φωτογραφία του ουρανού τη στιγμή
-          που γεννήθηκες, όπως φαινόταν από τον τόπο της γέννησής σου. Δείχνει σε ποιο ζώδιο
-          βρισκόταν ο Ήλιος, η Σελήνη και κάθε πλανήτης, ποιο ζώδιο ανέτειλε στον ορίζοντα και
-          πώς μοιράζονται οι πλανήτες στους δώδεκα οίκους.
+          Ο αστρολογικός χάρτης, ή γενέθλιος χάρτης, είναι μια φωτογραφία του
+          ουρανού τη στιγμή που γεννήθηκες, όπως φαινόταν από τον τόπο της
+          γέννησής σου. Δείχνει σε ποιο ζώδιο βρισκόταν ο Ήλιος, η Σελήνη και
+          κάθε πλανήτης, ποιο ζώδιο ανέτειλε στον ορίζοντα και πώς μοιράζονται
+          οι πλανήτες στους δώδεκα οίκους.
         </p>
         <p>
-          Το ζώδιο που ξέρουν όλοι είναι η θέση του Ήλιου, δηλαδή ένα μόνο κομμάτι του χάρτη.
-          Γι’ αυτό δύο άνθρωποι του ίδιου ζωδίου μπορεί να μοιάζουν τόσο λίγο: η Σελήνη, ο
-          ωροσκόπος και οι πλανήτες τους είναι αλλού.
+          Το ζώδιο που ξέρουν όλοι είναι η θέση του Ήλιου, δηλαδή ένα μόνο
+          κομμάτι του χάρτη. Γι’ αυτό δύο άνθρωποι του ίδιου ζωδίου μπορεί να
+          μοιάζουν τόσο λίγο: η Σελήνη, ο ωροσκόπος και οι πλανήτες τους είναι
+          αλλού.
         </p>
         <p>
-          Ο τροχός διαβάζεται αριστερόστροφα. Αριστερά, στη θέση των εννιά, είναι ο ωροσκόπος
-          (ASC) και ψηλά το μεσουράνημα (MC). Στο εξωτερικό δαχτυλίδι είναι τα δώδεκα ζώδια,
-          μέσα του οι πλανήτες με τη μοίρα τους, και στο κέντρο οι γραμμές των όψεων.
+          Ο τροχός διαβάζεται αριστερόστροφα. Αριστερά, στη θέση των εννιά,
+          είναι ο ωροσκόπος (ASC) και ψηλά το μεσουράνημα (MC). Στο εξωτερικό
+          δαχτυλίδι είναι τα δώδεκα ζώδια, μέσα του οι πλανήτες με τη μοίρα
+          τους, και στο κέντρο οι γραμμές των όψεων.
         </p>
       </ContentSection>
 
       <ContentSection title="Οι πλανήτες">
         <p>
-          Κάθε πλανήτης μιλά για ένα κομμάτι του εαυτού σου. Το ζώδιο όπου βρίσκεται δείχνει
-          τον τρόπο που το εκφράζεις και ο οίκος το πεδίο της ζωής όπου φαίνεται περισσότερο.
+          Κάθε πλανήτης μιλά για ένα κομμάτι του εαυτού σου. Το ζώδιο όπου
+          βρίσκεται δείχνει τον τρόπο που το εκφράζεις και ο οίκος το πεδίο της
+          ζωής όπου φαίνεται περισσότερο.
         </p>
         <dl className="flex flex-col divide-y divide-violet-800 rounded-lg border border-violet-800 bg-surface">
           {PLANETS.map((planet) => (
@@ -415,21 +481,25 @@ export default function BirthChartPage() {
                 </span>
                 {planet.name}
               </dt>
-              <dd className="mt-1 sm:mt-0 text-sm text-violet-200">{capitalize(planet.theme)}</dd>
+              <dd className="mt-1 sm:mt-0 text-sm text-violet-200">
+                {capitalize(planet.theme)}
+              </dd>
             </div>
           ))}
         </dl>
         <p>
-          Ανάδρομος (℞) λέγεται ο πλανήτης που, όπως τον βλέπουμε από τη Γη, μοιάζει να
-          κινείται προς τα πίσω. Η δύναμή του στρέφεται περισσότερο προς τα μέσα.
+          Ανάδρομος (℞) λέγεται ο πλανήτης που, όπως τον βλέπουμε από τη Γη,
+          μοιάζει να κινείται προς τα πίσω. Η δύναμή του στρέφεται περισσότερο
+          προς τα μέσα.
         </p>
       </ContentSection>
 
       <ContentSection title="Οι δώδεκα οίκοι">
         <p>
-          Ο χάρτης χωρίζεται σε δώδεκα οίκους, έναν για κάθε πεδίο της ζωής. Ο πρώτος ξεκινά
-          από τον ωροσκόπο και οι υπόλοιποι ακολουθούν αριστερόστροφα. Ένας πλανήτης στον
-          πέμπτο οίκο, για παράδειγμα, φέρνει τη δύναμή του στον έρωτα και στη δημιουργία.
+          Ο χάρτης χωρίζεται σε δώδεκα οίκους, έναν για κάθε πεδίο της ζωής. Ο
+          πρώτος ξεκινά από τον ωροσκόπο και οι υπόλοιποι ακολουθούν
+          αριστερόστροφα. Ένας πλανήτης στον πέμπτο οίκο, για παράδειγμα, φέρνει
+          τη δύναμή του στον έρωτα και στη δημιουργία.
         </p>
         <ol className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {HOUSE_TOPICS.map((topic, index) => (
@@ -445,45 +515,50 @@ export default function BirthChartPage() {
           ))}
         </ol>
         <p>
-          Μέσα σε μια μέρα ο ουρανός κάνει έναν ολόκληρο γύρο, οπότε οι οίκοι αλλάζουν κάθε
-          λίγα λεπτά. Γι’ αυτό χρειάζονται την ακριβή ώρα γέννησης.
+          Μέσα σε μια μέρα ο ουρανός κάνει έναν ολόκληρο γύρο, οπότε οι οίκοι
+          αλλάζουν κάθε λίγα λεπτά. Γι’ αυτό χρειάζονται την ακριβή ώρα
+          γέννησης.
         </p>
       </ContentSection>
 
       <ContentSection title="Οι όψεις">
         <p>
-          Οι όψεις είναι οι γωνίες που σχηματίζουν οι πλανήτες μεταξύ τους. Δείχνουν ποια
-          κομμάτια του εαυτού σου συνεργάζονται εύκολα και ποια τραβούν το καθένα προς τη δική
-          του μεριά. Στον τροχό οι αρμονικές όψεις φαίνονται με μπλε γραμμές και οι εντάσεις
-          με κόκκινες.
+          Οι όψεις είναι οι γωνίες που σχηματίζουν οι πλανήτες μεταξύ τους.
+          Δείχνουν ποια κομμάτια του εαυτού σου συνεργάζονται εύκολα και ποια
+          τραβούν το καθένα προς τη δική του μεριά. Στον τροχό οι αρμονικές
+          όψεις φαίνονται με μπλε γραμμές και οι εντάσεις με κόκκινες.
         </p>
         <dl className="flex flex-col divide-y divide-violet-800 rounded-lg border border-violet-800 bg-surface">
           {Object.values(ASPECTS).map((aspect) => (
             <div key={aspect.name} className="px-4 py-3 sm:flex sm:gap-6">
               <dt className="text-sm font-medium text-violet-50 sm:w-40 shrink-0">
                 {aspect.name}{" "}
-                <span className="font-normal text-violet-300 tabular-nums">{aspect.angle}°</span>
+                <span className="font-normal text-violet-300 tabular-nums">
+                  {aspect.angle}°
+                </span>
               </dt>
-              <dd className="mt-1 sm:mt-0 text-sm text-violet-200">{capitalize(aspect.meaning)}</dd>
+              <dd className="mt-1 sm:mt-0 text-sm text-violet-200">
+                {capitalize(aspect.meaning)}
+              </dd>
             </div>
           ))}
         </dl>
         <p>
-          Οι εντάσεις δεν είναι κακό σημάδι. Δείχνουν πού σε σπρώχνει ο χάρτης να μεγαλώσεις,
-          και συχνά εκεί κρύβεται η μεγαλύτερη δύναμή σου.
+          Οι εντάσεις δεν είναι κακό σημάδι. Δείχνουν πού σε σπρώχνει ο χάρτης
+          να μεγαλώσεις, και συχνά εκεί κρύβεται η μεγαλύτερη δύναμή σου.
         </p>
       </ContentSection>
 
       <ContentSection title="Αν δεν ξέρεις την ώρα γέννησης">
         <p>
-          Η ώρα γέννησης αναγράφεται συνήθως στη ληξιαρχική πράξη γέννησης. Γράψε την ώρα όπως
-          την έδειχνε το ρολόι τη στιγμή της γέννησης.
+          Η ώρα γέννησης αναγράφεται συνήθως στη ληξιαρχική πράξη γέννησης.
+          Γράψε την ώρα όπως την έδειχνε το ρολόι τη στιγμή της γέννησης.
         </p>
         <p>
-          Αν δεν την ξέρεις, επίλεξε «Δεν ξέρω την ώρα». Οι πλανήτες και τα ζώδιά τους βγαίνουν
-          κανονικά, ενώ οι οίκοι και ο ωροσκόπος μένουν έξω. Η Σελήνη αλλάζει ζώδιο κάθε
-          δυόμισι μέρες περίπου, οπότε αν άλλαξε τη μέρα που γεννήθηκες, ο χάρτης θα σου το
-          πει.
+          Αν δεν την ξέρεις, επίλεξε «Δεν ξέρω την ώρα». Οι πλανήτες και τα
+          ζώδιά τους βγαίνουν κανονικά, ενώ οι οίκοι και ο ωροσκόπος μένουν έξω.
+          Η Σελήνη αλλάζει ζώδιο κάθε δυόμισι μέρες περίπου, οπότε αν άλλαξε τη
+          μέρα που γεννήθηκες, ο χάρτης θα σου το πει.
         </p>
       </ContentSection>
 

@@ -30,14 +30,22 @@ class RequireCredits:
         user_id = current_user.get("sub")
         if not user_id:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        check_credits(user_id, self.amount)
 
-        user = dynamodb_service.get_user(user_id)
-        if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-        credits = int(user.get("credits", 0))
-        if credits < self.amount:
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail=f"Δεν έχεις αρκετά credits. Χρειάζεσαι {self.amount}, έχεις {credits}.",
-            )
+def check_credits(user_id: str, amount: int) -> None:
+    """Raises 402 when the user has fewer than `amount` credits.
+
+    For routes that decide inside the handler whether anything is charged at all; the others
+    use the RequireCredits dependency.
+    """
+    user = dynamodb_service.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    credits = int(user.get("credits", 0))
+    if credits < amount:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail=f"Δεν έχεις αρκετά credits. Χρειάζεσαι {amount}, έχεις {credits}.",
+        )
