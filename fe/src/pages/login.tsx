@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Check, Eye, EyeOff, Loader2, X } from "lucide-react";
 import { login, register, confirmRegistration, forgotPassword, confirmForgotPassword, getUser, loginWithGoogle, resendRegistrationCode } from "@/lib/auth";
+import { safeReturnTo } from "@/lib/return-to";
 import { Brand } from "@/components/navbar";
 import { Seo } from "@/components/seo";
 
@@ -19,10 +20,10 @@ type PasswordRule = {
 export default function LoginPage() {
   const router = useRouter();
 
-  const getDestination = useCallback(() => {
-    const returnTo = router.query.returnTo as string | undefined;
-    return returnTo && returnTo.startsWith("/") ? returnTo : "/";
-  }, [router.query.returnTo]);
+  const getDestination = useCallback(
+    () => safeReturnTo(router.query.returnTo),
+    [router.query.returnTo],
+  );
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -205,7 +206,7 @@ export default function LoginPage() {
                 <span className="text-xs text-violet-300">ή</span>
                 <div className="flex-1 h-px bg-violet-800" />
               </div>
-              <GoogleButton />
+              <GoogleButton returnTo={getDestination()} />
               <div className="mt-6 flex flex-col items-center gap-2 text-sm text-violet-300">
                 <button onClick={() => { setStep("forgot"); setError(""); }} className="hover:text-violet-50 transition-colors">
                   Ξέχασες τον κωδικό;
@@ -294,7 +295,7 @@ export default function LoginPage() {
                 <span className="text-xs text-violet-300">ή</span>
                 <div className="flex-1 h-px bg-violet-800" />
               </div>
-              <GoogleButton />
+              <GoogleButton returnTo={getDestination()} />
               <p className="mt-6 text-center text-sm text-violet-300">
                 Έχεις ήδη λογαριασμό;{" "}
                 <button onClick={() => { setStep("login"); setError(""); }} className="font-medium text-amber-400 hover:text-amber-300 transition-colors">
@@ -442,11 +443,12 @@ function FormError({ message }: { message: string }) {
   );
 }
 
-function GoogleButton() {
+/** `returnTo` rides through the Google redirect as Amplify's custom state (see _app.tsx). */
+function GoogleButton({ returnTo }: { returnTo: string }) {
   return (
     <button
       type="button"
-      onClick={() => loginWithGoogle()}
+      onClick={() => loginWithGoogle(returnTo)}
       className="w-full flex items-center justify-center gap-2 rounded-md border border-violet-700 text-violet-100 hover:border-violet-600 hover:bg-violet-900/50 text-sm px-4 py-2 transition-colors"
     >
       <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">

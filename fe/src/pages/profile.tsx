@@ -1,15 +1,22 @@
 import { useState, useEffect } from "react";
-import { AlertCircle, CheckCircle2, Plus, Loader2 } from "lucide-react";
+import Link from "next/link";
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  Plus,
+  Loader2,
+} from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { AuthGuard } from "@/components/auth-guard";
 import { PlaceAutocomplete } from "@/components/place-autocomplete";
 import { TimeZoneSelect } from "@/components/time-zone-select";
+import { BirthTimeInput } from "@/components/birth-time-input";
 import { getBirthProfile, saveBirthProfile, getMe } from "@/lib/api";
 import { SIGN_BY_ID } from "@/lib/astrology";
 import { DEFAULT_TIME_ZONE } from "@/lib/time-zones";
+import { BIRTH_CHART_PATH } from "@/lib/zodiac";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
-import { NatalChartWheel } from "@/components/natal-chart-wheel";
-import { NatalChartDetails } from "@/components/natal-chart-details";
 import {
   BIRTH_PROFILE_SWR_KEY,
   NatalReadingButton,
@@ -199,13 +206,13 @@ export default function ProfilePage() {
                 Αυτά τα δεδομένα χρησιμοποιούνται αυτόματα στις εξατομικευμένες
                 αστρολογικές αναγνώσεις σου.
               </p>
-
-              {profile.chart.planets && profile.chart.planets.length > 0 && (
-                <div className="mt-6 flex flex-col gap-6">
-                  <NatalChartWheel chart={profile.chart} />
-                  <NatalChartDetails chart={profile.chart} />
-                </div>
-              )}
+              <Link
+                href={BIRTH_CHART_PATH}
+                className="mt-4 inline-flex items-center gap-2 rounded-md border border-violet-700 text-violet-100 hover:border-violet-600 hover:bg-violet-900/50 text-sm px-4 py-2 transition-colors"
+              >
+                Δες ολόκληρο τον χάρτη σου
+                <ArrowRight className="w-4 h-4" />
+              </Link>
 
               <section className="mt-6 rounded-lg border border-amber-600/60 bg-surface p-5">
                 <h3 className="text-base font-semibold text-violet-50">
@@ -269,12 +276,10 @@ export default function ProfilePage() {
                     </span>
                   </label>
                   {!timeUnknown ? (
-                    <input
+                    <BirthTimeInput
                       id="profile-birth-time"
-                      type="time"
                       value={birthTime}
-                      onChange={(e) => setBirthTime(e.target.value)}
-                      className="w-full rounded-md border border-violet-700 bg-bg px-3 py-2 text-base text-violet-50 focus:outline-none focus:border-amber-500 [color-scheme:dark]"
+                      onChange={setBirthTime}
                     />
                   ) : (
                     <div className="flex items-start gap-2 rounded-md border border-violet-700 bg-bg p-3">

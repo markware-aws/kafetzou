@@ -35,7 +35,7 @@ src/
 │   ├── dream.tsx           # Dream interpretation page
 │   ├── dream-reading.tsx   # Dream reading detail — uses ?id= query param
 │   ├── dream-dictionary.tsx # Free symbol dictionary — live search, ?q= query param
-│   ├── profile.tsx         # Birth profile + credit balance
+│   ├── profile.tsx         # Birth profile form, Sun/Moon/Ascendant cards, credits; links to the full chart page
 │   ├── buy-credits.tsx     # Credit bundle purchase via Stripe
 │   ├── privacy.tsx         # Privacy policy
 │   ├── terms.tsx           # Terms of service
@@ -67,6 +67,7 @@ src/
 │   ├── cookie-banner.tsx   # Accept/reject bar for Google Analytics; reopened from the footer
 │   ├── place-autocomplete.tsx # Birth place search (Photon), used by profile + both chart calculators
 │   ├── time-zone-select.tsx # Birth time zone <select>: shortlist, then every IANA zone (after hydration)
+│   ├── birth-time-input.tsx # Birth time as hour / minutes / π.μ.-μ.μ. selects (profile); value stays "HH:MM"
 │   ├── signup-prompt-dialog.tsx # "Δημιούργησε λογαριασμό" modal for members-only tools (returnTo, featureText)
 │   ├── natal-chart-wheel.tsx   # SVG chart wheel: signs, houses, planets, aspect lines
 │   ├── natal-chart-details.tsx # Placements table, element balance, aspect list, time-unknown notes
@@ -91,7 +92,10 @@ src/
     ├── planets.ts          # Planet/aspect names and glyphs, element balance, degree formatting (tested)
     ├── chart-texts.ts      # Chart text keys, Greek titles, ChartData → sections of { key, title } (tested)
     ├── place-search.ts     # Photon search URL + result → { label, latitude, longitude }
-    └── time-zones.ts       # Birth time zone shortlist (Greek labels), browser zone list, region groups (tested)
+    ├── time-zones.ts       # Birth time zone shortlist (Greek labels), browser zone list, region groups (tested)
+    ├── birth-time.ts       # 24-hour "HH:MM" ↔ 12-hour parts with π.μ./μ.μ. (tested)
+    ├── chart-form.ts       # Chart page form: profile → form, same-details check, sign-up draft in sessionStorage (tested)
+    └── return-to.ts        # safeReturnTo(): in-site paths only, for ?returnTo= and Google's customState (tested)
 
 src/content/*.json                 # Guide content: coffee symbols, tarot cards, zodiac signs, pairs
 scripts/generate-sitemap.mjs       # Runs after next build: writes out/sitemap.xml, fails on SEO errors
@@ -156,18 +160,21 @@ Public, indexable pages that target Greek search terms and link into the app fea
 - **Sitemap is generated** by `scripts/generate-sitemap.mjs` after `next build`: every exported page that is not `noindex` is listed. The script fails the build if an indexable page has no canonical, a canonical that is not its own URL, or a title/description shared with another page.
 - **Horoscope text** on `/zodia/<sign>/` is fetched in the browser from the prewarmed CDN JSON (`docs/horoscope-cdn-architecture.md`), so the static HTML carries only the evergreen sign content.
 - **The chart calculators** (`/zodia/oroskopos/` and `/zodia/astrologikos-xartis/`) call `POST /chart/calculate` (`calculateChart` in `api.ts`): Swiss Ephemeris on the backend, the same numbers as the profile and the readings. No chart maths runs in the browser.
-  - They need an account: the pages stay public and indexable, but the calculate button opens `SignupPromptDialog` for signed-out visitors, and so does the homepage guide card (it points at the full chart page).
+  - They need an account: the pages stay public and indexable, but the calculate button opens `SignupPromptDialog` for signed-out visitors. Links to them (homepage guide card, footer, hubs) always open the page, so visitors see it before being asked to sign up.
   - The birth place comes from `PlaceAutocomplete` (coordinates only). The birth time zone is picked in `TimeZoneSelect` under it (default `Europe/Athens`, `DEFAULT_TIME_ZONE`) and sent as `time_zone`; the backend no longer guesses it from the coordinates. The time itself is asked as the clock showed it: summer time comes from the zone's history.
   - The profile sends its zone as `birth_time_zone` and gets it back on `GET/PUT /profile/birth`; the full chart page starts from the signed-in user's zone and saves the zone the chart was drawn with. Leaving `birth_time_zone` out keeps the stored one (mobile sends none).
   - `TimeZoneSelect` renders only the shortlist plus the current value until hydration ends (`useSyncExternalStore` with a server snapshot, like `cookie-banner.tsx`; a `setState` in `useEffect` fails lint), then adds `Intl.supportedValuesOf('timeZone')`: the exported HTML has no browser list, and hydration must match it. The current value is always an option, even a zone missing from the browser list.
-  - The full chart page has a «Δεν ξέρω την ώρα» option (no houses, no Ascendant) and saves the chart to the profile with «Αποθήκευση στο προφίλ» (keeping the profile's sex and eye colour), because the paid reading always reads the saved profile chart.
+  - The full chart page has a «Δεν ξέρω την ώρα» option (no houses, no Ascendant).
+  - **The full chart page is the user's chart page**: `/profile`, `/astrology#xartis` and `/natal-reading` link to it (`BIRTH_CHART_PATH` in `lib/zodiac.ts`). A signed-in user lands on the saved profile chart with the form filled in (`chartFormFromProfile`); fields they change are a patch over it, so a profile that loads late still fills the rest.
+  - An account's first chart is saved to the profile automatically. «Αποθήκευση στο προφίλ» (keeping the profile's sex and eye colour) only shows when the calculated chart's details differ from the profile (`isSameBirthDetails`), because the paid reading always reads the saved profile chart.
+  - What a signed-out visitor types is kept in sessionStorage for 30 minutes (`chart-form.ts`) and read back through `useSyncExternalStore` after hydration, so it survives the sign-up round trip; it is cleared on the next successful calculation.
 
 ## Natal chart
 - `ChartData` (`api.ts`): the seven legacy keys are always there; `planets`, `houses`, `aspects`, `ascendant`, `midheaven`, `moon_day_signs` came with chart version 2 and are optional. Draw the wheel and details only when `planets` exists (`NatalChartWheel`/`NatalChartDetails` return null otherwise).
 - The wheel puts the Ascendant at 9 o'clock (0° Aries when the time is unknown) and runs the zodiac counter-clockwise. Geometry lives in `lib/chart-wheel.ts`, pure and unit-tested; it and `lib/planets.ts` use relative imports only, since vitest has no `@/` alias.
 - Every glyph drawn as text (planets, ♈-♓) gets the text variation selector `︎` (`planetGlyph`/`signGlyph`), or iOS draws colour emoji.
 - Colours come from Tailwind classes on the SVG (`fill-*`, `stroke-*`), so they follow the theme in `globals.css`.
-- On the chart page the result section widens to 64rem on `lg` (the form and guide text keep the reading width). `/profile` and `/natal-reading` use `max-w-5xl`, the topbar's width. The aspects list in `NatalChartDetails` goes to two columns by container width (`@3xl`), not viewport, so it follows whichever column it sits in.
+- The chart page is a `ContentLayout wide` page: the intro, form, reading box and guide text sit in `max-w-3xl` on the same left edge, the chart result uses the full width. `/natal-reading` uses `max-w-5xl`, the topbar's width; `/profile` keeps the reading width (`max-w-2xl`). The aspects list in `NatalChartDetails` goes to two columns by container width (`@3xl`), not viewport, so it follows whichever column it sits in.
 - The birth profile has one SWR key, `BIRTH_PROFILE_SWR_KEY` (`natal-reading-button.tsx`), shared by `/profile`, `/astrology` and the chart page, so a save shows up everywhere at once.
 - **Instant chart texts** (`NatalChartTexts`, under the details on the chart page): one free, pre-written text per placement, no AI. `chartTextSections()` turns a chart into «Ωροσκόπος» (time known), «Οι πλανήτες στα ζώδια», «Οι πλανήτες στους οίκους» (time known) and «Οι όψεις»; keys are `ascendant-<sign>`, `<planet>-<sign>`, `<planet>-house-<n>`, `<planet_a>-<type>-<planet_b>`. The component fetches only that chart's keys from `/data/chart/<key>.json` in parallel, skips 404s and draws nothing if none exist. The texts are adapted from the Heindels' "The Message of the Stars" (1918, public domain); no credit is shown on the page, like the dream dictionary and Miller. Never import `chart-texts.json` in client code. The paid reading is positioned as the whole chart told as one story.
 - The natal reading costs 2 credits (`NATAL_READING_CREDITS`): `NatalReadingButton` on `/profile`, `/astrology#xartis` and the chart page; results at `/natal-reading/?id=` and in the dashboard's «Χάρτης» tab.
@@ -199,7 +206,7 @@ Every call adds `Authorization: Bearer <cognito-id-token>` via `getIdToken()`.
 ## Auth Flow
 1. `_app.tsx` configures Amplify on client mount + listens for Hub auth events
 2. `AuthGuard` calls `getUser()` on every protected page — redirects to `/login` if null
-3. Login flow: sign in → OR → register → confirm code → sign in
+3. Login flow: sign in → OR → register → confirm code → sign in. `?returnTo=` goes through `safeReturnTo()`; Google sign-in carries it as Amplify `customState`, and the Hub listener in `_app.tsx` sends the user there on `customOAuthState` + `signInWithRedirect`
 4. Token refresh is handled automatically by Amplify
 
 ## Environment Variables

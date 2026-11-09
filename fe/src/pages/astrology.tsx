@@ -22,6 +22,7 @@ import {
   AstrologyReading,
 } from "@/lib/api";
 import { SIGNS, SIGN_BY_ID, getSignFromDob } from "@/lib/astrology";
+import { BIRTH_CHART_PATH } from "@/lib/zodiac";
 import { getIdToken } from "@/lib/auth";
 import { notifyCreditsChanged } from "@/lib/user";
 import { InsufficientCreditsDialog } from "@/components/credits-dialog";
@@ -472,8 +473,8 @@ function NatalChartSection() {
       <p className="mt-1 mb-4 text-sm text-violet-200 leading-relaxed">
         Μια ανάγνωση όλου του χάρτη γέννησής σου: ο χαρακτήρας, τα συναισθήματα, ο έρωτας, η
         καριέρα και ο δρόμος σου. Γίνεται από τα στοιχεία γέννησης του προφίλ σου.{" "}
-        <Link href="/zodia/astrologikos-xartis/" className="text-amber-400 hover:text-amber-300">
-          Τι δείχνει ο χάρτης
+        <Link href={BIRTH_CHART_PATH} className="text-amber-400 hover:text-amber-300">
+          Δες τον χάρτη σου
         </Link>
       </p>
       <NatalReadingButton returnTo="/astrology/#xartis" />

@@ -21,6 +21,7 @@ import { NatalChartDetails } from "@/components/natal-chart-details";
 import { getNatalReading, type NatalReading } from "@/lib/api";
 import { SIGN_BY_ID } from "@/lib/astrology";
 import { planetGlyph } from "@/lib/planets";
+import { BIRTH_CHART_PATH } from "@/lib/zodiac";
 import { useAuthedSWR } from "@/lib/use-authed-swr";
 import { timeAgo } from "@/lib/time-ago";
 
@@ -137,6 +138,12 @@ export default function NatalReadingPage() {
               <section>
                 <h2 className="mb-3 text-lg font-semibold text-violet-50">Οι θέσεις του χάρτη</h2>
                 <NatalChartDetails chart={chart} />
+                <Link
+                  href={BIRTH_CHART_PATH}
+                  className="mt-4 inline-block text-sm text-amber-400 hover:text-amber-300 transition-colors"
+                >
+                  Ο τωρινός χάρτης του προφίλ σου, με κείμενο για κάθε θέση →
+                </Link>
               </section>
             </div>
           )}

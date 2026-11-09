@@ -39,6 +39,8 @@ function natalReadingHref(readingId: string): string {
 interface NatalReadingButtonProps {
   /** Where sign-in brings the visitor back to, e.g. "/astrology/#xartis". */
   returnTo: string;
+  /** Shown instead of the link to /profile when there is no saved chart yet. */
+  missingProfileText?: string;
 }
 
 /**
@@ -47,7 +49,10 @@ interface NatalReadingButtonProps {
  * once: when the profile's chart already has its reading the button opens it, and a new paid
  * reading is offered only after the birth details change.
  */
-export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
+export function NatalReadingButton({
+  returnTo,
+  missingProfileText,
+}: NatalReadingButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -147,6 +152,13 @@ export function NatalReadingButton({ returnTo }: NatalReadingButtonProps) {
   }
 
   if (!profile?.chart) {
+    if (missingProfileText) {
+      return (
+        <p className="text-sm text-violet-200 leading-relaxed">
+          {missingProfileText}
+        </p>
+      );
+    }
     return (
       <div>
         <p className="text-sm text-violet-200 leading-relaxed">

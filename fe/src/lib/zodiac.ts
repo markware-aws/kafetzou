@@ -68,6 +68,9 @@ export const SLUG_BY_SIGN_ID: Record<string, string> = Object.fromEntries(
   SIGNS.map((sign, index) => [sign.id, ZODIAC_SLUGS[index]]),
 );
 
+/** The full birth chart page: the one home of a user's chart (wheel, placements, texts). */
+export const BIRTH_CHART_PATH = "/zodia/astrologikos-xartis/";
+
 export function zodiacSignPath(slug: string): string {
   return `/zodia/${slug}/`;
 }

@@ -3,6 +3,7 @@ import { Commissioner } from "next/font/google";
 import { Hub } from "aws-amplify/utils";
 import { SWRConfig } from "swr";
 import { configureAmplify } from "@/lib/amplify-config";
+import { safeReturnTo } from "@/lib/return-to";
 import { Footer } from "@/components/footer";
 import { CookieBanner } from "@/components/cookie-banner";
 import "../styles/globals.css";
@@ -10,13 +11,20 @@ import "../styles/globals.css";
 // The UI is Greek; Geist has no Greek glyphs, so it silently fell back to Arial.
 const commissioner = Commissioner({ subsets: ["greek", "latin"] });
 
+/**
+ * The page a Google sign-in started from (login.tsx passes it as Amplify's custom state).
+ * Amplify dispatches `customOAuthState` right before `signInWithRedirect`.
+ */
+let oauthReturnTo: string | null = null;
+
 if (typeof window !== "undefined") {
   configureAmplify();
-  // Register Hub listener at module load time — before React mounts — so we
+  // Register Hub listener at module load time, before React mounts, so we
   // don't miss the signInWithRedirect event that Amplify fires synchronously
   // while processing the OAuth ?code= callback on page load.
   Hub.listen("auth", ({ payload }) => {
-    if (payload.event === "signInWithRedirect") window.location.replace("/");
+    if (payload.event === "customOAuthState") oauthReturnTo = safeReturnTo(payload.data);
+    if (payload.event === "signInWithRedirect") window.location.replace(oauthReturnTo ?? "/");
     if (payload.event === "signInWithRedirect_failure") window.location.replace("/login");
   });
 }
